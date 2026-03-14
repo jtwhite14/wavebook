@@ -26,7 +26,52 @@ import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils/date";
 import { findNearbySpots } from "@/lib/utils/geo";
 import { SurfSpot } from "@/lib/db/schema";
+import { extractExifData, isExifSupported } from "@/lib/utils/exif";
 import { ExifData } from "@/types";
+
+const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4MB (Vercel limit)
+const MAX_DIMENSION = 2048;
+
+function resizeImage(file: File): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    if (file.size <= MAX_FILE_SIZE) {
+      resolve(file);
+      return;
+    }
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+        const ratio = Math.min(MAX_DIMENSION / width, MAX_DIMENSION / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { reject(new Error("Canvas error")); return; }
+      ctx.drawImage(img, 0, 0, width, height);
+      let quality = 0.85;
+      const tryCompress = () => {
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) { reject(new Error("Compress failed")); return; }
+            if (blob.size > MAX_FILE_SIZE && quality > 0.3) { quality -= 0.15; tryCompress(); }
+            else resolve(blob);
+          },
+          "image/jpeg",
+          quality
+        );
+      };
+      tryCompress();
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
 
 // ---- Types ----
 
@@ -126,14 +171,21 @@ export default function OnboardingPage() {
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const files = e.target.files;
-    if (!files || !sessionId) return;
+    if (!files || !token) return;
 
     for (const file of Array.from(files)) {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("uploadSessionId", sessionId);
-
       try {
+        let exifData = {};
+        if (isExifSupported(file)) {
+          exifData = await extractExifData(file);
+        }
+        const processedFile = await resizeImage(file);
+
+        const formData = new FormData();
+        formData.append("file", processedFile, file.name);
+        formData.append("token", token);
+        formData.append("exifData", JSON.stringify(exifData));
+
         const res = await fetch("/api/upload/public", {
           method: "POST",
           body: formData,

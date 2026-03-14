@@ -13,6 +13,78 @@ interface FailedUpload {
   error: string;
 }
 
+const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4MB (Vercel limit)
+const MAX_DIMENSION = 2048;
+
+function resizeImage(file: File): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    // If already small enough, return as-is
+    if (file.size <= MAX_FILE_SIZE) {
+      resolve(file);
+      return;
+    }
+
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+
+      let { width, height } = img;
+
+      // Scale down to max dimension
+      if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+        const ratio = Math.min(MAX_DIMENSION / width, MAX_DIMENSION / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        reject(new Error("Could not get canvas context"));
+        return;
+      }
+
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // Try progressively lower quality until under limit
+      let quality = 0.85;
+      const tryCompress = () => {
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error("Failed to compress image"));
+              return;
+            }
+            if (blob.size > MAX_FILE_SIZE && quality > 0.3) {
+              quality -= 0.15;
+              tryCompress();
+            } else {
+              resolve(blob);
+            }
+          },
+          "image/jpeg",
+          quality
+        );
+      };
+
+      tryCompress();
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      // If we can't load it as image, send original
+      resolve(file);
+    };
+
+    img.src = url;
+  });
+}
+
 export function UploadClient({ token }: { token: string }) {
   const [uploadedPhotos, setUploadedPhotos] = useState<UploadedPhoto[]>([]);
   const [failedUploads, setFailedUploads] = useState<FailedUpload[]>([]);
@@ -41,8 +113,11 @@ export function UploadClient({ token }: { token: string }) {
             exifData = await extractExifData(file);
           }
 
+          // Resize if too large for Vercel's 4.5MB limit
+          const processedFile = await resizeImage(file);
+
           const formData = new FormData();
-          formData.append("file", file);
+          formData.append("file", processedFile, file.name);
           formData.append("token", token);
           formData.append("exifData", JSON.stringify(exifData));
 
