@@ -1,0 +1,232 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useSession, signIn } from "next-auth/react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { AvailabilityView } from "@/components/calendar/AvailabilityView";
+import { toast } from "sonner";
+import { AvailabilityWindow, CalendarEvent } from "@/types";
+import { addDays } from "date-fns";
+
+export default function SettingsPage() {
+  const { data: session } = useSession();
+  const [calendarConnected, setCalendarConnected] = useState(false);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [availability, setAvailability] = useState<AvailabilityWindow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    fetchCalendarData();
+  }, []);
+
+  async function fetchCalendarData() {
+    try {
+      const response = await fetch("/api/calendar");
+      if (response.ok) {
+        const data = await response.json();
+        setCalendarConnected(data.connected);
+        setEvents(data.events || []);
+        setAvailability(
+          (data.availability || []).map((a: AvailabilityWindow) => ({
+            ...a,
+            start: new Date(a.start),
+            end: new Date(a.end),
+          }))
+        );
+      }
+    } catch (error) {
+      console.error("Error fetching calendar:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleConnectCalendar() {
+    // Re-authenticate with calendar scope
+    signIn("google", {
+      callbackUrl: "/settings",
+    });
+  }
+
+  async function handleRefreshCalendar() {
+    setRefreshing(true);
+    try {
+      const response = await fetch("/api/calendar?refresh=true");
+      if (response.ok) {
+        const data = await response.json();
+        setEvents(data.events || []);
+        setAvailability(
+          (data.availability || []).map((a: AvailabilityWindow) => ({
+            ...a,
+            start: new Date(a.start),
+            end: new Date(a.end),
+          }))
+        );
+        toast.success("Calendar refreshed");
+      } else {
+        toast.error("Failed to refresh calendar");
+      }
+    } catch (error) {
+      console.error("Error refreshing calendar:", error);
+      toast.error("Failed to refresh calendar");
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
+  const startDate = new Date();
+  const endDate = addDays(new Date(), 7);
+
+  return (
+    <div className="max-w-3xl mx-auto space-y-6">
+      <h1 className="text-3xl font-bold">Settings</h1>
+
+      {/* Account */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Account</CardTitle>
+          <CardDescription>Your account information</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium">{session?.user?.name}</p>
+              <p className="text-sm text-muted-foreground">{session?.user?.email}</p>
+            </div>
+            {session?.user?.image && (
+              <img
+                src={session.user.image}
+                alt="Profile"
+                className="w-12 h-12 rounded-full"
+              />
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Calendar Integration */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Google Calendar</CardTitle>
+              <CardDescription>
+                Connect your calendar to see when you're free to surf
+              </CardDescription>
+            </div>
+            {calendarConnected && (
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                Connected
+              </Badge>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {loading ? (
+            <div className="animate-pulse space-y-4">
+              <div className="h-4 bg-muted rounded w-3/4"></div>
+              <div className="h-4 bg-muted rounded w-1/2"></div>
+            </div>
+          ) : calendarConnected ? (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Your Google Calendar is connected. SurfSync can see your busy/free
+                times to suggest optimal surf windows.
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleRefreshCalendar}
+                  disabled={refreshing}
+                >
+                  {refreshing ? "Refreshing..." : "Refresh Calendar"}
+                </Button>
+              </div>
+
+              <Separator />
+
+              {/* Weekly availability preview */}
+              <div>
+                <h3 className="font-medium mb-4">This Week's Availability</h3>
+                <AvailabilityView
+                  events={events.map((e) => ({
+                    ...e,
+                    start: new Date(e.start),
+                    end: new Date(e.end),
+                  }))}
+                  availability={availability}
+                  startDate={startDate}
+                  endDate={endDate}
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Connect your Google Calendar to enable "Golden Window"
+                predictions - when good surf conditions align with your free time.
+              </p>
+              <div className="bg-muted/50 p-4 rounded-lg space-y-2 text-sm">
+                <p className="font-medium">What we access:</p>
+                <ul className="list-disc list-inside text-muted-foreground space-y-1">
+                  <li>Read-only access to your calendar events</li>
+                  <li>We only check event times, not details</li>
+                  <li>Your data is never shared</li>
+                </ul>
+              </div>
+              <Button onClick={handleConnectCalendar}>
+                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                  <path
+                    fill="currentColor"
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                  />
+                  <path
+                    fill="currentColor"
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  />
+                  <path
+                    fill="currentColor"
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                  />
+                  <path
+                    fill="currentColor"
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                  />
+                </svg>
+                Connect Google Calendar
+              </Button>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* About */}
+      <Card>
+        <CardHeader>
+          <CardTitle>About SurfSync</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm text-muted-foreground">
+          <p>
+            SurfSync helps you track your surf sessions and predicts the best times
+            to surf based on your past experiences.
+          </p>
+          <p>
+            Weather data provided by{" "}
+            <a
+              href="https://open-meteo.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              Open-Meteo
+            </a>
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

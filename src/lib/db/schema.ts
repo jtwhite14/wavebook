@@ -1,0 +1,203 @@
+import {
+  pgTable,
+  uuid,
+  varchar,
+  text,
+  timestamp,
+  decimal,
+  integer,
+  jsonb,
+  primaryKey,
+} from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
+
+// Users table
+export const users = pgTable("users", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  name: varchar("name", { length: 255 }),
+  emailVerified: timestamp("email_verified"),
+  image: text("image"),
+  googleRefreshToken: text("google_refresh_token"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// NextAuth required tables - column names must match DrizzleAdapter expected names
+export const accounts = pgTable(
+  "accounts",
+  {
+    userId: uuid("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    type: varchar("type", { length: 255 }).notNull(),
+    provider: varchar("provider", { length: 255 }).notNull(),
+    providerAccountId: varchar("providerAccountId", { length: 255 }).notNull(),
+    refresh_token: text("refresh_token"),
+    access_token: text("access_token"),
+    expires_at: integer("expires_at"),
+    token_type: varchar("token_type", { length: 255 }),
+    scope: text("scope"),
+    id_token: text("id_token"),
+    session_state: text("session_state"),
+  },
+  (account) => [
+    primaryKey({ columns: [account.provider, account.providerAccountId] }),
+  ]
+);
+
+export const sessions = pgTable("sessions", {
+  sessionToken: varchar("sessionToken", { length: 255 }).primaryKey(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  expires: timestamp("expires").notNull(),
+});
+
+export const verificationTokens = pgTable(
+  "verification_tokens",
+  {
+    identifier: varchar("identifier", { length: 255 }).notNull(),
+    token: varchar("token", { length: 255 }).notNull(),
+    expires: timestamp("expires").notNull(),
+  },
+  (vt) => [primaryKey({ columns: [vt.identifier, vt.token] })]
+);
+
+// Surf Spots table
+export const surfSpots = pgTable("surf_spots", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  name: varchar("name", { length: 255 }).notNull(),
+  latitude: decimal("latitude", { precision: 10, scale: 7 }).notNull(),
+  longitude: decimal("longitude", { precision: 10, scale: 7 }).notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Surf Sessions table
+export const surfSessions = pgTable("surf_sessions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  spotId: uuid("spot_id")
+    .notNull()
+    .references(() => surfSpots.id, { onDelete: "cascade" }),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  date: timestamp("date").notNull(),
+  startTime: timestamp("start_time").notNull(),
+  endTime: timestamp("end_time"),
+  rating: integer("rating").notNull(), // 1-5
+  notes: text("notes"),
+  photoUrl: text("photo_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Session Conditions table (captured at session time)
+export const sessionConditions = pgTable("session_conditions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  sessionId: uuid("session_id")
+    .notNull()
+    .references(() => surfSessions.id, { onDelete: "cascade" })
+    .unique(),
+  waveHeight: decimal("wave_height", { precision: 5, scale: 2 }),
+  wavePeriod: decimal("wave_period", { precision: 5, scale: 2 }),
+  waveDirection: decimal("wave_direction", { precision: 5, scale: 2 }),
+  primarySwellHeight: decimal("primary_swell_height", { precision: 5, scale: 2 }),
+  primarySwellPeriod: decimal("primary_swell_period", { precision: 5, scale: 2 }),
+  primarySwellDirection: decimal("primary_swell_direction", { precision: 5, scale: 2 }),
+  secondarySwellHeight: decimal("secondary_swell_height", { precision: 5, scale: 2 }),
+  secondarySwellPeriod: decimal("secondary_swell_period", { precision: 5, scale: 2 }),
+  secondarySwellDirection: decimal("secondary_swell_direction", { precision: 5, scale: 2 }),
+  windSpeed: decimal("wind_speed", { precision: 5, scale: 2 }),
+  windDirection: decimal("wind_direction", { precision: 5, scale: 2 }),
+  seaSurfaceTemp: decimal("sea_surface_temp", { precision: 5, scale: 2 }),
+  timestamp: timestamp("timestamp").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Spot Forecasts table (cached forecasts per spot)
+export const spotForecasts = pgTable("spot_forecasts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  spotId: uuid("spot_id")
+    .notNull()
+    .references(() => surfSpots.id, { onDelete: "cascade" }),
+  forecastData: jsonb("forecast_data").notNull(), // 16 days of hourly data
+  fetchedAt: timestamp("fetched_at").defaultNow().notNull(),
+});
+
+// Relations
+export const usersRelations = relations(users, ({ many }) => ({
+  surfSpots: many(surfSpots),
+  surfSessions: many(surfSessions),
+  accounts: many(accounts),
+  sessions: many(sessions),
+}));
+
+export const accountsRelations = relations(accounts, ({ one }) => ({
+  user: one(users, {
+    fields: [accounts.userId],
+    references: [users.id],
+  }),
+}));
+
+export const sessionsRelations = relations(sessions, ({ one }) => ({
+  user: one(users, {
+    fields: [sessions.userId],
+    references: [users.id],
+  }),
+}));
+
+export const surfSpotsRelations = relations(surfSpots, ({ one, many }) => ({
+  user: one(users, {
+    fields: [surfSpots.userId],
+    references: [users.id],
+  }),
+  surfSessions: many(surfSessions),
+  forecasts: many(spotForecasts),
+}));
+
+export const surfSessionsRelations = relations(surfSessions, ({ one }) => ({
+  spot: one(surfSpots, {
+    fields: [surfSessions.spotId],
+    references: [surfSpots.id],
+  }),
+  user: one(users, {
+    fields: [surfSessions.userId],
+    references: [users.id],
+  }),
+  conditions: one(sessionConditions, {
+    fields: [surfSessions.id],
+    references: [sessionConditions.sessionId],
+  }),
+}));
+
+export const sessionConditionsRelations = relations(sessionConditions, ({ one }) => ({
+  session: one(surfSessions, {
+    fields: [sessionConditions.sessionId],
+    references: [surfSessions.id],
+  }),
+}));
+
+export const spotForecastsRelations = relations(spotForecasts, ({ one }) => ({
+  spot: one(surfSpots, {
+    fields: [spotForecasts.spotId],
+    references: [surfSpots.id],
+  }),
+}));
+
+// Type exports
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
+export type SurfSpot = typeof surfSpots.$inferSelect;
+export type NewSurfSpot = typeof surfSpots.$inferInsert;
+export type SurfSession = typeof surfSessions.$inferSelect;
+export type NewSurfSession = typeof surfSessions.$inferInsert;
+export type SessionCondition = typeof sessionConditions.$inferSelect;
+export type NewSessionCondition = typeof sessionConditions.$inferInsert;
+export type SpotForecast = typeof spotForecasts.$inferSelect;
+export type NewSpotForecast = typeof spotForecasts.$inferInsert;
