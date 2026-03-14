@@ -721,18 +721,56 @@ export default function OnboardingPage() {
                       />
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() =>
-                      updateCurrentReview({
-                        creatingNewSpot: false,
-                        newSpotName: "",
-                      })
-                    }
-                  >
-                    Cancel
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      disabled={
+                        !currentReview.newSpotName ||
+                        currentReview.newSpotLat === null ||
+                        currentReview.newSpotLng === null
+                      }
+                      onClick={async () => {
+                        try {
+                          const res = await fetch("/api/spots", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              name: currentReview.newSpotName,
+                              latitude: currentReview.newSpotLat,
+                              longitude: currentReview.newSpotLng,
+                            }),
+                          });
+                          if (!res.ok) throw new Error("Failed to create spot");
+                          const data = await res.json();
+                          const newSpot = data.spot;
+                          setSpots((prev) => [...prev, newSpot]);
+                          updateCurrentReview({
+                            spotId: newSpot.id,
+                            spotName: newSpot.name,
+                            creatingNewSpot: false,
+                            newSpotName: "",
+                          });
+                          toast.success(`Created spot "${newSpot.name}"`);
+                        } catch {
+                          toast.error("Failed to create spot");
+                        }
+                      }}
+                    >
+                      Save Spot
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        updateCurrentReview({
+                          creatingNewSpot: false,
+                          newSpotName: "",
+                        })
+                      }
+                    >
+                      Cancel
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>
