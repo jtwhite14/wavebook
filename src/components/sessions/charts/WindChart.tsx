@@ -67,6 +67,13 @@ export function WindChart({ data, sessionIndex }: WindChartProps) {
 
   const sessionTime = data[sessionIndex]?.time;
 
+  // Optimal Y scale so bar height differences are visible
+  const speedValues = chartData.map((d) => d.speed).filter((v) => v > 0);
+  const minSpeed = speedValues.length > 0 ? Math.min(...speedValues) : 0;
+  const maxSpeed = speedValues.length > 0 ? Math.max(...speedValues) : 1;
+  const yFloor = Math.max(0, Math.floor(minSpeed * 0.6));
+  const yCeil = Math.ceil(maxSpeed) + 2;
+
   return (
     <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02]">
       {/* Header */}
@@ -95,7 +102,7 @@ export function WindChart({ data, sessionIndex }: WindChartProps) {
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} barCategoryGap="15%">
             <XAxis dataKey="time" hide />
-            <YAxis hide domain={[0, "auto"]} />
+            <YAxis hide domain={[yFloor, yCeil]} />
             <Tooltip content={<WindTooltip />} cursor={false} />
             {sessionTime && (
               <ReferenceLine

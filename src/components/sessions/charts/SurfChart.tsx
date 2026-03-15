@@ -92,26 +92,20 @@ export function SurfChart({ data, sessionIndex }: SurfChartProps) {
 
   const sessionTime = data[sessionIndex]?.time;
 
-  // Determine which bars get a label — show on the session bar,
-  // first, last, and wherever value changes significantly
-  const labelIndices = new Set<number>();
-  labelIndices.add(sessionIndex);
-  labelIndices.add(0);
-  labelIndices.add(chartData.length - 1);
-  // Show label when rounded value changes
-  let lastRounded = -1;
-  chartData.forEach((d, i) => {
-    const rounded = Math.round(d.wave);
-    if (rounded !== lastRounded) {
-      labelIndices.add(i);
-      lastRounded = rounded;
-    }
-  });
+  // Compute optimal Y domain: start from a floor near the min so bars show
+  // meaningful height differences instead of all looking the same height.
+  const waveValues = chartData.map((d) => d.wave).filter((v) => v > 0);
+  const minWave = waveValues.length > 0 ? Math.min(...waveValues) : 0;
+  const maxWave = waveValues.length > 0 ? Math.max(...waveValues) : 1;
+  // Floor at 60% of min (rounded down) so even small differences are visible
+  const yFloor = Math.max(0, Math.floor(minWave * 0.6));
+  // Ceil with a little headroom for labels
+  const yCeil = Math.ceil(maxWave) + 1;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const renderLabel = (props: any) => {
-    const { x, y, width, index, value } = props;
-    if (!labelIndices.has(index) || value == null || value === 0) return null;
+    const { x, y, width, value } = props;
+    if (value == null || value === 0) return null;
     return (
       <text
         x={x + width / 2}
@@ -189,7 +183,7 @@ export function SurfChart({ data, sessionIndex }: SurfChartProps) {
               tickLine={false}
               dy={4}
             />
-            <YAxis hide domain={[0, "auto"]} />
+            <YAxis hide domain={[yFloor, yCeil]} />
             <Tooltip content={<SurfTooltip />} cursor={false} />
             {sessionTime && (
               <ReferenceLine

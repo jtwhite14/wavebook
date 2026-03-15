@@ -63,7 +63,7 @@ export function ConditionsTimeline({ sessionId }: ConditionsTimelineProps) {
       <div>
         <h2 className="text-lg font-semibold tracking-tight">Conditions Timeline</h2>
         <p className="text-[13px] text-white/30 mt-0.5">
-          13-hour window around your session
+          24-hour window around your session
         </p>
       </div>
       <div className="space-y-3">

@@ -497,9 +497,9 @@ export async function fetchHourlyTimeline(
     }
   });
 
-  // Slice 6 before, session hour, 6 after = 13 hours
-  const sliceStart = Math.max(0, closestIndex - 6);
-  const sliceEnd = Math.min(allHours.length, closestIndex + 7);
+  // Slice 12 before, session hour, 11 after = 24 hours
+  const sliceStart = Math.max(0, closestIndex - 12);
+  const sliceEnd = Math.min(allHours.length, closestIndex + 12);
   const timeline = allHours.slice(sliceStart, sliceEnd);
   const sessionHourIndex = closestIndex - sliceStart;
 
