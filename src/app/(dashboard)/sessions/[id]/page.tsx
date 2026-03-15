@@ -77,7 +77,7 @@ export default function SessionDetailPage() {
 
   const c = session.conditions;
   const conditions: MarineConditions | null = c
-    ? {
+    ? ({
         waveHeight: c.waveHeight ? parseFloat(c.waveHeight) : null,
         wavePeriod: c.wavePeriod ? parseFloat(c.wavePeriod) : null,
         waveDirection: c.waveDirection ? parseFloat(c.waveDirection) : null,
@@ -87,11 +87,21 @@ export default function SessionDetailPage() {
         secondarySwellHeight: c.secondarySwellHeight ? parseFloat(c.secondarySwellHeight) : null,
         secondarySwellPeriod: c.secondarySwellPeriod ? parseFloat(c.secondarySwellPeriod) : null,
         secondarySwellDirection: c.secondarySwellDirection ? parseFloat(c.secondarySwellDirection) : null,
+        windWaveHeight: c.windWaveHeight ? parseFloat(c.windWaveHeight) : null,
+        windWavePeriod: c.windWavePeriod ? parseFloat(c.windWavePeriod) : null,
+        windWaveDirection: c.windWaveDirection ? parseFloat(c.windWaveDirection) : null,
         windSpeed: c.windSpeed ? parseFloat(c.windSpeed) : null,
         windDirection: c.windDirection ? parseFloat(c.windDirection) : null,
+        windGust: c.windGust ? parseFloat(c.windGust) : null,
+        airTemp: c.airTemp ? parseFloat(c.airTemp) : null,
         seaSurfaceTemp: c.seaSurfaceTemp ? parseFloat(c.seaSurfaceTemp) : null,
+        humidity: c.humidity ? parseFloat(c.humidity) : null,
+        precipitation: c.precipitation ? parseFloat(c.precipitation) : null,
+        pressureMsl: c.pressureMsl ? parseFloat(c.pressureMsl) : null,
+        cloudCover: c.cloudCover ? parseFloat(c.cloudCover) : null,
+        visibility: c.visibility ? parseFloat(c.visibility) : null,
         timestamp: new Date(c.timestamp),
-      }
+      } as MarineConditions)
     : null;
 
   return (
