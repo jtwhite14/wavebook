@@ -108,9 +108,71 @@ export default function SessionDetailPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2">
+      {/* Hero photo */}
+      {session.photoUrl && (
+        <div className="relative -mx-4 sm:mx-0 sm:rounded-2xl overflow-hidden">
+          <img
+            src={session.photoUrl}
+            alt="Session photo"
+            className="w-full h-[320px] sm:h-[400px] object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-8">
+            <Button variant="ghost" size="sm" asChild className="-ml-2 text-white/70 hover:text-white hover:bg-white/10 mb-3">
+              <Link href="/sessions">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="w-4 h-4 mr-1"
+                >
+                  <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+                Back
+              </Link>
+            </Button>
+            <h1 className="text-3xl sm:text-4xl font-bold text-white">
+              {session.spot?.name || "Session"}
+            </h1>
+            <div className="flex items-center gap-3 mt-2">
+              <span className="text-white/70">{formatFullDate(session.date)}</span>
+              <span className="text-white/30">|</span>
+              <span className="text-white/70">
+                {formatTime(session.startTime)}
+                {session.endTime && ` - ${formatTime(session.endTime)}`}
+              </span>
+              <div className="flex items-center ml-1">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <svg
+                    key={i}
+                    className={`w-4 h-4 ${
+                      i < session.rating ? "text-yellow-400" : "text-white/20"
+                    }`}
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="absolute top-4 right-4">
+            <Button variant="destructive" size="sm" onClick={handleDelete} className="shadow-lg">
+              Delete
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Header without photo */}
+      {!session.photoUrl && (
+        <div className="flex items-center justify-between">
+          <div>
             <Button variant="ghost" size="sm" asChild className="-ml-2">
               <Link href="/sessions">
                 <svg
@@ -128,82 +190,71 @@ export default function SessionDetailPage() {
                 Back
               </Link>
             </Button>
+            <h1 className="text-3xl font-bold mt-2">
+              {session.spot?.name || "Session"}
+            </h1>
+            <p className="text-muted-foreground">
+              {formatFullDate(session.date)}
+            </p>
           </div>
-          <h1 className="text-3xl font-bold mt-2">
-            {session.spot?.name || "Session"}
-          </h1>
-          <p className="text-muted-foreground">
-            {formatFullDate(session.date)}
-          </p>
+          <Button variant="destructive" size="sm" onClick={handleDelete}>
+            Delete
+          </Button>
         </div>
-        <Button variant="destructive" size="sm" onClick={handleDelete}>
-          Delete
-        </Button>
-      </div>
+      )}
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Session Info */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Session Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Time</span>
-              <span>
-                {formatTime(session.startTime)}
-                {session.endTime && ` - ${formatTime(session.endTime)}`}
-              </span>
-            </div>
-            <Separator />
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Rating</span>
-              <div className="flex items-center">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <svg
-                    key={i}
-                    className={`w-5 h-5 ${
-                      i < session.rating ? "text-yellow-400" : "text-gray-300"
-                    }`}
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                ))}
+      {/* Session Details */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Session Details</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!session.photoUrl && (
+            <>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Time</span>
+                <span>
+                  {formatTime(session.startTime)}
+                  {session.endTime && ` - ${formatTime(session.endTime)}`}
+                </span>
               </div>
-            </div>
-            <Separator />
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Spot</span>
-              <Link
-                href={`/spots/${session.spotId}`}
-                className="text-primary hover:underline"
-              >
-                {session.spot?.name}
-              </Link>
-            </div>
-            <Separator />
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Logged</span>
-              <span>{formatRelative(session.createdAt)}</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Photo */}
-        {session.photoUrl && (
-          <Card>
-            <CardContent className="p-0 overflow-hidden">
-              <img
-                src={session.photoUrl}
-                alt="Session photo"
-                className="w-full h-full object-cover rounded-lg"
-              />
-            </CardContent>
-          </Card>
-        )}
-      </div>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Rating</span>
+                <div className="flex items-center">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <svg
+                      key={i}
+                      className={`w-5 h-5 ${
+                        i < session.rating ? "text-yellow-400" : "text-gray-300"
+                      }`}
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  ))}
+                </div>
+              </div>
+              <Separator />
+            </>
+          )}
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Spot</span>
+            <Link
+              href={`/spots/${session.spotId}`}
+              className="text-primary hover:underline"
+            >
+              {session.spot?.name}
+            </Link>
+          </div>
+          <Separator />
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Logged</span>
+            <span>{formatRelative(session.createdAt)}</span>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Notes */}
       {session.notes && (
