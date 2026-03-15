@@ -6,9 +6,10 @@ interface DirectionStripProps {
   directions: (number | null)[];
   sessionIndex: number;
   label?: string;
+  showAllLabels?: boolean;
 }
 
-export function DirectionStrip({ directions, sessionIndex, label }: DirectionStripProps) {
+export function DirectionStrip({ directions, sessionIndex, label, showAllLabels }: DirectionStripProps) {
   return (
     <div className="flex items-center gap-2 px-5 pt-1.5 pb-2">
       {label && (
@@ -22,6 +23,7 @@ export function DirectionStrip({ directions, sessionIndex, label }: DirectionStr
           const compass = deg != null ? getDirectionText(deg) : null;
           // Arrows show where swell/wind comes FROM: rotate +180°
           const arrowDeg = deg != null ? (deg + 180) % 360 : null;
+          const showLabel = showAllLabels || isSession;
 
           return (
             <div
@@ -46,8 +48,8 @@ export function DirectionStrip({ directions, sessionIndex, label }: DirectionStr
                   <span className="text-white/10 text-[9px]">-</span>
                 )}
               </div>
-              {isSession && compass && (
-                <span className="text-[9px] font-medium text-primary/70">
+              {showLabel && compass && (
+                <span className={`text-[9px] font-medium ${isSession ? "text-primary/70" : "text-white/20"}`}>
                   {compass}
                 </span>
               )}
