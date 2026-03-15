@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ConditionsDisplay } from "@/components/sessions/ConditionsDisplay";
+import { ConditionsTimeline } from "@/components/sessions/ConditionsTimeline";
 import { toast } from "sonner";
 import { formatFullDate, formatTime, formatRelative } from "@/lib/utils/date";
 import { MarineConditions, SurfSessionWithConditions } from "@/types";
@@ -230,6 +231,9 @@ export default function SessionDetailPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Conditions Timeline Charts */}
+      <ConditionsTimeline sessionId={session.id} />
     </div>
   );
 }

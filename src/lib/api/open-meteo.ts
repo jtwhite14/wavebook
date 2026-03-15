@@ -288,6 +288,146 @@ function transformForecastResponse(
   };
 }
 
+// ── Numeric unit converters (for chart Y-axis values) ──
+
+export function metersToFeet(m: number | null): number | null {
+  return m != null ? m * 3.28084 : null;
+}
+
+export function kmhToMph(kmh: number | null): number | null {
+  return kmh != null ? kmh * 0.621371 : null;
+}
+
+export function celsiusToFahrenheit(c: number | null): number | null {
+  return c != null ? c * 9 / 5 + 32 : null;
+}
+
+export function hpaToInHg(hpa: number | null): number | null {
+  return hpa != null ? hpa * 0.02953 : null;
+}
+
+export function metersToMiles(m: number | null): number | null {
+  return m != null ? m / 1609.344 : null;
+}
+
+export function mmToInches(mm: number | null): number | null {
+  return mm != null ? mm / 25.4 : null;
+}
+
+/**
+ * Fetch hourly timeline for a 13-hour window centered on a session time.
+ * Calls Marine API + ERA5 in parallel for a 2-day range, then slices.
+ */
+export async function fetchHourlyTimeline(
+  latitude: number,
+  longitude: number,
+  sessionTime: Date
+): Promise<{ timeline: HourlyForecast[]; sessionHourIndex: number }> {
+  // Build a 2-day date range around the session to handle midnight crossings
+  const dayBefore = new Date(sessionTime);
+  dayBefore.setUTCDate(dayBefore.getUTCDate() - 1);
+  const dayAfter = new Date(sessionTime);
+  dayAfter.setUTCDate(dayAfter.getUTCDate() + 1);
+
+  const startDate = dayBefore.toISOString().split("T")[0];
+  const endDate = dayAfter.toISOString().split("T")[0];
+
+  const marineParams = new URLSearchParams({
+    latitude: latitude.toString(),
+    longitude: longitude.toString(),
+    start_date: startDate,
+    end_date: endDate,
+    hourly: MARINE_PARAMS,
+    timezone: "auto",
+  });
+
+  const weatherParams = new URLSearchParams({
+    latitude: latitude.toString(),
+    longitude: longitude.toString(),
+    start_date: startDate,
+    end_date: endDate,
+    hourly: [
+      "wind_speed_10m",
+      "wind_direction_10m",
+      "wind_gusts_10m",
+      "temperature_2m",
+      "sea_surface_temperature",
+      "relative_humidity_2m",
+      "precipitation",
+      "pressure_msl",
+      "cloud_cover",
+      "visibility",
+    ].join(","),
+    timezone: "auto",
+  });
+
+  const [marineResponse, weatherResponse] = await Promise.all([
+    fetch(`${MARINE_API_BASE}?${marineParams}`),
+    fetch(`${HISTORICAL_API_BASE}?${weatherParams}`),
+  ]);
+
+  const marineData: OpenMeteoMarineResponse | null = marineResponse.ok
+    ? await marineResponse.json()
+    : null;
+  const weatherData: OpenMeteoWeatherResponse | null = weatherResponse.ok
+    ? await weatherResponse.json()
+    : null;
+
+  const times: string[] =
+    marineData?.hourly?.time || weatherData?.hourly?.time || [];
+  if (times.length === 0) {
+    return { timeline: [], sessionHourIndex: 0 };
+  }
+
+  // Build full hourly array
+  const allHours: HourlyForecast[] = times.map((time, index) => ({
+    time,
+    timestamp: new Date(time),
+    waveHeight: marineData?.hourly?.wave_height?.[index] ?? null,
+    wavePeriod: marineData?.hourly?.wave_period?.[index] ?? null,
+    waveDirection: marineData?.hourly?.wave_direction?.[index] ?? null,
+    primarySwellHeight: marineData?.hourly?.swell_wave_height?.[index] ?? null,
+    primarySwellPeriod: marineData?.hourly?.swell_wave_period?.[index] ?? null,
+    primarySwellDirection: marineData?.hourly?.swell_wave_direction?.[index] ?? null,
+    secondarySwellHeight: marineData?.hourly?.secondary_swell_wave_height?.[index] ?? null,
+    secondarySwellPeriod: marineData?.hourly?.secondary_swell_wave_period?.[index] ?? null,
+    secondarySwellDirection: marineData?.hourly?.secondary_swell_wave_direction?.[index] ?? null,
+    windWaveHeight: marineData?.hourly?.wind_wave_height?.[index] ?? null,
+    windWavePeriod: marineData?.hourly?.wind_wave_period?.[index] ?? null,
+    windWaveDirection: marineData?.hourly?.wind_wave_direction?.[index] ?? null,
+    windSpeed: weatherData?.hourly?.wind_speed_10m?.[index] ?? null,
+    windDirection: weatherData?.hourly?.wind_direction_10m?.[index] ?? null,
+    windGust: weatherData?.hourly?.wind_gusts_10m?.[index] ?? null,
+    airTemp: weatherData?.hourly?.temperature_2m?.[index] ?? null,
+    seaSurfaceTemp: weatherData?.hourly?.sea_surface_temperature?.[index] ?? null,
+    humidity: weatherData?.hourly?.relative_humidity_2m?.[index] ?? null,
+    precipitation: weatherData?.hourly?.precipitation?.[index] ?? null,
+    pressureMsl: weatherData?.hourly?.pressure_msl?.[index] ?? null,
+    cloudCover: weatherData?.hourly?.cloud_cover?.[index] ?? null,
+    visibility: weatherData?.hourly?.visibility?.[index] ?? null,
+  }));
+
+  // Find the closest hour to sessionTime
+  const sessionMs = sessionTime.getTime();
+  let closestIndex = 0;
+  let minDiff = Infinity;
+  allHours.forEach((h, i) => {
+    const diff = Math.abs(new Date(h.time).getTime() - sessionMs);
+    if (diff < minDiff) {
+      minDiff = diff;
+      closestIndex = i;
+    }
+  });
+
+  // Slice 6 before, session hour, 6 after = 13 hours
+  const sliceStart = Math.max(0, closestIndex - 6);
+  const sliceEnd = Math.min(allHours.length, closestIndex + 7);
+  const timeline = allHours.slice(sliceStart, sliceEnd);
+  const sessionHourIndex = closestIndex - sliceStart;
+
+  return { timeline, sessionHourIndex };
+}
+
 /**
  * Get wave direction as compass text
  */
