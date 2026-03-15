@@ -123,7 +123,7 @@ export async function POST(
     }));
 
     const weights: ConditionWeights = (spot.conditionWeights as ConditionWeights) ?? DEFAULT_CONDITION_WEIGHTS;
-    const alerts = generateAlerts(forecastHours, sessionsForMatching, weights, 50, new Date(), forecast.utcOffsetSeconds, weights.swellExposure);
+    const alerts = generateAlerts(forecastHours, sessionsForMatching, weights, 70, new Date(), forecast.utcOffsetSeconds, weights.swellExposure);
 
     // Expire old alerts
     const existing = await db.query.spotAlerts.findMany({

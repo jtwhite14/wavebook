@@ -56,11 +56,11 @@ export function getRatingBoost(rating: number): number {
 
 export function getForecastConfidence(daysOut: number): number {
   if (daysOut <= 1) return 1.0;
-  if (daysOut <= 2) return 0.9;
-  if (daysOut <= 3) return 0.75;
-  if (daysOut <= 4) return 0.6;
-  if (daysOut <= 5) return 0.45;
-  return 0.3;
+  if (daysOut <= 2) return 0.95;
+  if (daysOut <= 3) return 0.9;
+  if (daysOut <= 4) return 0.8;
+  if (daysOut <= 5) return 0.7;
+  return 0.5;
 }
 
 // ── Time window classification ──
@@ -326,7 +326,7 @@ export function generateAlerts(
   forecastHours: ForecastHour[],
   sessions: SessionForMatching[],
   weights: ConditionWeights = DEFAULT_CONDITION_WEIGHTS,
-  threshold: number = 50,
+  threshold: number = 70,
   now: Date = new Date(),
   utcOffsetSeconds: number = 0,
   swellExposure?: CardinalDirection[]
