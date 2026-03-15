@@ -14,12 +14,12 @@ export interface PhotoGroup {
   latestTime: Date | null;
 }
 
-const MAX_TIME_GAP_MS = 3 * 60 * 60 * 1000; // 3 hours
-const MAX_DISTANCE_KM = 1; // 1 km
+const MAX_TIME_GAP_MS = 30 * 60 * 1000; // 30 minutes
+const MAX_DISTANCE_KM = 0.25; // 250 meters
 
 /**
  * Groups photos by time and location proximity.
- * Photos taken within 3 hours of each other and within 1km
+ * Photos taken within 30 minutes of each other and within 250m
  * are considered part of the same session.
  */
 export function groupPhotosBySession(photos: PhotoWithExif[]): PhotoGroup[] {
