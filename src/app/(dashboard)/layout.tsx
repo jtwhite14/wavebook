@@ -228,9 +228,11 @@ function SidebarContent({
         })}
       </div>
 
+      {/* Spacer */}
+      <div className="flex-1" />
+
       {/* Add button */}
-      <div className={`flex flex-col gap-px px-3 pb-3 ${collapsed ? "items-center" : ""}`}>
-        <div className={`h-px bg-sidebar-border mb-2 ${collapsed ? "w-full" : ""}`} />
+      <div className={`flex flex-col gap-px px-3 pb-2 ${collapsed ? "items-center" : ""}`}>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             {collapsed ? (
@@ -261,9 +263,6 @@ function SidebarContent({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-
-      {/* Spacer */}
-      <div className="flex-1" />
 
       {/* Profile — bottom */}
       <div className={`border-t border-sidebar-border p-3 flex flex-col gap-1 ${collapsed ? "items-center" : ""}`}>
