@@ -169,11 +169,11 @@ export function UploadClient({ token }: { token: string }) {
   const totalUploaded = uploadedPhotos.length;
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50">
+    <div className="flex min-h-screen flex-col bg-background">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-4 py-4 text-center">
-        <h1 className="text-xl font-bold text-gray-900">
-          🏄 SurfSync
+      <header className="border-b border-border px-4 py-4 text-center">
+        <h1 className="text-xl font-bold text-foreground">
+          SurfSynch
         </h1>
       </header>
 
@@ -182,13 +182,13 @@ export function UploadClient({ token }: { token: string }) {
         <div className="mb-6">
           {!isUploading && !hasUploaded && (
             <>
-              <p className="text-gray-600 text-center mb-6 text-sm">
+              <p className="text-muted-foreground text-center mb-6 text-sm">
                 Select surf photos from your phone to upload them to your
-                SurfSync account.
+                SurfSynch account.
               </p>
               <button
                 onClick={openFilePicker}
-                className="w-full rounded-xl bg-blue-600 px-6 py-4 text-lg font-semibold text-white active:bg-blue-700 transition-colors"
+                className="w-full rounded-xl bg-primary px-6 py-4 text-lg font-semibold text-primary-foreground active:opacity-90 transition-colors"
               >
                 Select Photos
               </button>
@@ -198,14 +198,14 @@ export function UploadClient({ token }: { token: string }) {
           {isUploading && (
             <div className="text-center">
               <div className="mb-4">
-                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-r-transparent" />
+                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-primary border-r-transparent" />
               </div>
-              <p className="text-gray-700 font-medium">
+              <p className="text-foreground font-medium">
                 Uploading {currentIndex} of {totalFiles} photos...
               </p>
-              <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-gray-200">
+              <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-muted">
                 <div
-                  className="h-full rounded-full bg-blue-600 transition-all duration-300"
+                  className="h-full rounded-full bg-primary transition-all duration-300"
                   style={{
                     width: `${(currentIndex / totalFiles) * 100}%`,
                   }}
@@ -216,11 +216,15 @@ export function UploadClient({ token }: { token: string }) {
 
           {!isUploading && hasUploaded && (
             <div className="text-center mb-6">
-              <div className="text-3xl mb-2">✓</div>
-              <p className="text-gray-900 font-semibold text-lg">
+              <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-primary/20 flex items-center justify-center">
+                <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <p className="text-foreground font-semibold text-lg">
                 {totalUploaded} photo{totalUploaded !== 1 ? "s" : ""} uploaded!
               </p>
-              <p className="text-gray-500 text-sm mt-1">
+              <p className="text-muted-foreground text-sm mt-1">
                 You can close this page or add more photos.
               </p>
             </div>
@@ -229,12 +233,12 @@ export function UploadClient({ token }: { token: string }) {
 
         {/* Failed uploads */}
         {failedUploads.length > 0 && (
-          <div className="mb-6 rounded-lg bg-red-50 border border-red-200 p-3">
-            <p className="text-red-800 text-sm font-medium mb-1">
+          <div className="mb-6 rounded-lg bg-destructive/10 border border-destructive/20 p-3">
+            <p className="text-destructive text-sm font-medium mb-1">
               {failedUploads.length} upload{failedUploads.length !== 1 ? "s" : ""} failed
             </p>
             {failedUploads.map((f, i) => (
-              <p key={i} className="text-red-600 text-xs truncate">
+              <p key={i} className="text-destructive/80 text-xs truncate">
                 {f.name}: {f.error}
               </p>
             ))}
@@ -244,14 +248,14 @@ export function UploadClient({ token }: { token: string }) {
         {/* Photo thumbnails grid */}
         {uploadedPhotos.length > 0 && (
           <div className="mb-6">
-            <p className="text-gray-500 text-xs font-medium uppercase tracking-wide mb-2">
+            <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide mb-2">
               Uploaded Photos
             </p>
             <div className="grid grid-cols-3 gap-2">
               {uploadedPhotos.map((photo, i) => (
                 <div
                   key={i}
-                  className="aspect-square overflow-hidden rounded-lg bg-gray-200"
+                  className="aspect-square overflow-hidden rounded-lg bg-muted"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -269,7 +273,7 @@ export function UploadClient({ token }: { token: string }) {
         {!isUploading && hasUploaded && (
           <button
             onClick={openFilePicker}
-            className="w-full rounded-xl border-2 border-blue-600 px-6 py-4 text-lg font-semibold text-blue-600 active:bg-blue-50 transition-colors"
+            className="w-full rounded-xl border-2 border-primary px-6 py-4 text-lg font-semibold text-primary active:bg-primary/10 transition-colors"
           >
             Add More Photos
           </button>

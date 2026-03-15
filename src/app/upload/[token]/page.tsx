@@ -24,14 +24,18 @@ export default async function UploadPage({
   // Check if session exists and is not completed
   if (!session || session.status === "completed") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
         <div className="w-full max-w-sm text-center">
-          <div className="text-5xl mb-4">🏄</div>
-          <h1 className="text-xl font-bold text-gray-900 mb-2">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+            <svg className="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h1 className="text-xl font-bold text-foreground mb-2">
             This upload link has expired
           </h1>
-          <p className="text-gray-500 text-sm">
-            Please scan a new QR code from the SurfSync dashboard to upload
+          <p className="text-muted-foreground text-sm">
+            Please scan a new QR code from the SurfSynch dashboard to upload
             photos.
           </p>
         </div>
