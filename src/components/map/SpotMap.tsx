@@ -41,6 +41,7 @@ export default function SpotMap({
 }: SpotMapProps) {
   const mapRef = useRef<MapRef>(null);
   const [viewState, setViewState] = useState(initialViewState);
+  const [mapLoaded, setMapLoaded] = useState(false);
 
   const spotById = useMemo(() => {
     const lookup: Record<string, SurfSpot> = {};
@@ -74,8 +75,8 @@ export default function SpotMap({
     const zoom = Math.floor(viewState.zoom ?? 9);
     const map = mapRef.current?.getMap();
     if (!map) {
-      // Before map loads, return all points unclustered
-      return points.map((p) => ({ ...p, id: p.properties.spotId }));
+      // Before map loads, use world bounds so points are still clustered
+      return supercluster.getClusters([-180, -90, 180, 90], zoom);
     }
     const bounds = map.getBounds();
     if (!bounds) return [];
@@ -86,7 +87,7 @@ export default function SpotMap({
       bounds.getNorth(),
     ];
     return supercluster.getClusters(bbox, zoom);
-  }, [supercluster, viewState.zoom, viewState.longitude, viewState.latitude, points]);
+  }, [supercluster, viewState.zoom, viewState.longitude, viewState.latitude, points, mapLoaded]);
 
   const handleMapClick = useCallback(
     (event: MapMouseEvent) => {
@@ -132,6 +133,7 @@ export default function SpotMap({
     <Map
       ref={mapRef}
       {...viewState}
+      onLoad={() => setMapLoaded(true)}
       onMove={(evt) => setViewState(evt.viewState)}
       onClick={handleMapClick}
       mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN}
