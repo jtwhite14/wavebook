@@ -552,9 +552,19 @@ export default function DashboardPage() {
                   </div>
                 ) : spotSessions.length > 0 ? (
                   <div>
-                    <h3 className="text-sm font-semibold mb-2">Recent Sessions</h3>
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-sm font-semibold">Recent Sessions</h3>
+                      {spotSessions.length > 2 && (
+                        <button
+                          onClick={() => setShowAllSessions(true)}
+                          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          View all
+                        </button>
+                      )}
+                    </div>
                     <div className="grid grid-cols-2 gap-3">
-                      {spotSessions.slice(0, 2).map((session) => {
+                      {[...spotSessions].sort((a, b) => b.rating - a.rating).slice(0, 2).map((session) => {
                         const photo = session.photos?.[0]?.photoUrl || session.photoUrl;
                         return (
                           <Link
@@ -604,16 +614,6 @@ export default function DashboardPage() {
                         );
                       })}
                     </div>
-                    {spotSessions.length > 2 && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full mt-2"
-                        onClick={() => setShowAllSessions(true)}
-                      >
-                        View All Sessions ({spotSessions.length})
-                      </Button>
-                    )}
                   </div>
                 ) : (
                   <div className="text-center py-4">
