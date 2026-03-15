@@ -6,6 +6,7 @@ import {
   uploadSessions,
   surfSessions,
   sessionConditions,
+  sessionPhotos,
   surfSpots,
 } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
@@ -84,6 +85,15 @@ export async function POST(request: NextRequest) {
         .returning();
 
       sessionIds.push(newSession.id);
+
+      // Insert into session_photos table
+      if (s.photoUrl) {
+        await db.insert(sessionPhotos).values({
+          sessionId: newSession.id,
+          photoUrl: s.photoUrl,
+          sortOrder: 0,
+        });
+      }
 
       // Try to fetch historical conditions
       const conditionsPromises = [
