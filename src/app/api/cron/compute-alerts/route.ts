@@ -50,8 +50,9 @@ export async function GET(request: NextRequest) {
 
     let totalAlerts = 0;
 
-    // Process spots in batches of 5 for bounded concurrency
-    const BATCH_SIZE = 5;
+    // Process spots in batches of 3 — each spot makes multiple Open-Meteo
+    // calls, and batches of 5 caused ConnectTimeoutError on the free tier
+    const BATCH_SIZE = 3;
     for (let i = 0; i < allSpots.length; i += BATCH_SIZE) {
       const batch = allSpots.slice(i, i + BATCH_SIZE);
       const results = await Promise.allSettled(

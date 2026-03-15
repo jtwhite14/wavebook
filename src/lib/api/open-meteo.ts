@@ -5,6 +5,38 @@ import { fetchNdbcWaveData, fetchNdbcTimeline } from "./noaa-ndbc";
 const MARINE_API_BASE = "https://marine-api.open-meteo.com/v1/marine";
 const HISTORICAL_API_BASE = "https://archive-api.open-meteo.com/v1/era5";
 
+const FETCH_TIMEOUT_MS = 15_000;
+const MAX_RETRIES = 2;
+
+/**
+ * Fetch with timeout and retry for transient connection errors.
+ * Open-Meteo's free tier can refuse connections under concurrent load,
+ * so we retry on ConnectTimeoutError with exponential backoff.
+ */
+async function fetchWithRetry(url: string, attempt = 0): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, { signal: controller.signal, cache: "no-store" });
+    return res;
+  } catch (error: unknown) {
+    const code = (error as { cause?: { code?: string } })?.cause?.code;
+    const isRetryable =
+      code === "UND_ERR_CONNECT_TIMEOUT" ||
+      code === "ECONNRESET" ||
+      code === "UND_ERR_SOCKET" ||
+      (error instanceof DOMException && error.name === "AbortError");
+    if (isRetryable && attempt < MAX_RETRIES) {
+      const delay = 1000 * 2 ** attempt; // 1s, 2s
+      await new Promise((r) => setTimeout(r, delay));
+      return fetchWithRetry(url, attempt + 1);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 // Marine API parameters for surf conditions
 const MARINE_PARAMS = [
   "wave_height",
@@ -100,11 +132,10 @@ export async function fetchMarineForecast(
     timezone: "auto",
   });
 
-  // Fetch marine and weather data in parallel — they're independent
-  const [response, weatherResponse] = await Promise.all([
-    fetch(`${MARINE_API_BASE}?${params}`),
-    fetch(`https://api.open-meteo.com/v1/forecast?${weatherParams}`),
-  ]);
+  // Fetch marine and weather data sequentially — parallel connections to
+  // Open-Meteo's free tier cause ConnectTimeoutError under cron concurrency
+  const response = await fetchWithRetry(`${MARINE_API_BASE}?${params}`);
+  const weatherResponse = await fetchWithRetry(`https://api.open-meteo.com/v1/forecast?${weatherParams}`);
 
   if (!response.ok) {
     throw new Error(`Marine API error: ${response.status}`);
@@ -182,8 +213,8 @@ export async function fetchHistoricalConditions(
 
   try {
     const [marineResponse, weatherResponse, tideHeight] = await Promise.all([
-      fetch(`${MARINE_API_BASE}?${marineParams}`),
-      fetch(`${weatherApiBase}?${weatherParams}`),
+      fetchWithRetry(`${MARINE_API_BASE}?${marineParams}`),
+      fetchWithRetry(`${weatherApiBase}?${weatherParams}`),
       fetchTideHeight(latitude, longitude, date),
     ]);
 
@@ -450,8 +481,8 @@ export async function fetchHourlyTimeline(
   const weatherParams = new URLSearchParams(weatherParamsObj);
 
   const [marineResponse, weatherResponse, tideData] = await Promise.all([
-    fetch(`${MARINE_API_BASE}?${marineParams}`),
-    fetch(`${weatherApiBase}?${weatherParams}`),
+    fetchWithRetry(`${MARINE_API_BASE}?${marineParams}`),
+    fetchWithRetry(`${weatherApiBase}?${weatherParams}`),
     fetchTideTimeline(latitude, longitude, dayBefore, dayAfter),
   ]);
 
