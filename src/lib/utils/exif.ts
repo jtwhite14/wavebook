@@ -47,19 +47,48 @@ export async function extractExifData(file: File): Promise<ExifData> {
             // Read IFD0 entries
             const entryCount = view.getUint16(ifd0Start, littleEndian);
 
+            let fallbackDateTime: Date | undefined;
+
             for (let i = 0; i < entryCount; i++) {
               const entryOffset = ifd0Start + 2 + i * 12;
               const tag = view.getUint16(entryOffset, littleEndian);
 
-              // DateTime tag
+              // DateTime tag (0x0132) - modified time, used as fallback
               if (tag === 0x0132) {
                 const valueOffset = view.getUint32(entryOffset + 8, littleEndian);
                 const dateStr = readString(view, tiffOffset + valueOffset, 19);
                 const parsed = parseExifDateTime(dateStr);
                 if (parsed) {
-                  exifData.dateTime = parsed;
+                  fallbackDateTime = parsed;
                 }
               }
+
+              // EXIF sub-IFD pointer - contains DateTimeOriginal
+              if (tag === 0x8769) {
+                const exifIfdOffset = view.getUint32(entryOffset + 8, littleEndian);
+                const exifIfdStart = tiffOffset + exifIfdOffset;
+                const exifEntryCount = view.getUint16(exifIfdStart, littleEndian);
+
+                for (let j = 0; j < exifEntryCount; j++) {
+                  const exifEntryOffset = exifIfdStart + 2 + j * 12;
+                  const exifTag = view.getUint16(exifEntryOffset, littleEndian);
+
+                  // DateTimeOriginal (0x9003) - original capture time, not affected by edits
+                  if (exifTag === 0x9003) {
+                    const valueOffset = view.getUint32(exifEntryOffset + 8, littleEndian);
+                    const dateStr = readString(view, tiffOffset + valueOffset, 19);
+                    const parsed = parseExifDateTime(dateStr);
+                    if (parsed) {
+                      exifData.dateTime = parsed;
+                    }
+                  }
+                }
+              }
+            }
+
+            // Fall back to DateTime (0x0132) if DateTimeOriginal not found
+            if (!exifData.dateTime && fallbackDateTime) {
+              exifData.dateTime = fallbackDateTime;
             }
 
             // Find GPS IFD
