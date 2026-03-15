@@ -36,17 +36,17 @@ export function SessionCard({ session }: SessionCardProps) {
               {session.conditions && (
                 <div className="mt-2 flex flex-wrap gap-2 text-xs">
                   {session.conditions.waveHeight && (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                    <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-500/15 text-blue-400">
                       {formatWaveHeight(parseFloat(session.conditions.waveHeight))}
                     </span>
                   )}
                   {session.conditions.primarySwellPeriod && (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                    <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-500/15 text-green-400">
                       {parseFloat(session.conditions.primarySwellPeriod).toFixed(0)}s
                     </span>
                   )}
                   {session.conditions.windSpeed && (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200">
+                    <span className="inline-flex items-center px-2 py-1 rounded-full bg-gray-500/15 text-gray-400">
                       {parseFloat(session.conditions.windSpeed).toFixed(0)} km/h
                     </span>
                   )}
@@ -59,7 +59,7 @@ export function SessionCard({ session }: SessionCardProps) {
                   <svg
                     key={i}
                     className={`w-4 h-4 ${
-                      i < session.rating ? "text-yellow-400" : "text-gray-300"
+                      i < session.rating ? "text-yellow-400" : "text-muted-foreground/40"
                     }`}
                     fill="currentColor"
                     viewBox="0 0 20 20"

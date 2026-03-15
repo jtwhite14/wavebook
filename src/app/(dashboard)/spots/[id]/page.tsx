@@ -246,7 +246,7 @@ export default function SpotDetailPage() {
                                 className={`w-4 h-4 ${
                                   i < session.rating
                                     ? "text-yellow-400"
-                                    : "text-gray-300"
+                                    : "text-muted-foreground/40"
                                 }`}
                                 fill="currentColor"
                                 viewBox="0 0 20 20"

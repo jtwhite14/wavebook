@@ -19,17 +19,17 @@ export function ConditionsDisplay({ conditions, compact = false }: ConditionsDis
     return (
       <div className="flex flex-wrap gap-2 text-sm">
         {conditions.waveHeight !== null && (
-          <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+          <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-500/15 text-blue-400">
             {formatWaveHeight(conditions.waveHeight)}
           </span>
         )}
         {conditions.primarySwellPeriod !== null && (
-          <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+          <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-500/15 text-green-400">
             {formatWavePeriod(conditions.primarySwellPeriod)}
           </span>
         )}
         {conditions.windSpeed !== null && (
-          <span className="inline-flex items-center px-2 py-1 rounded-full bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200">
+          <span className="inline-flex items-center px-2 py-1 rounded-full bg-gray-500/15 text-gray-400">
             {formatWindSpeed(conditions.windSpeed)}
           </span>
         )}

@@ -29,7 +29,7 @@ function LoginContent() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-50 to-blue-100 dark:from-slate-900 dark:to-slate-800">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-secondary">
       <Card className="w-full max-w-md mx-4">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 text-5xl">🏄</div>
@@ -40,7 +40,7 @@ function LoginContent() {
         </CardHeader>
         <CardContent className="space-y-4">
           {error && (
-            <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-md">
+            <div className="p-3 text-sm text-red-400 bg-red-500/10 rounded-md">
               {error === "OAuthSignin" && "Error starting sign in process"}
               {error === "OAuthCallback" && "Error during sign in callback"}
               {error === "OAuthCreateAccount" && "Error creating account"}

@@ -259,7 +259,7 @@ export function SessionForm({ spots, defaultSpotId }: SessionFormProps) {
                   >
                     <svg
                       className={`w-6 h-6 transition-colors ${
-                        i < rating ? "text-yellow-400" : "text-gray-300 hover:text-yellow-200"
+                        i < rating ? "text-yellow-400" : "text-muted-foreground/40 hover:text-yellow-200"
                       }`}
                       fill="currentColor"
                       viewBox="0 0 20 20"

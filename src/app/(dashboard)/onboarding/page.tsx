@@ -432,7 +432,7 @@ export default function OnboardingPage() {
             className={`w-6 h-6 transition-colors ${
               i < value
                 ? "text-yellow-400"
-                : "text-gray-300 hover:text-yellow-200"
+                : "text-muted-foreground/40 hover:text-yellow-200"
             }`}
             fill="currentColor"
             viewBox="0 0 20 20"
@@ -477,10 +477,12 @@ export default function OnboardingPage() {
                 </div>
               ) : token ? (
                 <div className="flex flex-col items-center space-y-4">
-                  <QRCodeSVG
-                    value={`${typeof window !== "undefined" ? window.location.origin : ""}/upload/${token}`}
-                    size={256}
-                  />
+                  <div className="bg-white p-4 rounded-lg">
+                    <QRCodeSVG
+                      value={`${typeof window !== "undefined" ? window.location.origin : ""}/upload/${token}`}
+                      size={256}
+                    />
+                  </div>
                   <p className="text-sm text-muted-foreground text-center max-w-md break-all">
                     {typeof window !== "undefined"
                       ? `${window.location.origin}/upload/${token}`
@@ -904,7 +906,7 @@ export default function OnboardingPage() {
                           className={`w-4 h-4 ${
                             i < review.rating
                               ? "text-yellow-400"
-                              : "text-gray-200"
+                              : "text-muted-foreground/40"
                           }`}
                           fill="currentColor"
                           viewBox="0 0 20 20"
