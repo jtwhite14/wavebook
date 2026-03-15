@@ -4,16 +4,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { formatDate, formatTime, formatRelative } from "@/lib/utils/date";
-import { formatWaveHeight, formatWindSpeed, getDirectionText } from "@/lib/api/open-meteo";
-import type { SurfSessionWithConditions, SurfPrediction } from "@/types";
+import { formatDate, formatTime } from "@/lib/utils/date";
+import { formatWaveHeight } from "@/lib/api/open-meteo";
+import type { SurfSessionWithConditions } from "@/types";
 
 interface DashboardData {
   recentSessions: SurfSessionWithConditions[];
   spotCount: number;
   sessionCount: number;
-  upcomingPredictions: SurfPrediction[];
 }
 
 export default function DashboardPage() {
@@ -34,7 +32,6 @@ export default function DashboardPage() {
             recentSessions: sessionsData.sessions || [],
             spotCount: spotsData.spots?.length || 0,
             sessionCount: sessionsData.total || 0,
-            upcomingPredictions: [], // Will be populated when predictions are implemented
           });
         }
       } catch (error) {
@@ -218,59 +215,6 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Upcoming Predictions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Surf Predictions</CardTitle>
-            <CardDescription>Upcoming good surf windows</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {data?.upcomingPredictions?.length ? (
-              <div className="space-y-4">
-                {data.upcomingPredictions.map((prediction, index) => (
-                  <div
-                    key={index}
-                    className="p-3 rounded-lg border"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">{prediction.spotName}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {formatDate(prediction.timestamp)} at{" "}
-                          {formatTime(prediction.timestamp)}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        {prediction.isGoldenWindow && (
-                          <Badge className="bg-yellow-500">Golden Window</Badge>
-                        )}
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {prediction.confidence}% confidence
-                        </p>
-                      </div>
-                    </div>
-                    {prediction.conditions && (
-                      <div className="mt-2 text-sm text-muted-foreground">
-                        {formatWaveHeight(prediction.conditions.waveHeight)} |{" "}
-                        {formatWindSpeed(prediction.conditions.windSpeed)} |{" "}
-                        {getDirectionText(prediction.conditions.primarySwellDirection)}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground mb-4">
-                  Log sessions to get personalized predictions
-                </p>
-                <Button asChild variant="outline">
-                  <Link href="/predictions">View Predictions</Link>
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

@@ -18,7 +18,6 @@ const navigation = [
   { name: "Dashboard", href: "/" },
   { name: "Spots", href: "/spots" },
   { name: "Sessions", href: "/sessions" },
-  { name: "Predictions", href: "/predictions" },
 ];
 
 export default function DashboardLayout({

@@ -10,8 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { ConditionsDisplay } from "@/components/sessions/ConditionsDisplay";
 import { toast } from "sonner";
 import { formatFullDate, formatTime, formatRelative } from "@/lib/utils/date";
-import { sessionConditionsToMarine } from "@/lib/matching/conditions";
-import { SurfSessionWithConditions } from "@/types";
+import { MarineConditions, SurfSessionWithConditions } from "@/types";
 
 export default function SessionDetailPage() {
   const params = useParams();
@@ -76,7 +75,24 @@ export default function SessionDetailPage() {
     return null;
   }
 
-  const conditions = sessionConditionsToMarine(session.conditions);
+  const c = session.conditions;
+  const conditions: MarineConditions | null = c
+    ? {
+        waveHeight: c.waveHeight ? parseFloat(c.waveHeight) : null,
+        wavePeriod: c.wavePeriod ? parseFloat(c.wavePeriod) : null,
+        waveDirection: c.waveDirection ? parseFloat(c.waveDirection) : null,
+        primarySwellHeight: c.primarySwellHeight ? parseFloat(c.primarySwellHeight) : null,
+        primarySwellPeriod: c.primarySwellPeriod ? parseFloat(c.primarySwellPeriod) : null,
+        primarySwellDirection: c.primarySwellDirection ? parseFloat(c.primarySwellDirection) : null,
+        secondarySwellHeight: c.secondarySwellHeight ? parseFloat(c.secondarySwellHeight) : null,
+        secondarySwellPeriod: c.secondarySwellPeriod ? parseFloat(c.secondarySwellPeriod) : null,
+        secondarySwellDirection: c.secondarySwellDirection ? parseFloat(c.secondarySwellDirection) : null,
+        windSpeed: c.windSpeed ? parseFloat(c.windSpeed) : null,
+        windDirection: c.windDirection ? parseFloat(c.windDirection) : null,
+        seaSurfaceTemp: c.seaSurfaceTemp ? parseFloat(c.seaSurfaceTemp) : null,
+        timestamp: new Date(c.timestamp),
+      }
+    : null;
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
