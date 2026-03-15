@@ -62,6 +62,7 @@ export async function PUT(
       tideHeight: clamp(body.tideHeight ?? 0.5),
       windSpeed: clamp(body.windSpeed ?? 0.7),
       windDirection: clamp(body.windDirection ?? 0.6),
+      waveEnergy: clamp(body.waveEnergy ?? 0.8),
       preferredTide: ['any', 'low', 'mid', 'high', 'incoming', 'outgoing'].includes(body.preferredTide)
         ? body.preferredTide
         : 'any',

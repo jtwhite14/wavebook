@@ -1,5 +1,5 @@
 import { MarineConditions, ConditionWeights, DEFAULT_CONDITION_WEIGHTS, MatchDetails, TimeWindow, CardinalDirection } from "@/types";
-import { calculateDirectionAttenuation } from "@/lib/wave-energy";
+import { calculateDirectionAttenuation, calculateWaveEnergy } from "@/lib/wave-energy";
 
 // ── Gaussian similarity ──
 
@@ -38,6 +38,7 @@ const SIGMAS = {
   windSpeed: 7.5, // km/h
   windDirection: 22.5,
   tideHeight: 0.75, // feet
+  waveEnergy: (sessionValue: number) => Math.max(50, 0.35 * sessionValue), // relative, kJ
 };
 
 // ── Rating boost ──
@@ -127,6 +128,7 @@ export interface ParsedConditions {
   windSpeed: number | null;
   windDirection: number | null;
   tideHeight: number | null;
+  waveEnergy: number | null;
 }
 
 export function parseSessionConditions(conditions: {
@@ -136,14 +138,18 @@ export function parseSessionConditions(conditions: {
   windSpeed: string | null;
   windDirection: string | null;
   tideHeight: string | null;
+  waveEnergy: string | null;
 }): ParsedConditions {
+  const swellHeight = safeParseFloat(conditions.primarySwellHeight);
+  const swellPeriod = safeParseFloat(conditions.primarySwellPeriod);
   return {
-    swellHeight: safeParseFloat(conditions.primarySwellHeight),
-    swellPeriod: safeParseFloat(conditions.primarySwellPeriod),
+    swellHeight,
+    swellPeriod,
     swellDirection: safeParseFloat(conditions.primarySwellDirection),
     windSpeed: safeParseFloat(conditions.windSpeed),
     windDirection: safeParseFloat(conditions.windDirection),
     tideHeight: safeParseFloat(conditions.tideHeight),
+    waveEnergy: safeParseFloat(conditions.waveEnergy) ?? calculateWaveEnergy(swellHeight, swellPeriod),
   };
 }
 
@@ -155,6 +161,7 @@ export function parseForecastConditions(forecast: MarineConditions): ParsedCondi
     windSpeed: forecast.windSpeed,
     windDirection: forecast.windDirection,
     tideHeight: forecast.tideHeight,
+    waveEnergy: forecast.waveEnergy ?? calculateWaveEnergy(forecast.primarySwellHeight, forecast.primarySwellPeriod),
   };
 }
 
@@ -172,7 +179,7 @@ export function computeSimilarity(
   let weightedSum = 0;
   let totalWeight = 0;
   let nonNullCount = 0;
-  const totalVars = 6;
+  const totalVars = 7;
 
   // Per-variable similarities
   const details: MatchDetails = {
@@ -182,6 +189,7 @@ export function computeSimilarity(
     tideHeight: null,
     windSpeed: null,
     windDirection: null,
+    waveEnergy: null,
     coverage: 0,
     ratingBoost: 1,
     forecastConfidence: 1,
@@ -239,6 +247,16 @@ export function computeSimilarity(
     details.tideHeight = sim;
     weightedSum += weights.tideHeight * sim;
     totalWeight += weights.tideHeight;
+    nonNullCount++;
+  }
+
+  // Wave energy (relative sigma)
+  if (forecast.waveEnergy != null && session.waveEnergy != null) {
+    const sigma = SIGMAS.waveEnergy(session.waveEnergy);
+    const sim = gaussianSimilarity(forecast.waveEnergy, session.waveEnergy, sigma);
+    details.waveEnergy = sim;
+    weightedSum += weights.waveEnergy * sim;
+    totalWeight += weights.waveEnergy;
     nonNullCount++;
   }
 

@@ -102,6 +102,7 @@ async function processSpot(spot: {
       windSpeed: string | null;
       windDirection: string | null;
       tideHeight: string | null;
+      waveEnergy: string | null;
     } | null;
   }>;
 }): Promise<number> {
