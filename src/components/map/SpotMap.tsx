@@ -41,25 +41,42 @@ export default function SpotMap({
   const mapRef = useRef<MapRef>(null);
   const [viewState, setViewState] = useState(initialViewState);
   const hasFitted = useRef(false);
+  const spotsRef = useRef(spots);
+  spotsRef.current = spots;
 
-  useEffect(() => {
-    if (!fitToSpots || hasFitted.current || !mapRef.current || spots.length === 0) return;
-    hasFitted.current = true;
-
-    if (spots.length === 1) {
-      mapRef.current.flyTo({
-        center: [parseFloat(spots[0].longitude), parseFloat(spots[0].latitude)],
+  const fitSpotsToMap = useCallback((map: MapRef, spotsToFit: SurfSpot[]) => {
+    if (spotsToFit.length === 1) {
+      map.flyTo({
+        center: [parseFloat(spotsToFit[0].longitude), parseFloat(spotsToFit[0].latitude)],
         zoom: 12,
         duration: 1000,
       });
     } else {
       const bounds = new mapboxgl.LngLatBounds();
-      spots.forEach((spot) => {
+      spotsToFit.forEach((spot) => {
         bounds.extend([parseFloat(spot.longitude), parseFloat(spot.latitude)]);
       });
-      mapRef.current.fitBounds(bounds, { padding: 80, maxZoom: 13, duration: 1000 });
+      map.fitBounds(bounds, { padding: 80, maxZoom: 13, duration: 1000 });
     }
-  }, [fitToSpots, spots]);
+  }, []);
+
+  const handleLoad = useCallback(() => {
+    if (!fitToSpots || hasFitted.current || !mapRef.current) return;
+    if (spotsRef.current.length > 0) {
+      hasFitted.current = true;
+      fitSpotsToMap(mapRef.current, spotsRef.current);
+    }
+  }, [fitToSpots, fitSpotsToMap]);
+
+  // Also try when spots arrive after map is already loaded
+  useEffect(() => {
+    if (!fitToSpots || hasFitted.current || !mapRef.current || spots.length === 0) return;
+    // Check if map is loaded
+    if (mapRef.current.loaded()) {
+      hasFitted.current = true;
+      fitSpotsToMap(mapRef.current, spots);
+    }
+  }, [fitToSpots, spots, fitSpotsToMap]);
 
   const handleMapClick = useCallback(
     (event: MapMouseEvent) => {
@@ -94,6 +111,7 @@ export default function SpotMap({
       ref={mapRef}
       {...viewState}
       onMove={(evt) => setViewState(evt.viewState)}
+      onLoad={handleLoad}
       onClick={handleMapClick}
       mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN}
       mapStyle="mapbox://styles/mapbox/satellite-v9"
