@@ -5,7 +5,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils/date";
-import { ChevronDown, ChevronUp, Plus, Loader2, LayoutDashboard, Waves } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, Loader2 } from "lucide-react";
 import type { SurfSpot } from "@/lib/db/schema";
 import type { SurfSessionWithConditions } from "@/types";
 
@@ -92,26 +92,6 @@ export default function DashboardPage() {
             Log Session
           </Link>
         </Button>
-      </div>
-
-      {/* Navigation items */}
-      <div className="absolute bottom-6 right-4 z-10 flex gap-2">
-        {[
-          { name: "Home", href: "/", icon: LayoutDashboard },
-          { name: "Sessions", href: "/sessions", icon: Waves },
-        ].map((item) => (
-          <Button
-            key={item.href}
-            asChild
-            size="icon"
-            variant="secondary"
-            className="size-10 shadow-lg bg-background/90 backdrop-blur-sm hover:bg-accent"
-          >
-            <Link href={item.href} title={item.name}>
-              <item.icon className="size-4" />
-            </Link>
-          </Button>
-        ))}
       </div>
 
       {/* Recent Sessions panel */}
