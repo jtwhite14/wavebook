@@ -159,6 +159,10 @@ export default function SpotMap({
         if ("cluster" in props && props.cluster) {
           const count = props.point_count;
           const size = count < 10 ? 36 : count < 50 ? 44 : 52;
+          const clusterHasAlert = alertSpotIds && alertSpotIds.size > 0 &&
+            supercluster.getLeaves(cluster.id as number, Infinity).some(
+              (leaf) => alertSpotIds.has(leaf.properties.spotId)
+            );
           return (
             <Marker
               key={`cluster-${cluster.id}`}
@@ -170,11 +174,18 @@ export default function SpotMap({
                 handleClusterClick(cluster.id as number, longitude, latitude);
               }}
             >
-              <div
-                className="bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold text-sm drop-shadow-lg cursor-pointer hover:scale-110 transition-transform border-2 border-white"
-                style={{ width: size, height: size }}
-              >
-                {count}
+              <div className="relative">
+                {clusterHasAlert && (
+                  <div className="absolute -top-0.5 -right-0.5 z-10">
+                    <div className="w-2.5 h-2.5 rounded-full bg-red-500 border border-white" />
+                  </div>
+                )}
+                <div
+                  className="bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold text-sm drop-shadow-lg cursor-pointer hover:scale-110 transition-transform border-2 border-white"
+                  style={{ width: size, height: size }}
+                >
+                  {count}
+                </div>
               </div>
             </Marker>
           );
