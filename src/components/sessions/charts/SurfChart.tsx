@@ -12,7 +12,6 @@ import {
   LabelList,
 } from "recharts";
 import { formatHour, sessionColor, axisColor } from "./TimelineChart";
-import { DirectionStrip } from "./DirectionStrip";
 import { HourlyForecast } from "@/types";
 import { metersToFeet, getDirectionText } from "@/lib/api/open-meteo";
 
@@ -175,14 +174,7 @@ export function SurfChart({ data, sessionIndex }: SurfChartProps) {
       <div className="h-[180px] w-full px-2">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} margin={{ top: 20, right: 8, left: 0, bottom: 0 }} barCategoryGap="15%">
-            <XAxis
-              dataKey="time"
-              tickFormatter={formatHour}
-              tick={{ fill: axisColor, fontSize: 10, fontWeight: 500 }}
-              axisLine={false}
-              tickLine={false}
-              dy={4}
-            />
+            <XAxis dataKey="time" hide />
             <YAxis hide domain={[yFloor, yCeil]} />
             <Tooltip content={<SurfTooltip />} cursor={false} />
             {sessionTime && (
@@ -208,27 +200,64 @@ export function SurfChart({ data, sessionIndex }: SurfChartProps) {
         </ResponsiveContainer>
       </div>
 
-      {/* Swell period row */}
-      <div className="flex px-5 pt-2">
-        <div className="flex items-center justify-between flex-1">
-          {chartData.map((d, i) => {
-            const isSession = i === sessionIndex;
-            return (
+      {/* Time + period + direction — unified grid */}
+      <div className="flex px-4 pb-3 pt-1">
+        {chartData.map((d, i) => {
+          const isSession = i === sessionIndex;
+          const deg = directions[i];
+          const compass = deg != null ? getDirectionText(deg) : null;
+          const arrowDeg = deg != null ? (deg + 180) % 360 : null;
+
+          return (
+            <div key={d.time} className="flex-1 flex flex-col items-center gap-1">
+              {/* Time */}
               <span
-                key={i}
+                className={`text-[10px] font-medium tabular-nums ${
+                  isSession ? "text-white/50" : "text-white/20"
+                }`}
+              >
+                {formatHour(d.time)}
+              </span>
+
+              {/* Period */}
+              <span
                 className={`text-[10px] tabular-nums font-medium ${
                   isSession ? "text-white/60" : "text-white/20"
                 }`}
               >
                 {d.period != null ? `${Math.round(d.period)}s` : ""}
               </span>
-            );
-          })}
-        </div>
-      </div>
 
-      {/* Swell direction strip */}
-      <DirectionStrip directions={directions} sessionIndex={sessionIndex} showAllLabels />
+              {/* Direction arrow */}
+              <div
+                className={`flex items-center justify-center w-5 h-5 rounded-full
+                  ${isSession ? "bg-primary/15" : ""}`}
+              >
+                {arrowDeg != null ? (
+                  <svg
+                    width="10"
+                    height="10"
+                    viewBox="0 0 10 10"
+                    className={isSession ? "text-primary" : "text-white/25"}
+                    style={{ transform: `rotate(${arrowDeg}deg)` }}
+                  >
+                    <path d="M5 1L7.5 8H2.5L5 1Z" fill="currentColor" />
+                  </svg>
+                ) : (
+                  <span className="text-white/10 text-[9px]">-</span>
+                )}
+              </div>
+
+              {/* Direction label */}
+              {compass && (
+                <span className={`text-[9px] font-medium ${isSession ? "text-primary/70" : "text-white/20"}`}>
+                  {compass}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
