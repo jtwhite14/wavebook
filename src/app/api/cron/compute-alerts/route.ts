@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, surfSpots, surfSessions, sessionConditions, spotForecasts, spotAlerts } from "@/lib/db";
 import { eq, gte, and, inArray } from "drizzle-orm";
 import { fetchMarineForecast } from "@/lib/api/open-meteo";
-import { fetchTideTimeline } from "@/lib/api/noaa-tides";
+import { fetchTideTimeline, warmStationCache } from "@/lib/api/noaa-tides";
 import {
   generateAlerts,
   parseSessionConditions,
@@ -28,6 +28,10 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // Pre-warm the NOAA station cache (2.6MB) before processing spots,
+    // so it doesn't compete for bandwidth with Open-Meteo forecast fetches
+    await warmStationCache();
+
     // Get all spots with rated sessions
     const allSpots = await db.query.surfSpots.findMany({
       with: {

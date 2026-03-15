@@ -1,5 +1,6 @@
 import { MarineConditions, HourlyForecast, ForecastData } from "@/types";
 import { fetchTideHeight, fetchTideTimeline } from "./noaa-tides";
+import { fetchNdbcWaveData, fetchNdbcTimeline } from "./noaa-ndbc";
 
 const MARINE_API_BASE = "https://marine-api.open-meteo.com/v1/marine";
 const HISTORICAL_API_BASE = "https://archive-api.open-meteo.com/v1/era5";
@@ -91,15 +92,6 @@ export async function fetchMarineForecast(
     timezone: "auto",
   });
 
-  const response = await fetch(`${MARINE_API_BASE}?${params}`);
-
-  if (!response.ok) {
-    throw new Error(`Marine API error: ${response.status}`);
-  }
-
-  const data: OpenMeteoMarineResponse = await response.json();
-
-  // Also fetch weather data (wind)
   const weatherParams = new URLSearchParams({
     latitude: latitude.toString(),
     longitude: longitude.toString(),
@@ -108,14 +100,21 @@ export async function fetchMarineForecast(
     timezone: "auto",
   });
 
-  const weatherResponse = await fetch(
-    `https://api.open-meteo.com/v1/forecast?${weatherParams}`
-  );
+  // Fetch marine and weather data in parallel — they're independent
+  const [response, weatherResponse] = await Promise.all([
+    fetch(`${MARINE_API_BASE}?${params}`),
+    fetch(`https://api.open-meteo.com/v1/forecast?${weatherParams}`),
+  ]);
 
-  let weatherData: OpenMeteoWeatherResponse | null = null;
-  if (weatherResponse.ok) {
-    weatherData = await weatherResponse.json();
+  if (!response.ok) {
+    throw new Error(`Marine API error: ${response.status}`);
   }
+
+  const [data, weatherData]: [OpenMeteoMarineResponse, OpenMeteoWeatherResponse | null] =
+    await Promise.all([
+      response.json(),
+      weatherResponse.ok ? weatherResponse.json() : Promise.resolve(null),
+    ]);
 
   return transformForecastResponse(data, weatherData);
 }
@@ -221,19 +220,49 @@ export async function fetchHistoricalConditions(
     const mi = marineTimes.length > 0 ? findClosestIndex(marineTimes) : -1;
     const wi = weatherTimes.length > 0 ? findClosestIndex(weatherTimes) : -1;
 
+    // Extract marine wave fields
+    let waveHeight = mi >= 0 ? (marineData!.hourly.wave_height?.[mi] ?? null) : null;
+    let wavePeriod = mi >= 0 ? (marineData!.hourly.wave_period?.[mi] ?? null) : null;
+    let waveDirection = mi >= 0 ? (marineData!.hourly.wave_direction?.[mi] ?? null) : null;
+    let primarySwellHeight = mi >= 0 ? (marineData!.hourly.swell_wave_height?.[mi] ?? null) : null;
+    let primarySwellPeriod = mi >= 0 ? (marineData!.hourly.swell_wave_period?.[mi] ?? null) : null;
+    let primarySwellDirection = mi >= 0 ? (marineData!.hourly.swell_wave_direction?.[mi] ?? null) : null;
+    const secondarySwellHeight = mi >= 0 ? (marineData!.hourly.secondary_swell_wave_height?.[mi] ?? null) : null;
+    const secondarySwellPeriod = mi >= 0 ? (marineData!.hourly.secondary_swell_wave_period?.[mi] ?? null) : null;
+    const secondarySwellDirection = mi >= 0 ? (marineData!.hourly.secondary_swell_wave_direction?.[mi] ?? null) : null;
+    const windWaveHeight = mi >= 0 ? (marineData!.hourly.wind_wave_height?.[mi] ?? null) : null;
+    const windWavePeriod = mi >= 0 ? (marineData!.hourly.wind_wave_period?.[mi] ?? null) : null;
+    const windWaveDirection = mi >= 0 ? (marineData!.hourly.wind_wave_direction?.[mi] ?? null) : null;
+
+    // NDBC buoy fallback: if Open-Meteo marine returned no wave data,
+    // try the nearest NOAA buoy for historical observations
+    if (waveHeight === null && wavePeriod === null) {
+      const ndbc = await fetchNdbcWaveData(latitude, longitude, date);
+      if (ndbc) {
+        waveHeight = ndbc.waveHeight;
+        wavePeriod = ndbc.dominantPeriod;
+        waveDirection = ndbc.meanWaveDirection;
+        // Use dominant period as primary swell period (best approximation)
+        primarySwellHeight = ndbc.waveHeight;
+        primarySwellPeriod = ndbc.dominantPeriod;
+        primarySwellDirection = ndbc.meanWaveDirection;
+        // NDBC stdmet doesn't decompose swell further
+      }
+    }
+
     return {
-      waveHeight: mi >= 0 ? (marineData!.hourly.wave_height?.[mi] ?? null) : null,
-      wavePeriod: mi >= 0 ? (marineData!.hourly.wave_period?.[mi] ?? null) : null,
-      waveDirection: mi >= 0 ? (marineData!.hourly.wave_direction?.[mi] ?? null) : null,
-      primarySwellHeight: mi >= 0 ? (marineData!.hourly.swell_wave_height?.[mi] ?? null) : null,
-      primarySwellPeriod: mi >= 0 ? (marineData!.hourly.swell_wave_period?.[mi] ?? null) : null,
-      primarySwellDirection: mi >= 0 ? (marineData!.hourly.swell_wave_direction?.[mi] ?? null) : null,
-      secondarySwellHeight: mi >= 0 ? (marineData!.hourly.secondary_swell_wave_height?.[mi] ?? null) : null,
-      secondarySwellPeriod: mi >= 0 ? (marineData!.hourly.secondary_swell_wave_period?.[mi] ?? null) : null,
-      secondarySwellDirection: mi >= 0 ? (marineData!.hourly.secondary_swell_wave_direction?.[mi] ?? null) : null,
-      windWaveHeight: mi >= 0 ? (marineData!.hourly.wind_wave_height?.[mi] ?? null) : null,
-      windWavePeriod: mi >= 0 ? (marineData!.hourly.wind_wave_period?.[mi] ?? null) : null,
-      windWaveDirection: mi >= 0 ? (marineData!.hourly.wind_wave_direction?.[mi] ?? null) : null,
+      waveHeight,
+      wavePeriod,
+      waveDirection,
+      primarySwellHeight,
+      primarySwellPeriod,
+      primarySwellDirection,
+      secondarySwellHeight,
+      secondarySwellPeriod,
+      secondarySwellDirection,
+      windWaveHeight,
+      windWavePeriod,
+      windWaveDirection,
       windSpeed: wi >= 0 ? (weatherData!.hourly.wind_speed_10m?.[wi] ?? null) : null,
       windDirection: wi >= 0 ? (weatherData!.hourly.wind_direction_10m?.[wi] ?? null) : null,
       windGust: wi >= 0 ? (weatherData!.hourly.wind_gusts_10m?.[wi] ?? null) : null,
@@ -480,6 +509,32 @@ export async function fetchHourlyTimeline(
     weatherCode: weatherData?.hourly?.weather_code?.[index] ?? null,
     isDay: weatherData?.hourly?.is_day?.[index] != null ? weatherData.hourly.is_day[index] === 1 : null,
   }));
+
+  // NDBC buoy fallback: if Open-Meteo marine returned no wave data for the
+  // entire timeline, backfill from the nearest NOAA buoy
+  const hasAnyWaveData = allHours.some((h) => h.waveHeight !== null);
+  if (!hasAnyWaveData) {
+    const ndbcMap = await fetchNdbcTimeline(latitude, longitude, dayBefore, dayAfter);
+    if (ndbcMap) {
+      for (const hour of allHours) {
+        // Timeline times are local (timezone:"auto"), NDBC keys are UTC.
+        // Convert the local time to a UTC key for lookup.
+        const localDate = new Date(hour.time);
+        const utcMs = localDate.getTime() - (marineData?.utc_offset_seconds ?? weatherData?.utc_offset_seconds ?? 0) * 1000;
+        const utcDate = new Date(utcMs);
+        const utcKey = `${utcDate.getUTCFullYear()}-${String(utcDate.getUTCMonth() + 1).padStart(2, "0")}-${String(utcDate.getUTCDate()).padStart(2, "0")}T${String(utcDate.getUTCHours()).padStart(2, "0")}:00`;
+        const obs = ndbcMap.get(utcKey);
+        if (obs) {
+          hour.waveHeight = obs.waveHeight;
+          hour.wavePeriod = obs.dominantPeriod;
+          hour.waveDirection = obs.meanWaveDirection;
+          hour.primarySwellHeight = obs.waveHeight;
+          hour.primarySwellPeriod = obs.dominantPeriod;
+          hour.primarySwellDirection = obs.meanWaveDirection;
+        }
+      }
+    }
+  }
 
   // Find the closest hour to sessionTime.
   // Open-Meteo returns local times (no offset) due to timezone:"auto".

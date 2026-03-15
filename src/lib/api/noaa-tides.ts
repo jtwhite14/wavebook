@@ -23,9 +23,11 @@ interface NoaaPrediction {
   v: string; // "3.456" (feet)
 }
 
-// In-memory cache for station list (fetched once per server lifecycle)
+// In-memory cache for station list (fetched once per server lifecycle).
+// Uses a singleton promise to prevent thundering-herd on concurrent callers.
 let stationCache: NoaaStation[] | null = null;
 let stationCacheTime = 0;
+let stationFetchPromise: Promise<NoaaStation[]> | null = null;
 const STATION_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 /**
@@ -56,39 +58,64 @@ async function getStations(): Promise<NoaaStation[]> {
     return stationCache;
   }
 
-  try {
-    const res = await fetch(
-      `${NOAA_METADATA_API}?type=tidepredictions&units=english`,
-      { next: { revalidate: 86400 } }
-    );
-    if (!res.ok) return [];
+  // Singleton promise: if a fetch is already in-flight, reuse it
+  // instead of firing duplicate 2.6MB downloads
+  if (stationFetchPromise) return stationFetchPromise;
 
-    const data = await res.json();
-    const stations: NoaaStation[] = (data.stations || []).map(
-      (s: {
-        id: string;
-        name: string;
-        lat: number;
-        lng: number;
-        type: string;
-        reference_id: string;
-      }) => ({
-        id: s.id,
-        name: s.name,
-        lat: s.lat,
-        lng: s.lng,
-        type: s.type || "R",
-        referenceId: s.reference_id || s.id,
-      })
-    );
+  stationFetchPromise = (async () => {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
 
-    stationCache = stations;
-    stationCacheTime = Date.now();
-    return stations;
-  } catch (err) {
-    console.warn("Failed to fetch NOAA stations:", err);
-    return [];
-  }
+      // Skip Next.js data cache — response is 2.6MB and exceeds the 2MB limit,
+      // so { next: { revalidate } } is a no-op. Use no-store to avoid the warning.
+      const res = await fetch(
+        `${NOAA_METADATA_API}?type=tidepredictions&units=english`,
+        { signal: controller.signal, cache: "no-store" }
+      );
+      clearTimeout(timeout);
+
+      if (!res.ok) return [];
+
+      const data = await res.json();
+      const stations: NoaaStation[] = (data.stations || []).map(
+        (s: {
+          id: string;
+          name: string;
+          lat: number;
+          lng: number;
+          type: string;
+          reference_id: string;
+        }) => ({
+          id: s.id,
+          name: s.name,
+          lat: s.lat,
+          lng: s.lng,
+          type: s.type || "R",
+          referenceId: s.reference_id || s.id,
+        })
+      );
+
+      stationCache = stations;
+      stationCacheTime = Date.now();
+      return stations;
+    } catch (err) {
+      console.warn("Failed to fetch NOAA stations:", err);
+      return [];
+    } finally {
+      stationFetchPromise = null;
+    }
+  })();
+
+  return stationFetchPromise;
+}
+
+/**
+ * Pre-warm the station cache. Call once before batch-processing spots
+ * so the 2.6MB download is done before any forecast fetches compete for bandwidth.
+ */
+export async function warmStationCache(): Promise<void> {
+  await getStations();
 }
 
 /**
