@@ -1,4 +1,5 @@
 import { MarineConditions, HourlyForecast, ForecastData } from "@/types";
+import { fetchTideHeight, fetchTideTimeline } from "./noaa-tides";
 
 const MARINE_API_BASE = "https://marine-api.open-meteo.com/v1/marine";
 const HISTORICAL_API_BASE = "https://archive-api.open-meteo.com/v1/era5";
@@ -29,6 +30,8 @@ const WEATHER_PARAMS = [
   "pressure_msl",
   "cloud_cover",
   "visibility",
+  "weather_code",
+  "is_day",
 ].join(",");
 
 interface OpenMeteoMarineResponse {
@@ -68,6 +71,8 @@ interface OpenMeteoWeatherResponse {
     pressure_msl?: number[];
     cloud_cover?: number[];
     visibility?: number[];
+    weather_code?: number[];
+    is_day?: number[];
   };
 }
 
@@ -163,6 +168,8 @@ export async function fetchHistoricalConditions(
     "pressure_msl",
     "cloud_cover",
     "visibility",
+    "weather_code",
+    "is_day",
   ].join(",");
 
   const weatherParamsObj: Record<string, string> = {
@@ -175,9 +182,10 @@ export async function fetchHistoricalConditions(
   const weatherParams = new URLSearchParams(weatherParamsObj);
 
   try {
-    const [marineResponse, weatherResponse] = await Promise.all([
+    const [marineResponse, weatherResponse, tideHeight] = await Promise.all([
       fetch(`${MARINE_API_BASE}?${marineParams}`),
       fetch(`${weatherApiBase}?${weatherParams}`),
+      fetchTideHeight(latitude, longitude, date),
     ]);
 
     // We need at least one source to succeed
@@ -236,6 +244,9 @@ export async function fetchHistoricalConditions(
       pressureMsl: wi >= 0 ? (weatherData!.hourly.pressure_msl?.[wi] ?? null) : null,
       cloudCover: wi >= 0 ? (weatherData!.hourly.cloud_cover?.[wi] ?? null) : null,
       visibility: wi >= 0 ? (weatherData!.hourly.visibility?.[wi] ?? null) : null,
+      tideHeight,
+      weatherCode: wi >= 0 ? (weatherData!.hourly.weather_code?.[wi] ?? null) : null,
+      isDay: wi >= 0 && weatherData!.hourly.is_day?.[wi] != null ? weatherData!.hourly.is_day[wi] === 1 : null,
       timestamp: new Date(marineTimes[mi] || weatherTimes[wi]),
     };
   } catch (error) {
@@ -306,6 +317,9 @@ function transformForecastResponse(
     pressureMsl: weatherData?.hourly?.pressure_msl?.[index] ?? null,
     cloudCover: weatherData?.hourly?.cloud_cover?.[index] ?? null,
     visibility: weatherData?.hourly?.visibility?.[index] ?? null,
+    tideHeight: null,
+    weatherCode: weatherData?.hourly?.weather_code?.[index] ?? null,
+    isDay: weatherData?.hourly?.is_day?.[index] != null ? weatherData.hourly.is_day[index] === 1 : null,
   }));
 
   return {
@@ -391,6 +405,8 @@ export async function fetchHourlyTimeline(
       "pressure_msl",
       "cloud_cover",
       "visibility",
+      "weather_code",
+      "is_day",
     ].join(","),
     timezone: "auto",
   };
@@ -404,9 +420,10 @@ export async function fetchHourlyTimeline(
   }
   const weatherParams = new URLSearchParams(weatherParamsObj);
 
-  const [marineResponse, weatherResponse] = await Promise.all([
+  const [marineResponse, weatherResponse, tideData] = await Promise.all([
     fetch(`${MARINE_API_BASE}?${marineParams}`),
     fetch(`${weatherApiBase}?${weatherParams}`),
+    fetchTideTimeline(latitude, longitude, dayBefore, dayAfter),
   ]);
 
   const marineData: OpenMeteoMarineResponse | null = marineResponse.ok
@@ -420,6 +437,17 @@ export async function fetchHourlyTimeline(
     marineData?.hourly?.time || weatherData?.hourly?.time || [];
   if (times.length === 0) {
     return { timeline: [], sessionHourIndex: 0 };
+  }
+
+  // Build a map of tide predictions by hour for quick lookup
+  const tideByHour = new Map<string, number>();
+  if (tideData) {
+    for (const t of tideData) {
+      // NOAA returns "YYYY-MM-DD HH:MM", normalize to match Open-Meteo "YYYY-MM-DDTHH:00"
+      const d = new Date(t.time);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}T${String(d.getHours()).padStart(2, "0")}:00`;
+      tideByHour.set(key, t.height);
+    }
   }
 
   // Build full hourly array
@@ -448,6 +476,9 @@ export async function fetchHourlyTimeline(
     pressureMsl: weatherData?.hourly?.pressure_msl?.[index] ?? null,
     cloudCover: weatherData?.hourly?.cloud_cover?.[index] ?? null,
     visibility: weatherData?.hourly?.visibility?.[index] ?? null,
+    tideHeight: tideByHour.get(time) ?? null,
+    weatherCode: weatherData?.hourly?.weather_code?.[index] ?? null,
+    isDay: weatherData?.hourly?.is_day?.[index] != null ? weatherData.hourly.is_day[index] === 1 : null,
   }));
 
   // Find the closest hour to sessionTime.
@@ -547,4 +578,12 @@ export function formatPrecipitation(mm: number | null): string {
   if (mm === null) return "N/A";
   const inches = mm / 25.4;
   return `${inches.toFixed(2)} in`;
+}
+
+/**
+ * Format tide height for display (already in feet from NOAA)
+ */
+export function formatTideHeight(feet: number | null): string {
+  if (feet === null) return "N/A";
+  return `${feet.toFixed(1)} ft`;
 }

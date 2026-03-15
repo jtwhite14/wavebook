@@ -115,6 +115,7 @@ export default function SessionDetailPage() {
         pressureMsl: c.pressureMsl ? parseFloat(c.pressureMsl) : null,
         cloudCover: c.cloudCover ? parseFloat(c.cloudCover) : null,
         visibility: c.visibility ? parseFloat(c.visibility) : null,
+        tideHeight: c.tideHeight ? parseFloat(c.tideHeight) : null,
         timestamp: new Date(c.timestamp),
       } as MarineConditions)
     : null;

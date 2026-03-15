@@ -42,6 +42,7 @@ interface Conditions {
   pressureMsl: number | null;
   cloudCover: number | null;
   visibility: number | null;
+  tideHeight: number | null;
   timestamp: Date;
 }
 
@@ -113,6 +114,7 @@ async function fetchHistorical(lat: number, lng: number, date: Date): Promise<Co
       pressureMsl: weather?.hourly?.pressure_msl?.[closestIndex] ?? null,
       cloudCover: weather?.hourly?.cloud_cover?.[closestIndex] ?? null,
       visibility: weather?.hourly?.visibility?.[closestIndex] ?? null,
+      tideHeight: null,
       timestamp: new Date(times[closestIndex]),
     };
   } catch {
@@ -171,6 +173,7 @@ async function fetchCurrent(lat: number, lng: number): Promise<Conditions | null
       pressureMsl: weather?.hourly?.pressure_msl?.[idx] ?? null,
       cloudCover: weather?.hourly?.cloud_cover?.[idx] ?? null,
       visibility: weather?.hourly?.visibility?.[idx] ?? null,
+      tideHeight: null,
       timestamp: new Date(marine.hourly.time[idx]),
     };
   } catch {
@@ -241,6 +244,7 @@ async function main() {
       pressureMsl: conditions.pressureMsl?.toString() || null,
       cloudCover: conditions.cloudCover?.toString() || null,
       visibility: conditions.visibility?.toString() || null,
+      tideHeight: conditions.tideHeight?.toString() || null,
       timestamp: conditions.timestamp,
     };
 

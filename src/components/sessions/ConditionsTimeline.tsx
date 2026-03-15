@@ -5,7 +5,8 @@ import { HourlyForecast } from "@/types";
 import { WaveChart } from "./charts/WaveChart";
 import { SwellChart } from "./charts/SwellChart";
 import { WindChart } from "./charts/WindChart";
-import { TemperatureChart } from "./charts/TemperatureChart";
+import { TideChart } from "./charts/TideChart";
+import { WeatherStrip } from "./charts/WeatherStrip";
 import { AtmospherePanel } from "./charts/AtmospherePanel";
 
 interface ConditionsTimelineProps {
@@ -69,8 +70,9 @@ export function ConditionsTimeline({ sessionId }: ConditionsTimelineProps) {
       <div className="space-y-3">
         <WaveChart data={timeline} sessionIndex={sessionHourIndex} />
         <SwellChart data={timeline} sessionIndex={sessionHourIndex} />
+        <TideChart data={timeline} sessionIndex={sessionHourIndex} />
         <WindChart data={timeline} sessionIndex={sessionHourIndex} />
-        <TemperatureChart data={timeline} sessionIndex={sessionHourIndex} />
+        <WeatherStrip data={timeline} sessionIndex={sessionHourIndex} />
         <AtmospherePanel data={timeline} sessionIndex={sessionHourIndex} />
       </div>
     </div>

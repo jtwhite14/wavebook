@@ -22,6 +22,9 @@ export interface MarineConditions {
   pressureMsl: number | null;
   cloudCover: number | null;
   visibility: number | null;
+  tideHeight: number | null;
+  weatherCode: number | null;
+  isDay: boolean | null;
   timestamp: Date;
 }
 
@@ -159,6 +162,7 @@ export interface SurfSessionWithConditions {
     pressureMsl: string | null;
     cloudCover: string | null;
     visibility: string | null;
+    tideHeight: string | null;
     timestamp: Date;
   } | null;
   spot?: {

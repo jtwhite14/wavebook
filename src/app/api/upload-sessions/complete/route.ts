@@ -142,6 +142,7 @@ export async function POST(request: NextRequest) {
           pressureMsl: conditions.pressureMsl?.toString() || null,
           cloudCover: conditions.cloudCover?.toString() || null,
           visibility: conditions.visibility?.toString() || null,
+          tideHeight: conditions.tideHeight?.toString() || null,
           timestamp: conditions.timestamp,
         });
       }

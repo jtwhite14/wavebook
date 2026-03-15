@@ -9,6 +9,7 @@ import {
   formatVisibility,
   formatPressure,
   formatPrecipitation,
+  formatTideHeight,
   getDirectionText,
 } from "@/lib/api/open-meteo";
 
@@ -110,6 +111,16 @@ export function ConditionsDisplay({ conditions, compact = false }: ConditionsDis
           />
         </div>
       </div>
+
+      {/* Tide Section */}
+      {conditions.tideHeight !== null && (
+        <div>
+          <h4 className="text-sm font-medium text-muted-foreground mb-3">Tide</h4>
+          <div className="grid grid-cols-2 gap-4">
+            <ConditionItem label="Tide Height" value={formatTideHeight(conditions.tideHeight)} />
+          </div>
+        </div>
+      )}
 
       {/* Wind Section */}
       <div>
