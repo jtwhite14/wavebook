@@ -44,7 +44,15 @@ export default function DashboardPage() {
   }, []);
 
   const initialViewState = useMemo(() => {
-    // If user has spots, center on them
+    // Home location is the primary default (~100mi radius ≈ zoom 7)
+    if (homeLocation) {
+      return {
+        longitude: homeLocation.longitude,
+        latitude: homeLocation.latitude,
+        zoom: 7,
+      };
+    }
+    // Fall back to centering on spots if no home location
     if (spots.length === 1) {
       return {
         longitude: parseFloat(spots[0].longitude),
@@ -59,14 +67,6 @@ export default function DashboardPage() {
         longitude: (Math.min(...lngs) + Math.max(...lngs)) / 2,
         latitude: (Math.min(...lats) + Math.max(...lats)) / 2,
         zoom: 10,
-      };
-    }
-    // Fall back to home location (~100mi radius ≈ zoom 7)
-    if (homeLocation) {
-      return {
-        longitude: homeLocation.longitude,
-        latitude: homeLocation.latitude,
-        zoom: 7,
       };
     }
     return undefined;

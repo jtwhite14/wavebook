@@ -11,7 +11,8 @@ import { AvailabilityView } from "@/components/calendar/AvailabilityView";
 import { toast } from "sonner";
 import { AvailabilityWindow, CalendarEvent } from "@/types";
 import { addDays } from "date-fns";
-import { MapPin } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { MapPin, Search } from "lucide-react";
 
 const SpotMap = dynamic(() => import("@/components/map/SpotMap"), { ssr: false });
 
@@ -25,6 +26,9 @@ export default function SettingsPage() {
   const [homeLocation, setHomeLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [locationLoading, setLocationLoading] = useState(true);
   const [locationSaving, setLocationSaving] = useState(false);
+  const [addressQuery, setAddressQuery] = useState("");
+  const [addressResults, setAddressResults] = useState<Array<{ place_name: string; center: [number, number] }>>([]);
+  const [addressSearching, setAddressSearching] = useState(false);
 
   useEffect(() => {
     fetchCalendarData();
@@ -104,7 +108,35 @@ export default function SettingsPage() {
 
   const handleMapClick = useCallback((lat: number, lng: number) => {
     setHomeLocation({ latitude: lat, longitude: lng });
+    setAddressResults([]);
   }, []);
+
+  async function handleAddressSearch(e: React.FormEvent) {
+    e.preventDefault();
+    if (!addressQuery.trim()) return;
+    setAddressSearching(true);
+    setAddressResults([]);
+    try {
+      const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+      const res = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(addressQuery.trim())}.json?access_token=${token}&limit=5&types=address,place,locality,neighborhood,postcode`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setAddressResults(data.features || []);
+      }
+    } catch {
+      toast.error("Address search failed");
+    } finally {
+      setAddressSearching(false);
+    }
+  }
+
+  function handleSelectAddress(center: [number, number], placeName: string) {
+    setHomeLocation({ latitude: center[1], longitude: center[0] });
+    setAddressQuery(placeName);
+    setAddressResults([]);
+  }
 
   async function handleSaveLocation() {
     if (!homeLocation) return;
@@ -190,6 +222,35 @@ export default function SettingsPage() {
             <div className="h-64 bg-muted rounded-lg animate-pulse" />
           ) : (
             <>
+              <form onSubmit={handleAddressSearch} className="relative">
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Input
+                      placeholder="Enter your address or city..."
+                      value={addressQuery}
+                      onChange={(e) => setAddressQuery(e.target.value)}
+                    />
+                  </div>
+                  <Button type="submit" variant="outline" disabled={addressSearching || !addressQuery.trim()}>
+                    <Search className="size-4" />
+                  </Button>
+                </div>
+                {addressResults.length > 0 && (
+                  <div className="absolute z-20 mt-1 w-full rounded-md border bg-popover shadow-lg">
+                    {addressResults.map((result, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => handleSelectAddress(result.center, result.place_name)}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-left hover:bg-accent transition-colors first:rounded-t-md last:rounded-b-md"
+                      >
+                        <MapPin className="size-3.5 shrink-0 text-muted-foreground" />
+                        <span className="truncate">{result.place_name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </form>
               <div className="h-64 rounded-lg overflow-hidden border">
                 <SpotMap
                   spots={[]}
