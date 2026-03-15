@@ -14,6 +14,8 @@ interface NoaaStation {
   name: string;
   lat: number;
   lng: number;
+  type: string; // "R" = reference/harmonic, "S" = subordinate
+  referenceId: string; // for subordinate stations, the reference station ID
 }
 
 interface NoaaPrediction {
@@ -63,11 +65,20 @@ async function getStations(): Promise<NoaaStation[]> {
 
     const data = await res.json();
     const stations: NoaaStation[] = (data.stations || []).map(
-      (s: { id: string; name: string; lat: number; lng: number }) => ({
+      (s: {
+        id: string;
+        name: string;
+        lat: number;
+        lng: number;
+        type: string;
+        reference_id: string;
+      }) => ({
         id: s.id,
         name: s.name,
         lat: s.lat,
         lng: s.lng,
+        type: s.type || "R",
+        referenceId: s.reference_id || s.id,
       })
     );
 
@@ -81,13 +92,16 @@ async function getStations(): Promise<NoaaStation[]> {
 }
 
 /**
- * Find the nearest NOAA tide station within maxDistanceKm of the given coordinates.
+ * Find the nearest NOAA tide station within maxDistanceKm.
+ * Returns the station ID to use for predictions — for subordinate stations,
+ * this is the reference station ID since NOAA only serves predictions
+ * for harmonic (type "R") stations.
  */
-async function findNearestStation(
+async function findPredictionStationId(
   lat: number,
   lng: number,
   maxDistanceKm = 50
-): Promise<NoaaStation | null> {
+): Promise<string | null> {
   const stations = await getStations();
   let nearest: NoaaStation | null = null;
   let minDist = Infinity;
@@ -100,7 +114,11 @@ async function findNearestStation(
     }
   }
 
-  return nearest;
+  if (!nearest) return null;
+
+  // Subordinate stations don't serve predictions directly —
+  // use their reference station instead
+  return nearest.type === "R" ? nearest.id : nearest.referenceId;
 }
 
 function formatNoaaDate(date: Date): string {
@@ -152,15 +170,15 @@ export async function fetchTideHeight(
   longitude: number,
   date: Date
 ): Promise<number | null> {
-  const station = await findNearestStation(latitude, longitude);
-  if (!station) return null;
+  const stationId = await findPredictionStationId(latitude, longitude);
+  if (!stationId) return null;
 
   const dayBefore = new Date(date);
   dayBefore.setUTCDate(dayBefore.getUTCDate() - 1);
   const dayAfter = new Date(date);
   dayAfter.setUTCDate(dayAfter.getUTCDate() + 1);
 
-  const predictions = await fetchPredictions(station.id, dayBefore, dayAfter);
+  const predictions = await fetchPredictions(stationId, dayBefore, dayAfter);
   if (predictions.length === 0) return null;
 
   // Find closest prediction to target time
@@ -191,10 +209,10 @@ export async function fetchTideTimeline(
   startDate: Date,
   endDate: Date
 ): Promise<{ time: string; height: number }[] | null> {
-  const station = await findNearestStation(latitude, longitude);
-  if (!station) return null;
+  const stationId = await findPredictionStationId(latitude, longitude);
+  if (!stationId) return null;
 
-  const predictions = await fetchPredictions(station.id, startDate, endDate);
+  const predictions = await fetchPredictions(stationId, startDate, endDate);
   if (predictions.length === 0) return null;
 
   return predictions.map((p) => ({
