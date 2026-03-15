@@ -5,6 +5,8 @@ import * as schema from "../src/lib/db/schema";
 
 const MARINE_API_BASE = "https://marine-api.open-meteo.com/v1/marine";
 const HISTORICAL_API_BASE = "https://archive-api.open-meteo.com/v1/era5";
+const NDBC_STATION_TABLE_URL = "https://www.ndbc.noaa.gov/data/stations/station_table.txt";
+const NDBC_HISTORICAL_URL = "https://www.ndbc.noaa.gov/view_text_file.php";
 
 const MARINE_PARAMS = [
   "wave_height", "wave_period", "wave_direction",
@@ -44,6 +46,112 @@ interface Conditions {
   visibility: number | null;
   tideHeight: number | null;
   timestamp: Date;
+}
+
+// ── NDBC buoy fallback for pre-Oct 2021 wave data ──
+
+interface NdbcStation { id: string; lat: number; lng: number }
+interface NdbcObs { waveHeight: number | null; dominantPeriod: number | null; meanWaveDirection: number | null; time: Date }
+
+let ndbcStations: NdbcStation[] | null = null;
+const ndbcCache = new Map<string, NdbcObs[]>();
+
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+async function getNdbcStations(): Promise<NdbcStation[]> {
+  if (ndbcStations) return ndbcStations;
+  try {
+    const res = await fetch(NDBC_STATION_TABLE_URL);
+    if (!res.ok) return [];
+    const text = await res.text();
+    const stations: NdbcStation[] = [];
+    for (const line of text.split("\n")) {
+      if (!line.trim() || line.startsWith("#")) continue;
+      const parts = line.split("|");
+      if (parts.length < 7) continue;
+      const id = parts[0].trim();
+      const loc = parts[6].trim();
+      if (!id || !loc) continue;
+      const m = loc.match(/^(\d+\.?\d*)\s+([NS])\s+(\d+\.?\d*)\s+([EW])/);
+      if (!m) continue;
+      let lat = parseFloat(m[1]); let lng = parseFloat(m[3]);
+      if (m[2] === "S") lat = -lat;
+      if (m[4] === "W") lng = -lng;
+      if (lat === 0 && lng === 0) continue;
+      stations.push({ id, lat, lng });
+    }
+    ndbcStations = stations;
+    return stations;
+  } catch { return []; }
+}
+
+function parseNdbcFloat(val: string, threshold: number): number | null {
+  if (val === "MM" || val === "") return null;
+  const n = parseFloat(val);
+  return isNaN(n) || n >= threshold ? null : n;
+}
+
+function parseNdbcStdmet(text: string): NdbcObs[] {
+  const obs: NdbcObs[] = [];
+  for (const line of text.split("\n")) {
+    if (!line.trim() || line.startsWith("#")) continue;
+    const c = line.trim().split(/\s+/);
+    if (c.length < 13) continue;
+    const yr = parseInt(c[0]); const mo = parseInt(c[1]); const dy = parseInt(c[2]);
+    const hr = parseInt(c[3]); const mn = parseInt(c[4]);
+    if (isNaN(yr) || isNaN(mo) || isNaN(dy)) continue;
+    const fullYr = yr < 100 ? (yr > 70 ? 1900 + yr : 2000 + yr) : yr;
+    obs.push({
+      time: new Date(Date.UTC(fullYr, mo - 1, dy, hr, mn)),
+      waveHeight: parseNdbcFloat(c[8], 99),
+      dominantPeriod: parseNdbcFloat(c[9], 99),
+      meanWaveDirection: parseNdbcFloat(c[11], 999),
+    });
+  }
+  return obs;
+}
+
+async function fetchNdbcWaveData(lat: number, lng: number, date: Date): Promise<NdbcObs | null> {
+  const stations = await getNdbcStations();
+  let nearest: NdbcStation | null = null;
+  let minDist = Infinity;
+  for (const s of stations) {
+    const d = haversineKm(lat, lng, s.lat, s.lng);
+    if (d < minDist && d <= 100) { minDist = d; nearest = s; }
+  }
+  if (!nearest) return null;
+
+  const year = date.getUTCFullYear();
+  const cacheKey = `${nearest.id}-${year}`;
+  let observations = ndbcCache.get(cacheKey);
+  if (!observations) {
+    try {
+      const url = `${NDBC_HISTORICAL_URL}?filename=${nearest.id}h${year}.txt.gz&dir=data/historical/stdmet/`;
+      const res = await fetch(url);
+      if (!res.ok) { ndbcCache.set(cacheKey, []); return null; }
+      const text = await res.text();
+      if (text.includes("</html>") || text.includes("Unable to access")) { ndbcCache.set(cacheKey, []); return null; }
+      observations = parseNdbcStdmet(text);
+      ndbcCache.set(cacheKey, observations);
+    } catch { return null; }
+  }
+
+  const targetMs = date.getTime();
+  const maxDiffMs = 1.5 * 60 * 60 * 1000;
+  let closest: NdbcObs | null = null;
+  let closestDiff = Infinity;
+  for (const o of observations) {
+    const diff = Math.abs(o.time.getTime() - targetMs);
+    if (diff < closestDiff && diff <= maxDiffMs) { closestDiff = diff; closest = o; }
+  }
+  if (closest) console.log(`    NDBC fallback: station ${nearest.id} (${minDist.toFixed(0)}km away)`);
+  return closest;
 }
 
 async function fetchHistorical(lat: number, lng: number, date: Date): Promise<Conditions | null> {
@@ -91,13 +199,33 @@ async function fetchHistorical(lat: number, lng: number, date: Date): Promise<Co
       if (diff < minDiff) { minDiff = diff; closestIndex = index; }
     });
 
+    let waveHeight = marine?.hourly?.wave_height?.[closestIndex] ?? null;
+    let wavePeriod = marine?.hourly?.wave_period?.[closestIndex] ?? null;
+    let waveDirection = marine?.hourly?.wave_direction?.[closestIndex] ?? null;
+    let primarySwellHeight = marine?.hourly?.swell_wave_height?.[closestIndex] ?? null;
+    let primarySwellPeriod = marine?.hourly?.swell_wave_period?.[closestIndex] ?? null;
+    let primarySwellDirection = marine?.hourly?.swell_wave_direction?.[closestIndex] ?? null;
+
+    // NDBC buoy fallback when Open-Meteo marine has no wave data
+    if (waveHeight === null && wavePeriod === null) {
+      const ndbc = await fetchNdbcWaveData(lat, lng, date);
+      if (ndbc) {
+        waveHeight = ndbc.waveHeight;
+        wavePeriod = ndbc.dominantPeriod;
+        waveDirection = ndbc.meanWaveDirection;
+        primarySwellHeight = ndbc.waveHeight;
+        primarySwellPeriod = ndbc.dominantPeriod;
+        primarySwellDirection = ndbc.meanWaveDirection;
+      }
+    }
+
     return {
-      waveHeight: marine?.hourly?.wave_height?.[closestIndex] ?? null,
-      wavePeriod: marine?.hourly?.wave_period?.[closestIndex] ?? null,
-      waveDirection: marine?.hourly?.wave_direction?.[closestIndex] ?? null,
-      primarySwellHeight: marine?.hourly?.swell_wave_height?.[closestIndex] ?? null,
-      primarySwellPeriod: marine?.hourly?.swell_wave_period?.[closestIndex] ?? null,
-      primarySwellDirection: marine?.hourly?.swell_wave_direction?.[closestIndex] ?? null,
+      waveHeight,
+      wavePeriod,
+      waveDirection,
+      primarySwellHeight,
+      primarySwellPeriod,
+      primarySwellDirection,
       secondarySwellHeight: marine?.hourly?.secondary_swell_wave_height?.[closestIndex] ?? null,
       secondarySwellPeriod: marine?.hourly?.secondary_swell_wave_period?.[closestIndex] ?? null,
       secondarySwellDirection: marine?.hourly?.secondary_swell_wave_direction?.[closestIndex] ?? null,

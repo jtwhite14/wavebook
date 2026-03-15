@@ -74,41 +74,50 @@ export function ConditionsDisplay({ conditions, compact = false }: ConditionsDis
   }
 
   const secondarySwell = conditions.secondarySwellHeight !== null && conditions.secondarySwellHeight > 0;
+  const hasWaveData = conditions.waveHeight !== null;
 
   return (
     <div className="space-y-4">
       {/* Surf — primary data surfers care about */}
       <section>
         <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Surf</h4>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2">
-          <ConditionItem label="Wave Height" value={formatWaveHeight(conditions.waveHeight)} />
-          <ConditionItem label="Period" value={formatWavePeriod(conditions.wavePeriod)} />
-          <ConditionItem label="Direction" value={formatDirection(conditions.waveDirection)} />
-        </div>
-
-        {/* Swell breakdown */}
-        <div className="mt-2 space-y-1">
-          <div className="flex items-baseline gap-2 text-sm">
-            <span className="text-muted-foreground w-20 shrink-0">Primary</span>
-            <span className="font-medium">
-              {formatSwellLine(conditions.primarySwellHeight, conditions.primarySwellPeriod, conditions.primarySwellDirection)}
-            </span>
-          </div>
-          {secondarySwell && (
-            <div className="flex items-baseline gap-2 text-sm">
-              <span className="text-muted-foreground w-20 shrink-0">Secondary</span>
-              <span className="font-medium">
-                {formatSwellLine(conditions.secondarySwellHeight, conditions.secondarySwellPeriod, conditions.secondarySwellDirection)}
-              </span>
+        {hasWaveData ? (
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2">
+              <ConditionItem label="Wave Height" value={formatWaveHeight(conditions.waveHeight)} />
+              <ConditionItem label="Period" value={formatWavePeriod(conditions.wavePeriod)} />
+              <ConditionItem label="Direction" value={formatDirection(conditions.waveDirection)} />
             </div>
-          )}
-          <div className="flex items-baseline gap-2 text-sm">
-            <span className="text-muted-foreground w-20 shrink-0">Wind chop</span>
-            <span className="font-medium">
-              {formatSwellLine(conditions.windWaveHeight, conditions.windWavePeriod, conditions.windWaveDirection)}
-            </span>
-          </div>
-        </div>
+
+            {/* Swell breakdown */}
+            <div className="mt-2 space-y-1">
+              <div className="flex items-baseline gap-2 text-sm">
+                <span className="text-muted-foreground w-20 shrink-0">Primary</span>
+                <span className="font-medium">
+                  {formatSwellLine(conditions.primarySwellHeight, conditions.primarySwellPeriod, conditions.primarySwellDirection)}
+                </span>
+              </div>
+              {secondarySwell && (
+                <div className="flex items-baseline gap-2 text-sm">
+                  <span className="text-muted-foreground w-20 shrink-0">Secondary</span>
+                  <span className="font-medium">
+                    {formatSwellLine(conditions.secondarySwellHeight, conditions.secondarySwellPeriod, conditions.secondarySwellDirection)}
+                  </span>
+                </div>
+              )}
+              <div className="flex items-baseline gap-2 text-sm">
+                <span className="text-muted-foreground w-20 shrink-0">Wind chop</span>
+                <span className="font-medium">
+                  {formatSwellLine(conditions.windWaveHeight, conditions.windWavePeriod, conditions.windWaveDirection)}
+                </span>
+              </div>
+            </div>
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Wave data unavailable — no buoy or hindcast data found for this session.
+          </p>
+        )}
       </section>
 
       {/* Wind & Tide — row of key values */}
