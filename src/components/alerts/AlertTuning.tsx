@@ -3,7 +3,15 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { ConditionWeights, DEFAULT_CONDITION_WEIGHTS, WEIGHT_PRESETS, CardinalDirection } from "@/types";
+import {
+  ConditionWeights,
+  DEFAULT_CONDITION_WEIGHTS,
+  WEIGHT_PRESETS,
+  CardinalDirection,
+  PreferredWaveSize,
+  PreferredSwellPeriod,
+  PreferredWind,
+} from "@/types";
 import { SwellExposurePicker } from "@/components/spots/SwellExposurePicker";
 
 interface AlertTuningSectionProps {
@@ -73,20 +81,42 @@ export function AlertTuningSection({ spotId, onSave }: AlertTuningSectionProps) 
 
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
+  function debouncedSave(newWeights: ConditionWeights) {
+    clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => saveWeights(newWeights), 700);
+  }
+
   function handleWeightChange(key: keyof ConditionWeights, level: number) {
     const value = level === 0 ? 0.3 : level === 1 ? 0.6 : 1.0;
     const newWeights = { ...weights, [key]: value };
+
+    // Clear follow-up preference when weight drops to "Not very"
+    if (level === 0) {
+      if (key === "swellHeight") newWeights.preferredWaveSize = undefined;
+      if (key === "swellPeriod") newWeights.preferredSwellPeriod = undefined;
+      if (key === "windSpeed") newWeights.preferredWind = undefined;
+      if (key === "tideHeight") newWeights.preferredTide = "any";
+    }
+
     setWeights(newWeights);
     setActivePreset(null);
-    clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(() => saveWeights(newWeights), 700);
+    debouncedSave(newWeights);
+  }
+
+  function handlePreferenceChange<K extends keyof ConditionWeights>(
+    key: K,
+    value: ConditionWeights[K] | undefined,
+  ) {
+    const newWeights = { ...weights, [key]: value };
+    setWeights(newWeights);
+    setActivePreset(null);
+    debouncedSave(newWeights);
   }
 
   function handleExposureChange(directions: CardinalDirection[]) {
     const newWeights = { ...weights, swellExposure: directions.length > 0 ? directions : undefined };
     setWeights(newWeights);
-    clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(() => saveWeights(newWeights), 700);
+    debouncedSave(newWeights);
   }
 
   function weightToLevel(value: number): number {
@@ -98,6 +128,12 @@ export function AlertTuningSection({ spotId, onSave }: AlertTuningSectionProps) 
   if (loading) {
     return <div className="py-2 text-center text-sm text-muted-foreground">Loading…</div>;
   }
+
+  const swellHeightLevel = weightToLevel(weights.swellHeight);
+  const swellPeriodLevel = weightToLevel(weights.swellPeriod);
+  const swellDirLevel = weightToLevel(weights.swellDirection);
+  const windSpeedLevel = weightToLevel(weights.windSpeed);
+  const tideLevel = weightToLevel(weights.tideHeight);
 
   return (
     <div className="space-y-3">
@@ -119,44 +155,107 @@ export function AlertTuningSection({ spotId, onSave }: AlertTuningSectionProps) 
         </div>
       </div>
 
-      {/* Swell exposure */}
-      <SwellExposurePicker
-        value={weights.swellExposure ?? []}
-        onChange={handleExposureChange}
-      />
-
       {/* Customize weights */}
-      <div className="space-y-3">
+      <div className="space-y-1">
         <label className="text-sm font-medium block">Customize</label>
+
+        {/* Wave size */}
         <WeightRow
           label="How important is wave size?"
-          value={weightToLevel(weights.swellHeight)}
+          value={swellHeightLevel}
           onChange={level => handleWeightChange("swellHeight", level)}
         />
+        <FollowUpRow
+          visible={swellHeightLevel >= 1}
+          label="What size waves?"
+          options={[
+            { value: "small", label: "Small (<3ft)" },
+            { value: "medium", label: "Medium (3–6ft)" },
+            { value: "large", label: "Large (6–10ft)" },
+            { value: "xl", label: "XL (10ft+)" },
+          ]}
+          selected={weights.preferredWaveSize}
+          onChange={(v) => handlePreferenceChange("preferredWaveSize", v as PreferredWaveSize | undefined)}
+        />
+
+        {/* Swell period */}
         <WeightRow
           label="How important is swell period?"
-          value={weightToLevel(weights.swellPeriod)}
+          value={swellPeriodLevel}
           onChange={level => handleWeightChange("swellPeriod", level)}
         />
+        <FollowUpRow
+          visible={swellPeriodLevel >= 1}
+          label="What swell period?"
+          options={[
+            { value: "short", label: "Short (<8s)" },
+            { value: "medium", label: "Medium (8–12s)" },
+            { value: "long", label: "Long (12s+)" },
+          ]}
+          selected={weights.preferredSwellPeriod}
+          onChange={(v) => handlePreferenceChange("preferredSwellPeriod", v as PreferredSwellPeriod | undefined)}
+        />
+
+        {/* Swell direction */}
         <WeightRow
           label="How important is swell direction?"
-          value={weightToLevel(weights.swellDirection)}
+          value={swellDirLevel}
           onChange={level => handleWeightChange("swellDirection", level)}
         />
+        {swellDirLevel >= 1 && (
+          <div className="pl-1 pb-1">
+            <SwellExposurePicker
+              value={weights.swellExposure ?? []}
+              onChange={handleExposureChange}
+            />
+          </div>
+        )}
+
+        {/* Wind */}
         <WeightRow
           label="How important is wind?"
-          value={weightToLevel(weights.windSpeed)}
+          value={windSpeedLevel}
           onChange={level => handleWeightChange("windSpeed", level)}
         />
+        <FollowUpRow
+          visible={windSpeedLevel >= 1}
+          label="What wind conditions?"
+          options={[
+            { value: "glassy", label: "Light/Glassy" },
+            { value: "offshore", label: "Offshore" },
+            { value: "cross-offshore", label: "Cross-offshore" },
+            { value: "onshore", label: "Onshore" },
+          ]}
+          selected={weights.preferredWind}
+          onChange={(v) => handlePreferenceChange("preferredWind", v as PreferredWind | undefined)}
+        />
+
+        {/* Wind direction */}
         <WeightRow
           label="How important is wind direction?"
           value={weightToLevel(weights.windDirection)}
           onChange={level => handleWeightChange("windDirection", level)}
         />
+
+        {/* Tide */}
         <WeightRow
           label="How important is tide?"
-          value={weightToLevel(weights.tideHeight)}
+          value={tideLevel}
           onChange={level => handleWeightChange("tideHeight", level)}
+        />
+        <FollowUpRow
+          visible={tideLevel >= 1}
+          label="Best tide?"
+          options={[
+            { value: "any", label: "Any" },
+            { value: "low", label: "Low" },
+            { value: "mid", label: "Mid" },
+            { value: "high", label: "High" },
+            { value: "incoming", label: "Incoming" },
+            { value: "outgoing", label: "Outgoing" },
+          ]}
+          selected={weights.preferredTide}
+          onChange={(v) => handlePreferenceChange("preferredTide", (v ?? "any") as ConditionWeights["preferredTide"])}
         />
       </div>
     </div>
@@ -174,7 +273,7 @@ function WeightRow({
 }) {
   const levels = ["Not very", "Somewhat", "Very"];
   return (
-    <div>
+    <div className="pt-2">
       <label className="text-xs text-muted-foreground mb-1 block">{label}</label>
       <div className="flex gap-1">
         {levels.map((text, i) => (
@@ -190,6 +289,47 @@ function WeightRow({
             {text}
           </button>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function FollowUpRow({
+  visible,
+  label,
+  options,
+  selected,
+  onChange,
+}: {
+  visible: boolean;
+  label: string;
+  options: { value: string; label: string }[];
+  selected: string | undefined;
+  onChange: (value: string | undefined) => void;
+}) {
+  return (
+    <div
+      className={`overflow-hidden transition-all duration-200 ${
+        visible ? "max-h-24 opacity-100" : "max-h-0 opacity-0"
+      }`}
+    >
+      <div className="pl-1 pt-1 pb-1">
+        <label className="text-xs text-muted-foreground mb-1 block">{label}</label>
+        <div className="flex flex-wrap gap-1">
+          {options.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => onChange(selected === opt.value ? undefined : opt.value)}
+              className={`px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${
+                selected === opt.value
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-accent"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -61,6 +61,15 @@ export type CardinalDirection = 'N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW
 
 export const VALID_CARDINAL_DIRECTIONS: CardinalDirection[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
 
+// Preference types for follow-up questions
+export type PreferredWaveSize = 'small' | 'medium' | 'large' | 'xl';
+export type PreferredSwellPeriod = 'short' | 'medium' | 'long';
+export type PreferredWind = 'glassy' | 'offshore' | 'cross-offshore' | 'onshore';
+
+export const VALID_PREFERRED_WAVE_SIZES: PreferredWaveSize[] = ['small', 'medium', 'large', 'xl'];
+export const VALID_PREFERRED_SWELL_PERIODS: PreferredSwellPeriod[] = ['short', 'medium', 'long'];
+export const VALID_PREFERRED_WINDS: PreferredWind[] = ['glassy', 'offshore', 'cross-offshore', 'onshore'];
+
 // Condition weight configuration per spot
 export interface ConditionWeights {
   swellHeight: number;    // 0-1
@@ -71,6 +80,9 @@ export interface ConditionWeights {
   windDirection: number;  // 0-1
   waveEnergy: number;     // 0-1
   preferredTide: 'any' | 'low' | 'mid' | 'high' | 'incoming' | 'outgoing';
+  preferredWaveSize?: PreferredWaveSize;
+  preferredSwellPeriod?: PreferredSwellPeriod;
+  preferredWind?: PreferredWind;
   swellExposure?: CardinalDirection[];
   notes?: string;
 }
@@ -94,15 +106,15 @@ export const WEIGHT_PRESETS: Record<string, { label: string; weights: Partial<Co
   },
   reefBreak: {
     label: "Reef break",
-    weights: { swellHeight: 0.7, swellPeriod: 0.9, swellDirection: 1.0, tideHeight: 0.9, windSpeed: 0.8, windDirection: 0.7, waveEnergy: 0.8, preferredTide: 'low' },
+    weights: { swellHeight: 0.7, swellPeriod: 0.9, swellDirection: 1.0, tideHeight: 0.9, windSpeed: 0.8, windDirection: 0.7, waveEnergy: 0.8, preferredTide: 'low', preferredWind: 'offshore', preferredSwellPeriod: 'long' },
   },
   beachBreak: {
     label: "Beach break",
-    weights: { swellHeight: 0.9, swellPeriod: 0.6, swellDirection: 0.7, tideHeight: 0.4, windSpeed: 0.9, windDirection: 0.7, waveEnergy: 0.9, preferredTide: 'any' },
+    weights: { swellHeight: 0.9, swellPeriod: 0.6, swellDirection: 0.7, tideHeight: 0.4, windSpeed: 0.9, windDirection: 0.7, waveEnergy: 0.9, preferredTide: 'any', preferredWind: 'glassy' },
   },
   pointBreak: {
     label: "Point break",
-    weights: { swellHeight: 0.7, swellPeriod: 0.8, swellDirection: 1.0, tideHeight: 0.6, windSpeed: 0.7, windDirection: 0.8, waveEnergy: 0.8, preferredTide: 'mid' },
+    weights: { swellHeight: 0.7, swellPeriod: 0.8, swellDirection: 1.0, tideHeight: 0.6, windSpeed: 0.7, windDirection: 0.8, waveEnergy: 0.8, preferredTide: 'mid', preferredWind: 'offshore', preferredSwellPeriod: 'long' },
   },
 };
 

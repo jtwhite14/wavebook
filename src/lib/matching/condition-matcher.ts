@@ -1,4 +1,4 @@
-import { MarineConditions, ConditionWeights, DEFAULT_CONDITION_WEIGHTS, MatchDetails, TimeWindow, CardinalDirection } from "@/types";
+import { MarineConditions, ConditionWeights, DEFAULT_CONDITION_WEIGHTS, MatchDetails, TimeWindow, CardinalDirection, PreferredWaveSize, PreferredSwellPeriod, PreferredWind } from "@/types";
 import { calculateDirectionAttenuation, calculateWaveEnergy } from "@/lib/wave-energy";
 
 // ── Gaussian similarity ──
@@ -165,6 +165,53 @@ export function parseForecastConditions(forecast: MarineConditions): ParsedCondi
   };
 }
 
+// ── Preference bonus/penalty ──
+
+const PREF_BONUS = 1.1;
+const PREF_PENALTY = 0.85;
+
+/** Wave size preference ranges in meters */
+const WAVE_SIZE_RANGES: Record<PreferredWaveSize, [number, number]> = {
+  small: [0, 0.9],     // <3ft
+  medium: [0.9, 1.8],  // 3-6ft
+  large: [1.8, 3.0],   // 6-10ft
+  xl: [3.0, Infinity],  // 10ft+
+};
+
+/** Swell period preference ranges in seconds */
+const SWELL_PERIOD_RANGES: Record<PreferredSwellPeriod, [number, number]> = {
+  short: [0, 8],
+  medium: [8, 12],
+  long: [12, Infinity],
+};
+
+function getPreferenceMultiplier(value: number | null, pref: string | undefined, ranges: Record<string, [number, number]>): number {
+  if (value == null || !pref || !(pref in ranges)) return 1.0;
+  const [min, max] = ranges[pref];
+  return (value >= min && value < max) ? PREF_BONUS : PREF_PENALTY;
+}
+
+function getWindPreferenceMultiplier(windSpeed: number | null, pref: PreferredWind | undefined): number {
+  if (windSpeed == null || !pref) return 1.0;
+  if (pref === 'glassy') {
+    if (windSpeed < 10) return PREF_BONUS;
+    if (windSpeed > 15) return PREF_PENALTY;
+    return 1.0;
+  }
+  // Offshore/cross-offshore/onshore deferred — requires spot orientation
+  return 1.0;
+}
+
+function getTidePreferenceMultiplier(tideHeight: number | null, pref: string | undefined): number {
+  if (tideHeight == null || !pref || pref === 'any') return 1.0;
+  // Approximate tide ranges (meters relative to mean)
+  if (pref === 'low') return tideHeight < -0.3 ? PREF_BONUS : (tideHeight > 0.3 ? PREF_PENALTY : 1.0);
+  if (pref === 'high') return tideHeight > 0.3 ? PREF_BONUS : (tideHeight < -0.3 ? PREF_PENALTY : 1.0);
+  if (pref === 'mid') return (tideHeight >= -0.3 && tideHeight <= 0.3) ? PREF_BONUS : PREF_PENALTY;
+  // incoming/outgoing can't be determined from a single height snapshot
+  return 1.0;
+}
+
 // ── Core matching ──
 
 /**
@@ -195,19 +242,23 @@ export function computeSimilarity(
     forecastConfidence: 1,
   };
 
-  // Swell height (relative sigma)
+  // Swell height (relative sigma) + wave size preference
   if (forecast.swellHeight != null && session.swellHeight != null) {
     const sigma = SIGMAS.swellHeight(session.swellHeight);
-    const sim = gaussianSimilarity(forecast.swellHeight, session.swellHeight, sigma);
+    let sim = gaussianSimilarity(forecast.swellHeight, session.swellHeight, sigma);
+    sim *= getPreferenceMultiplier(forecast.swellHeight, weights.preferredWaveSize, WAVE_SIZE_RANGES);
+    sim = Math.min(1, sim); // cap at 1 after bonus
     details.swellHeight = sim;
     weightedSum += weights.swellHeight * sim;
     totalWeight += weights.swellHeight;
     nonNullCount++;
   }
 
-  // Swell period
+  // Swell period + period preference
   if (forecast.swellPeriod != null && session.swellPeriod != null) {
-    const sim = gaussianSimilarity(forecast.swellPeriod, session.swellPeriod, SIGMAS.swellPeriod);
+    let sim = gaussianSimilarity(forecast.swellPeriod, session.swellPeriod, SIGMAS.swellPeriod);
+    sim *= getPreferenceMultiplier(forecast.swellPeriod, weights.preferredSwellPeriod, SWELL_PERIOD_RANGES);
+    sim = Math.min(1, sim);
     details.swellPeriod = sim;
     weightedSum += weights.swellPeriod * sim;
     totalWeight += weights.swellPeriod;
@@ -223,9 +274,11 @@ export function computeSimilarity(
     nonNullCount++;
   }
 
-  // Wind speed
+  // Wind speed + wind preference
   if (forecast.windSpeed != null && session.windSpeed != null) {
-    const sim = gaussianSimilarity(forecast.windSpeed, session.windSpeed, SIGMAS.windSpeed);
+    let sim = gaussianSimilarity(forecast.windSpeed, session.windSpeed, SIGMAS.windSpeed);
+    sim *= getWindPreferenceMultiplier(forecast.windSpeed, weights.preferredWind);
+    sim = Math.min(1, sim);
     details.windSpeed = sim;
     weightedSum += weights.windSpeed * sim;
     totalWeight += weights.windSpeed;
@@ -241,9 +294,11 @@ export function computeSimilarity(
     nonNullCount++;
   }
 
-  // Tide height
+  // Tide height + tide preference
   if (forecast.tideHeight != null && session.tideHeight != null) {
-    const sim = gaussianSimilarity(forecast.tideHeight, session.tideHeight, SIGMAS.tideHeight);
+    let sim = gaussianSimilarity(forecast.tideHeight, session.tideHeight, SIGMAS.tideHeight);
+    sim *= getTidePreferenceMultiplier(forecast.tideHeight, weights.preferredTide);
+    sim = Math.min(1, sim);
     details.tideHeight = sim;
     weightedSum += weights.tideHeight * sim;
     totalWeight += weights.tideHeight;

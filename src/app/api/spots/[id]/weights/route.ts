@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db, surfSpots } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
-import { ConditionWeights, DEFAULT_CONDITION_WEIGHTS, VALID_CARDINAL_DIRECTIONS, CardinalDirection } from "@/types";
+import { ConditionWeights, DEFAULT_CONDITION_WEIGHTS, VALID_CARDINAL_DIRECTIONS, CardinalDirection, VALID_PREFERRED_WAVE_SIZES, VALID_PREFERRED_SWELL_PERIODS, VALID_PREFERRED_WINDS } from "@/types";
 
 export async function GET(
   request: NextRequest,
@@ -66,6 +66,15 @@ export async function PUT(
       preferredTide: ['any', 'low', 'mid', 'high', 'incoming', 'outgoing'].includes(body.preferredTide)
         ? body.preferredTide
         : 'any',
+      preferredWaveSize: VALID_PREFERRED_WAVE_SIZES.includes(body.preferredWaveSize)
+        ? body.preferredWaveSize
+        : undefined,
+      preferredSwellPeriod: VALID_PREFERRED_SWELL_PERIODS.includes(body.preferredSwellPeriod)
+        ? body.preferredSwellPeriod
+        : undefined,
+      preferredWind: VALID_PREFERRED_WINDS.includes(body.preferredWind)
+        ? body.preferredWind
+        : undefined,
       swellExposure: Array.isArray(body.swellExposure)
         ? body.swellExposure.filter((d: string) => VALID_CARDINAL_DIRECTIONS.includes(d as CardinalDirection)) as CardinalDirection[]
         : undefined,
