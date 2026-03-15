@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronDown, Shirt } from "lucide-react";
+import { ChevronDown, Plus, Shirt } from "lucide-react";
 import { Surfboard, Wetsuit } from "@/lib/db/schema";
 
 interface EquipmentSelectProps {
@@ -13,6 +13,8 @@ interface EquipmentSelectProps {
   wetsuitId: string;
   onSurfboardChange: (id: string) => void;
   onWetsuitChange: (id: string) => void;
+  onAddSurfboard?: () => void;
+  onAddWetsuit?: () => void;
 }
 
 export function EquipmentSelect({
@@ -22,13 +24,18 @@ export function EquipmentSelect({
   wetsuitId,
   onSurfboardChange,
   onWetsuitChange,
+  onAddSurfboard,
+  onAddWetsuit,
 }: EquipmentSelectProps) {
   const [expanded, setExpanded] = useState(false);
 
   const activeSurfboards = surfboards.filter((b) => !b.retired);
   const activeWetsuits = wetsuits.filter((w) => !w.retired);
 
-  if (activeSurfboards.length === 0 && activeWetsuits.length === 0) {
+  const hasEquipment = activeSurfboards.length > 0 || activeWetsuits.length > 0;
+  const canAdd = onAddSurfboard || onAddWetsuit;
+
+  if (!hasEquipment && !canAdd) {
     return null;
   }
 
@@ -48,45 +55,69 @@ export function EquipmentSelect({
 
       {expanded && (
         <div className="px-4 pb-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {activeSurfboards.length > 0 && (
-            <div className="space-y-2">
-              <Label>Surfboard</Label>
-              <Select value={surfboardId} onValueChange={onSurfboardChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="None" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  {activeSurfboards.map((board) => (
-                    <SelectItem key={board.id} value={board.id}>
-                      {board.name}
-                      {board.brand && ` (${board.brand})`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+          <div className="space-y-2">
+            <Label>Surfboard</Label>
+            <Select
+              value={surfboardId}
+              onValueChange={(v) => {
+                if (v === "__add__") { onAddSurfboard?.(); return; }
+                onSurfboardChange(v);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="None" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {activeSurfboards.map((board) => (
+                  <SelectItem key={board.id} value={board.id}>
+                    {board.name}
+                    {board.brand && ` (${board.brand})`}
+                  </SelectItem>
+                ))}
+                {onAddSurfboard && (
+                  <SelectItem value="__add__" className="text-primary">
+                    <span className="flex items-center gap-1.5">
+                      <Plus className="size-3" />
+                      Add new surfboard
+                    </span>
+                  </SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
 
-          {activeWetsuits.length > 0 && (
-            <div className="space-y-2">
-              <Label>Wetsuit</Label>
-              <Select value={wetsuitId} onValueChange={onWetsuitChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="None" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  {activeWetsuits.map((suit) => (
-                    <SelectItem key={suit.id} value={suit.id}>
-                      {suit.name}
-                      {suit.thickness && ` (${suit.thickness})`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+          <div className="space-y-2">
+            <Label>Wetsuit</Label>
+            <Select
+              value={wetsuitId}
+              onValueChange={(v) => {
+                if (v === "__add__") { onAddWetsuit?.(); return; }
+                onWetsuitChange(v);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="None" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {activeWetsuits.map((suit) => (
+                  <SelectItem key={suit.id} value={suit.id}>
+                    {suit.name}
+                    {suit.thickness && ` (${suit.thickness})`}
+                  </SelectItem>
+                ))}
+                {onAddWetsuit && (
+                  <SelectItem value="__add__" className="text-primary">
+                    <span className="flex items-center gap-1.5">
+                      <Plus className="size-3" />
+                      Add new wetsuit
+                    </span>
+                  </SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       )}
     </div>

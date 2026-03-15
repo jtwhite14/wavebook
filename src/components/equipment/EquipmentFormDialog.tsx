@@ -22,6 +22,7 @@ interface EquipmentFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSaved: () => void;
+  onSavedWithData?: (item: Surfboard | Wetsuit) => void;
 }
 
 const BOARD_TYPES = ["shortboard", "longboard", "fish", "funboard", "midlength", "gun", "foamie", "SUP"] as const;
@@ -44,6 +45,7 @@ export function EquipmentFormDialog({
   open,
   onOpenChange,
   onSaved,
+  onSavedWithData,
 }: EquipmentFormDialogProps) {
   const [name, setName] = useState("");
   const [brand, setBrand] = useState("");
@@ -169,7 +171,10 @@ export function EquipmentFormDialog({
       });
 
       if (response.ok) {
+        const data = await response.json();
         toast.success(existing ? `${equipmentType === "surfboard" ? "Surfboard" : "Wetsuit"} updated` : `${equipmentType === "surfboard" ? "Surfboard" : "Wetsuit"} added`);
+        const item = data.surfboard || data.wetsuit;
+        if (item) onSavedWithData?.(item);
         onSaved();
         onOpenChange(false);
       } else {

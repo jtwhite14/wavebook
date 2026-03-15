@@ -21,6 +21,14 @@ import { SurfSpot, Surfboard, Wetsuit } from "@/lib/db/schema";
 import { findNearestSpot } from "@/lib/utils/geo";
 import { groupPhotosBySession, PhotoGroup } from "@/lib/utils/photo-grouping";
 import { EquipmentSelect } from "@/components/equipment/EquipmentSelect";
+import { EquipmentFormDialog } from "@/components/equipment/EquipmentFormDialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Plus } from "lucide-react";
 
 const MAX_FILE_SIZE = 4 * 1024 * 1024;
 const MAX_DIMENSION = 2048;
@@ -126,9 +134,14 @@ function deriveSessionDraft(group: PhotoGroup, spots: SurfSpot[], defaultSpotId?
   return { spotId, date, startTime, endTime, rating: 3, notes: "", photoUrls, expanded: false, activePhotoIndex: 0, surfboardId: "", wetsuitId: "" };
 }
 
-export function SessionForm({ spots, defaultSpotId, surfboards = [], wetsuits = [] }: SessionFormProps) {
+export function SessionForm({ spots: initialSpots, defaultSpotId, surfboards: initialSurfboards = [], wetsuits: initialWetsuits = [] }: SessionFormProps) {
   const router = useRouter();
   const [step, setStep] = useState<"photo" | "details">("photo");
+
+  // Local mutable copies of spots/equipment (so inline-created items appear immediately)
+  const [spots, setSpots] = useState<SurfSpot[]>(initialSpots);
+  const [surfboards, setSurfboards] = useState<Surfboard[]>(initialSurfboards);
+  const [wetsuits, setWetsuits] = useState<Wetsuit[]>(initialWetsuits);
 
   // Photo upload state
   const [uploadSessionId, setUploadSessionId] = useState<string | null>(null);
@@ -142,6 +155,18 @@ export function SessionForm({ spots, defaultSpotId, surfboards = [], wetsuits = 
   // Multi-session details state
   const [sessionDrafts, setSessionDrafts] = useState<SessionDraft[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Add new spot dialog
+  const [addSpotOpen, setAddSpotOpen] = useState(false);
+  const [addSpotDraftIdx, setAddSpotDraftIdx] = useState(0);
+  const [newSpotName, setNewSpotName] = useState("");
+  const [newSpotDescription, setNewSpotDescription] = useState("");
+  const [isSavingSpot, setIsSavingSpot] = useState(false);
+
+  // Add new equipment dialogs
+  const [equipDialogType, setEquipDialogType] = useState<"surfboard" | "wetsuit">("surfboard");
+  const [equipDialogOpen, setEquipDialogOpen] = useState(false);
+  const [equipDraftIdx, setEquipDraftIdx] = useState(0);
 
   // Create upload session on mount
   useEffect(() => {
@@ -312,6 +337,55 @@ export function SessionForm({ spots, defaultSpotId, surfboards = [], wetsuits = 
 
   const removeDraft = (index: number) => {
     setSessionDrafts((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // --- Add new spot ---
+  const openAddSpot = (draftIdx: number) => {
+    setAddSpotDraftIdx(draftIdx);
+    setNewSpotName("");
+    setNewSpotDescription("");
+    setAddSpotOpen(true);
+  };
+
+  const handleSaveNewSpot = async () => {
+    if (!newSpotName.trim()) return;
+    setIsSavingSpot(true);
+
+    // Try to get coords from the photo group's centroid
+    const group = photoGroups[addSpotDraftIdx];
+    const lat = group?.centroidLat ?? 0;
+    const lng = group?.centroidLng ?? 0;
+
+    try {
+      const res = await fetch("/api/spots", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newSpotName.trim(),
+          latitude: lat,
+          longitude: lng,
+          description: newSpotDescription.trim() || undefined,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      const newSpot: SurfSpot = data.spot;
+      setSpots((prev) => [...prev, newSpot]);
+      updateDraft(addSpotDraftIdx, { spotId: newSpot.id });
+      setAddSpotOpen(false);
+      toast.success("Spot created!");
+    } catch {
+      toast.error("Failed to create spot");
+    } finally {
+      setIsSavingSpot(false);
+    }
+  };
+
+  // --- Add new equipment ---
+  const openAddEquipment = (type: "surfboard" | "wetsuit", draftIdx: number) => {
+    setEquipDialogType(type);
+    setEquipDraftIdx(draftIdx);
+    setEquipDialogOpen(true);
   };
 
   const handleSubmit = async () => {
@@ -740,7 +814,13 @@ export function SessionForm({ spots, defaultSpotId, surfboards = [], wetsuits = 
                 {/* Spot Selection */}
                 <div className="space-y-2">
                   <Label>Surf Spot</Label>
-                  <Select value={draft.spotId} onValueChange={(v) => updateDraft(idx, { spotId: v })}>
+                  <Select
+                    value={draft.spotId}
+                    onValueChange={(v) => {
+                      if (v === "__add__") { openAddSpot(idx); return; }
+                      updateDraft(idx, { spotId: v });
+                    }}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select a spot" />
                     </SelectTrigger>
@@ -750,6 +830,12 @@ export function SessionForm({ spots, defaultSpotId, surfboards = [], wetsuits = 
                           {spot.name}
                         </SelectItem>
                       ))}
+                      <SelectItem value="__add__" className="text-primary">
+                        <span className="flex items-center gap-1.5">
+                          <Plus className="size-3" />
+                          Add new spot
+                        </span>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -762,6 +848,8 @@ export function SessionForm({ spots, defaultSpotId, surfboards = [], wetsuits = 
                   wetsuitId={draft.wetsuitId}
                   onSurfboardChange={(v) => updateDraft(idx, { surfboardId: v })}
                   onWetsuitChange={(v) => updateDraft(idx, { wetsuitId: v })}
+                  onAddSurfboard={() => openAddEquipment("surfboard", idx)}
+                  onAddWetsuit={() => openAddEquipment("wetsuit", idx)}
                 />
 
                 {/* Date */}
@@ -891,6 +979,73 @@ export function SessionForm({ spots, defaultSpotId, surfboards = [], wetsuits = 
           }
         </Button>
       </div>
+
+      {/* Add New Spot Dialog */}
+      <Dialog open={addSpotOpen} onOpenChange={setAddSpotOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New Spot</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Name *</Label>
+              <Input
+                placeholder="e.g. Pipeline, Rincon…"
+                value={newSpotName}
+                onChange={(e) => setNewSpotName(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Textarea
+                placeholder="Optional notes about this spot…"
+                value={newSpotDescription}
+                onChange={(e) => setNewSpotDescription(e.target.value)}
+                rows={2}
+              />
+            </div>
+            {photoGroups[addSpotDraftIdx]?.centroidLat ? (
+              <p className="text-xs text-muted-foreground">
+                Location from photo: {photoGroups[addSpotDraftIdx].centroidLat!.toFixed(5)}, {photoGroups[addSpotDraftIdx].centroidLng!.toFixed(5)}
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                No GPS from photos — you can update the location later from the map.
+              </p>
+            )}
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setAddSpotOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={handleSaveNewSpot}
+                disabled={!newSpotName.trim() || isSavingSpot}
+              >
+                {isSavingSpot ? "Creating…" : "Create Spot"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add New Equipment Dialog */}
+      <EquipmentFormDialog
+        equipmentType={equipDialogType}
+        open={equipDialogOpen}
+        onOpenChange={setEquipDialogOpen}
+        onSaved={() => {}}
+        onSavedWithData={(item) => {
+          if (equipDialogType === "surfboard") {
+            setSurfboards((prev) => [...prev, item as Surfboard]);
+            updateDraft(equipDraftIdx, { surfboardId: item.id });
+          } else {
+            setWetsuits((prev) => [...prev, item as Wetsuit]);
+            updateDraft(equipDraftIdx, { wetsuitId: item.id });
+          }
+        }}
+      />
     </div>
   );
 }
