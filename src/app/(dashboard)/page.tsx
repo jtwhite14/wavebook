@@ -486,7 +486,14 @@ export default function DashboardPage() {
                         )}
                         <div className="px-3 py-2.5">
                           <div className="flex items-center justify-between">
-                            <p className="font-medium text-sm">{formatDate(session.date)}</p>
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <p className="font-medium text-sm">{formatDate(session.date)}</p>
+                              {session.ignored && (
+                                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 shrink-0">
+                                  Ignored
+                                </span>
+                              )}
+                            </div>
                             <div className="flex items-center shrink-0">
                               {Array.from({ length: 5 }).map((_, i) => (
                                 <svg
@@ -566,7 +573,14 @@ export default function DashboardPage() {
                             )}
                             <div className="px-3 py-2">
                               <div className="flex items-center justify-between">
-                                <p className="font-medium text-sm truncate">{formatDate(session.date)}</p>
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <p className="font-medium text-sm truncate">{formatDate(session.date)}</p>
+                                  {session.ignored && (
+                                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 shrink-0">
+                                      Ignored
+                                    </span>
+                                  )}
+                                </div>
                                 <div className="flex items-center shrink-0">
                                   {Array.from({ length: 5 }).map((_, i) => (
                                     <svg

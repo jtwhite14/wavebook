@@ -65,10 +65,12 @@ export const VALID_CARDINAL_DIRECTIONS: CardinalDirection[] = ['N', 'NE', 'E', '
 export type PreferredWaveSize = 'small' | 'medium' | 'large' | 'xl';
 export type PreferredSwellPeriod = 'short' | 'medium' | 'long';
 export type PreferredWind = 'glassy' | 'offshore' | 'cross-offshore' | 'onshore';
+export type PreferredTide = 'low' | 'mid' | 'high' | 'incoming' | 'outgoing';
 
 export const VALID_PREFERRED_WAVE_SIZES: PreferredWaveSize[] = ['small', 'medium', 'large', 'xl'];
 export const VALID_PREFERRED_SWELL_PERIODS: PreferredSwellPeriod[] = ['short', 'medium', 'long'];
 export const VALID_PREFERRED_WINDS: PreferredWind[] = ['glassy', 'offshore', 'cross-offshore', 'onshore'];
+export const VALID_PREFERRED_TIDES: PreferredTide[] = ['low', 'mid', 'high', 'incoming', 'outgoing'];
 
 // Condition weight configuration per spot
 export interface ConditionWeights {
@@ -79,7 +81,7 @@ export interface ConditionWeights {
   windSpeed: number;      // 0-1
   windDirection: number;  // 0-1
   waveEnergy: number;     // 0-1
-  preferredTide: 'any' | 'low' | 'mid' | 'high' | 'incoming' | 'outgoing';
+  preferredTide?: PreferredTide[];
   preferredWaveSize?: PreferredWaveSize[];
   preferredSwellPeriod?: PreferredSwellPeriod[];
   preferredWind?: PreferredWind[];
@@ -96,7 +98,7 @@ export const DEFAULT_CONDITION_WEIGHTS: ConditionWeights = {
   windSpeed: 0.7,
   windDirection: 0.6,
   waveEnergy: 0.8,
-  preferredTide: 'any',
+  preferredTide: undefined,
 };
 
 // Weight presets for common spot types
@@ -237,6 +239,7 @@ export interface SurfSessionWithConditions {
   rating: number;
   notes: string | null;
   photoUrl: string | null;
+  ignored: boolean;
   photos?: { id: string; photoUrl: string; sortOrder: number }[];
   createdAt: Date;
   updatedAt: Date;

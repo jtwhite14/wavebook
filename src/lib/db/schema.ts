@@ -149,6 +149,7 @@ export const surfSessions = pgTable("surf_sessions", {
   rating: integer("rating").notNull(), // 1-5
   notes: text("notes"),
   photoUrl: text("photo_url"),
+  ignored: boolean("ignored").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [

@@ -51,7 +51,7 @@ export async function POST(
       return NextResponse.json({ error: "Spot not found" }, { status: 404 });
     }
 
-    const sessionsWithConditions = spot.surfSessions.filter(s => s.conditions);
+    const sessionsWithConditions = spot.surfSessions.filter(s => s.conditions && !s.ignored);
     if (sessionsWithConditions.length === 0) {
       return NextResponse.json({
         success: true,

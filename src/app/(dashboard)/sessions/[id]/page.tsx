@@ -77,6 +77,30 @@ export default function SessionDetailPage() {
     }
   }
 
+  const handleToggleIgnore = async () => {
+    if (!session) return;
+    const newIgnored = !session.ignored;
+
+    try {
+      const response = await fetch(`/api/sessions?id=${session.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ignored: newIgnored }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSession(data.session);
+        toast.success(newIgnored ? "Session ignored" : "Session unignored");
+      } else {
+        toast.error("Failed to update session");
+      }
+    } catch (error) {
+      console.error("Error toggling ignore:", error);
+      toast.error("Failed to update session");
+    }
+  };
+
   const handleDelete = async () => {
     if (!session || !confirm("Are you sure you want to delete this session?")) return;
 
@@ -192,6 +216,15 @@ export default function SessionDetailPage() {
                 Edit session
               </button>
               <button
+                className="w-full px-3 py-2 text-sm text-left hover:bg-muted"
+                onClick={() => {
+                  setMenuOpen(false);
+                  handleToggleIgnore();
+                }}
+              >
+                {session.ignored ? "Unignore session" : "Ignore session"}
+              </button>
+              <button
                 className="w-full px-3 py-2 text-sm text-left text-destructive hover:bg-muted rounded-b-md"
                 onClick={() => {
                   setMenuOpen(false);
@@ -204,6 +237,22 @@ export default function SessionDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Ignored banner */}
+      {session.ignored && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-600 dark:text-yellow-400 text-sm">
+          <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L6.59 6.59m7.532 7.532l3.29 3.29M3 3l18 18" />
+          </svg>
+          <span>This session is ignored and won&apos;t affect alert predictions</span>
+          <button
+            className="ml-auto text-xs underline hover:no-underline"
+            onClick={handleToggleIgnore}
+          >
+            Unignore
+          </button>
+        </div>
+      )}
 
       {/* Photo gallery */}
       {(() => {

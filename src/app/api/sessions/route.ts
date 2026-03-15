@@ -363,6 +363,64 @@ export async function PUT(request: NextRequest) {
   }
 }
 
+export async function PATCH(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const searchParams = request.nextUrl.searchParams;
+    const sessionId = searchParams.get("id");
+
+    if (!sessionId) {
+      return NextResponse.json({ error: "Session ID required" }, { status: 400 });
+    }
+
+    const body = await request.json();
+    const { ignored } = body;
+
+    if (typeof ignored !== "boolean") {
+      return NextResponse.json({ error: "Invalid ignored value" }, { status: 400 });
+    }
+
+    const existing = await db.query.surfSessions.findFirst({
+      where: and(
+        eq(surfSessions.id, sessionId),
+        eq(surfSessions.userId, session.user.id)
+      ),
+    });
+
+    if (!existing) {
+      return NextResponse.json({ error: "Session not found" }, { status: 404 });
+    }
+
+    await db
+      .update(surfSessions)
+      .set({ ignored, updatedAt: new Date() })
+      .where(eq(surfSessions.id, sessionId));
+
+    const updatedSession = await db.query.surfSessions.findFirst({
+      where: eq(surfSessions.id, sessionId),
+      with: {
+        conditions: true,
+        spot: true,
+        photos: true,
+        surfboard: true,
+        wetsuit: true,
+      },
+    });
+
+    return NextResponse.json({ session: updatedSession });
+  } catch (error) {
+    console.error("Error updating session:", error);
+    return NextResponse.json(
+      { error: "Failed to update session" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
