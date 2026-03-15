@@ -378,7 +378,7 @@ export default function SessionDetailPage() {
                   <img
                     src={allPhotos[activePhotoIndex]?.photoUrl}
                     alt="Session photo"
-                    className="max-h-[90vh] max-w-[95vw] object-contain"
+                    className="max-h-[90vh] max-w-[90vw] w-auto h-auto object-contain rounded-lg"
                     onClick={(e) => e.stopPropagation()}
                   />
 
