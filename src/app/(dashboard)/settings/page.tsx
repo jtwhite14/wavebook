@@ -119,7 +119,7 @@ export default function SettingsPage() {
               </CardDescription>
             </div>
             {calendarConnected && (
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              <Badge variant="outline" className="bg-green-500/15 text-green-400 border-green-500/30">
                 Connected
               </Badge>
             )}
