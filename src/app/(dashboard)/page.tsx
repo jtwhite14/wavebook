@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { formatDate } from "@/lib/utils/date";
 import {
+  ArrowLeft,
   ChevronDown,
   ChevronUp,
   Plus,
@@ -65,6 +66,7 @@ export default function DashboardPage() {
   const [editDescription, setEditDescription] = useState("");
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [isDeletingSpot, setIsDeletingSpot] = useState(false);
+  const [showAllSessions, setShowAllSessions] = useState(false);
 
   const handleStartAddSpot = () => {
     setSelectedSpot(null);
@@ -116,6 +118,7 @@ export default function DashboardPage() {
   const handleSpotClick = useCallback(async (spot: SurfSpot) => {
     setSelectedSpot(spot);
     setEditingSpot(false);
+    setShowAllSessions(false);
     setLoadingSpotSessions(true);
     try {
       const res = await fetch(`/api/sessions?spotId=${spot.id}`);
@@ -133,6 +136,7 @@ export default function DashboardPage() {
     setSelectedSpot(null);
     setSpotSessions([]);
     setEditingSpot(false);
+    setShowAllSessions(false);
   };
 
   const handleStartEdit = () => {
@@ -230,7 +234,7 @@ export default function DashboardPage() {
 
   // When the spot detail pane is open, pad flyTo so the spot centers in the visible area
   const flyToPadding = useMemo(
-    () => (selectedSpot ? { left: 464 } : undefined),
+    () => (selectedSpot ? { left: typeof window !== "undefined" ? window.innerWidth * 0.5 : 700 } : undefined),
     [selectedSpot]
   );
 
@@ -257,7 +261,7 @@ export default function DashboardPage() {
 
       {/* Spot detail pane */}
       {selectedSpot && addSpotMode === "idle" && (
-        <div className="absolute top-4 left-4 bottom-4 z-20 w-[calc(100%-2rem)] sm:w-[28rem] flex flex-col rounded-lg border bg-background/90 backdrop-blur-sm shadow-lg overflow-hidden">
+        <div className="absolute top-4 left-4 bottom-4 z-20 w-[calc(100%-2rem)] sm:w-[50vw] sm:max-w-[800px] flex flex-col rounded-lg border bg-background/90 backdrop-blur-sm shadow-lg overflow-hidden">
           {/* Header */}
           <div className="flex items-start justify-between gap-2 px-4 pt-4 pb-3">
             <div className="min-w-0 flex-1">
@@ -342,71 +346,148 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          {/* Scrollable content: conditions + sessions */}
+          {/* Scrollable content */}
           <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
-            <SpotConditions spotId={selectedSpot.id} />
-            {loadingSpotSessions ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="size-5 animate-spin text-muted-foreground" />
-              </div>
-            ) : spotSessions.length > 0 ? (
-              <div className="space-y-3">
-                {spotSessions.map((session) => {
-                  const photo = session.photos?.[0]?.photoUrl || session.photoUrl;
-                  return (
-                    <Link
-                      key={session.id}
-                      href={`/sessions/${session.id}`}
-                      className="block rounded-lg border bg-background/60 overflow-hidden hover:bg-accent/50 transition-colors"
-                    >
-                      {photo && (
-                        <div className="aspect-video w-full overflow-hidden">
-                          <img
-                            src={photo}
-                            alt={`Session on ${formatDate(session.date)}`}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      )}
-                      <div className="px-3 py-2.5">
-                        <div className="flex items-center justify-between">
-                          <p className="font-medium text-sm">{formatDate(session.date)}</p>
-                          <div className="flex items-center shrink-0">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                              <svg
-                                key={i}
-                                className={`w-3 h-3 ${
-                                  i < session.rating ? "text-yellow-400" : "text-muted-foreground/30"
-                                }`}
-                                fill="currentColor"
-                                viewBox="0 0 20 20"
-                              >
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                              </svg>
-                            ))}
+            {showAllSessions ? (
+              /* All Sessions view */
+              <div>
+                <button
+                  onClick={() => setShowAllSessions(false)}
+                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-3"
+                >
+                  <ArrowLeft className="size-4" />
+                  Back
+                </button>
+                <h3 className="text-sm font-semibold mb-3">All Sessions</h3>
+                <div className="space-y-3">
+                  {spotSessions.map((session) => {
+                    const photo = session.photos?.[0]?.photoUrl || session.photoUrl;
+                    return (
+                      <Link
+                        key={session.id}
+                        href={`/sessions/${session.id}`}
+                        className="block rounded-lg border bg-background/60 overflow-hidden hover:bg-accent/50 transition-colors"
+                      >
+                        {photo && (
+                          <div className="aspect-video w-full overflow-hidden">
+                            <img
+                              src={photo}
+                              alt={`Session on ${formatDate(session.date)}`}
+                              className="w-full h-full object-cover"
+                            />
                           </div>
-                        </div>
-                        {session.notes && (
-                          <p className="text-xs text-muted-foreground truncate mt-1">{session.notes}</p>
                         )}
-                      </div>
-                    </Link>
-                  );
-                })}
+                        <div className="px-3 py-2.5">
+                          <div className="flex items-center justify-between">
+                            <p className="font-medium text-sm">{formatDate(session.date)}</p>
+                            <div className="flex items-center shrink-0">
+                              {Array.from({ length: 5 }).map((_, i) => (
+                                <svg
+                                  key={i}
+                                  className={`w-3 h-3 ${
+                                    i < session.rating ? "text-yellow-400" : "text-muted-foreground/30"
+                                  }`}
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                              ))}
+                            </div>
+                          </div>
+                          {session.notes && (
+                            <p className="text-xs text-muted-foreground truncate mt-1">{session.notes}</p>
+                          )}
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
               </div>
             ) : (
-              <div className="text-center py-8">
-                <p className="text-sm text-muted-foreground">No sessions at this spot yet</p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mt-3"
-                  onClick={() => router.push(`/sessions/new?spotId=${selectedSpot.id}`)}
-                >
-                  <Plus className="size-3 mr-1" />
-                  Add Session
-                </Button>
-              </div>
+              /* Default view: Recent Sessions + Conditions */
+              <>
+                {/* Recent Sessions section */}
+                {loadingSpotSessions ? (
+                  <div className="flex justify-center py-4">
+                    <Loader2 className="size-5 animate-spin text-muted-foreground" />
+                  </div>
+                ) : spotSessions.length > 0 ? (
+                  <div>
+                    <h3 className="text-sm font-semibold mb-2">Recent Sessions</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      {spotSessions.slice(0, 2).map((session) => {
+                        const photo = session.photos?.[0]?.photoUrl || session.photoUrl;
+                        return (
+                          <Link
+                            key={session.id}
+                            href={`/sessions/${session.id}`}
+                            className="block rounded-lg border bg-background/60 overflow-hidden hover:bg-accent/50 transition-colors"
+                          >
+                            {photo && (
+                              <div className="aspect-video w-full overflow-hidden">
+                                <img
+                                  src={photo}
+                                  alt={`Session on ${formatDate(session.date)}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            )}
+                            <div className="px-3 py-2">
+                              <div className="flex items-center justify-between">
+                                <p className="font-medium text-sm truncate">{formatDate(session.date)}</p>
+                                <div className="flex items-center shrink-0">
+                                  {Array.from({ length: 5 }).map((_, i) => (
+                                    <svg
+                                      key={i}
+                                      className={`w-2.5 h-2.5 ${
+                                        i < session.rating ? "text-yellow-400" : "text-muted-foreground/30"
+                                      }`}
+                                      fill="currentColor"
+                                      viewBox="0 0 20 20"
+                                    >
+                                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                    </svg>
+                                  ))}
+                                </div>
+                              </div>
+                              {session.notes && (
+                                <p className="text-xs text-muted-foreground truncate mt-1">{session.notes}</p>
+                              )}
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                    {spotSessions.length > 2 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full mt-2"
+                        onClick={() => setShowAllSessions(true)}
+                      >
+                        View All Sessions ({spotSessions.length})
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-sm text-muted-foreground">No sessions at this spot yet</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-2"
+                      onClick={() => router.push(`/sessions/new?spotId=${selectedSpot.id}`)}
+                    >
+                      <Plus className="size-3 mr-1" />
+                      Add Session
+                    </Button>
+                  </div>
+                )}
+
+                {/* Conditions Timeline */}
+                <SpotConditions spotId={selectedSpot.id} />
+              </>
             )}
           </div>
         </div>
