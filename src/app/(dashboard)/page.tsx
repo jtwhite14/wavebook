@@ -33,7 +33,8 @@ import { toast } from "sonner";
 import { SpotConditions } from "@/components/spots/SpotConditions";
 import { SpotAlertCard } from "@/components/alerts/SpotAlertCard";
 import { ForecastScores } from "@/components/alerts/ForecastScores";
-import { EditSpotDialog } from "@/components/spots/EditSpotDialog";
+import { SpotPaneSessionDetail } from "@/components/spots/SpotPaneSessionDetail";
+import { SpotPaneEditSpot } from "@/components/spots/SpotPaneEditSpot";
 import type { SurfSpot } from "@/lib/db/schema";
 import type { SurfSessionWithConditions } from "@/types";
 
@@ -66,9 +67,10 @@ export default function DashboardPage() {
   const [selectedSpot, setSelectedSpot] = useState<SurfSpot | null>(null);
   const [spotSessions, setSpotSessions] = useState<SurfSessionWithConditions[]>([]);
   const [loadingSpotSessions, setLoadingSpotSessions] = useState(false);
-  const [editSpotOpen, setEditSpotOpen] = useState(false);
   const [isDeletingSpot, setIsDeletingSpot] = useState(false);
   const [showAllSessions, setShowAllSessions] = useState(false);
+  const [paneView, setPaneView] = useState<"spot" | "session" | "edit">("spot");
+  const [viewingSession, setViewingSession] = useState<SurfSessionWithConditions | null>(null);
   const [alertSpotIds, setAlertSpotIds] = useState<Set<string>>(new Set());
   const [alertSummaries, setAlertSummaries] = useState<Array<{ spotId: string; spotName: string; effectiveScore: number; forecastHour: string; timeWindow: string; conditions: string }>>([]);
   const [panelTab, setPanelTab] = useState<"sessions" | "alerts">("alerts");
@@ -99,7 +101,7 @@ export default function DashboardPage() {
 
   const handleFixTuning = async (spot: SurfSpot) => {
     await handleSpotClick(spot);
-    setEditSpotOpen(true);
+    setPaneView("edit");
   };
 
   const handleCancelFixLocation = () => {
@@ -186,6 +188,8 @@ export default function DashboardPage() {
   const handleSpotClick = useCallback(async (spot: SurfSpot) => {
     setSelectedSpot(spot);
     setShowAllSessions(false);
+    setPaneView("spot");
+    setViewingSession(null);
     setLoadingSpotSessions(true);
     try {
       const res = await fetch(`/api/sessions?spotId=${spot.id}`);
@@ -203,6 +207,18 @@ export default function DashboardPage() {
     setSelectedSpot(null);
     setSpotSessions([]);
     setShowAllSessions(false);
+    setPaneView("spot");
+    setViewingSession(null);
+  };
+
+  const handleViewSession = (session: SurfSessionWithConditions) => {
+    setViewingSession(session);
+    setPaneView("session");
+  };
+
+  const handleBackToSpot = () => {
+    setPaneView("spot");
+    setViewingSession(null);
   };
 
   const handleSpotSaved = (updatedSpot: SurfSpot) => {
@@ -407,174 +423,95 @@ export default function DashboardPage() {
       {/* Spot detail pane */}
       {selectedSpot && addSpotMode === "idle" && (
         <div className="absolute inset-0 sm:inset-auto sm:top-4 sm:left-4 sm:bottom-4 z-20 w-full sm:w-[50vw] sm:max-w-[800px] flex flex-col sm:rounded-lg border bg-background/95 sm:bg-background/90 backdrop-blur-sm shadow-lg overflow-hidden">
-          {/* Header */}
-          <div className="flex items-start justify-between gap-2 px-4 pt-4 pb-3">
-            <div className="min-w-0 flex-1">
-              <h2 className="text-xl font-bold truncate">{selectedSpot.name}</h2>
-              {selectedSpot.description && (
-                <p className="text-sm text-muted-foreground mt-1">{selectedSpot.description}</p>
-              )}
-              <p className="text-xs text-muted-foreground mt-1">
-                {parseFloat(selectedSpot.latitude).toFixed(5)}, {parseFloat(selectedSpot.longitude).toFixed(5)}
-              </p>
-            </div>
-            <div className="flex items-center gap-1 shrink-0">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="rounded-md p-2 hover:bg-accent transition-colors">
-                    <MoreHorizontal className="size-4" />
+          {paneView === "session" && viewingSession ? (
+            <SpotPaneSessionDetail
+              session={viewingSession}
+              onBack={handleBackToSpot}
+              onSessionUpdated={(updated) => {
+                setViewingSession(updated);
+                setSpotSessions((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+              }}
+              onSessionDeleted={(sessionId) => {
+                setSpotSessions((prev) => prev.filter((s) => s.id !== sessionId));
+                handleBackToSpot();
+              }}
+            />
+          ) : paneView === "edit" ? (
+            <SpotPaneEditSpot
+              spot={selectedSpot}
+              onBack={handleBackToSpot}
+              onSave={handleSpotSaved}
+            />
+          ) : (
+            <>
+              {/* Header */}
+              <div className="flex items-start justify-between gap-2 px-4 pt-4 pb-3">
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-xl font-bold truncate">{selectedSpot.name}</h2>
+                  {selectedSpot.description && (
+                    <p className="text-sm text-muted-foreground mt-1">{selectedSpot.description}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {parseFloat(selectedSpot.latitude).toFixed(5)}, {parseFloat(selectedSpot.longitude).toFixed(5)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="rounded-md p-2 hover:bg-accent transition-colors">
+                        <MoreHorizontal className="size-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setPaneView("edit")}>
+                        <Pencil className="size-3.5 mr-2" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleDeleteSpot} disabled={isDeletingSpot} className="text-destructive">
+                        <Trash2 className="size-3.5 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <button
+                    onClick={handleCloseSpotDetail}
+                    className="rounded-md p-2 hover:bg-accent transition-colors"
+                  >
+                    <X className="size-5 sm:size-4" />
                   </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setEditSpotOpen(true)}>
-                    <Pencil className="size-3.5 mr-2" />
-                    Edit
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleDeleteSpot} disabled={isDeletingSpot} className="text-destructive">
-                    <Trash2 className="size-3.5 mr-2" />
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <button
-                onClick={handleCloseSpotDetail}
-                className="rounded-md p-2 hover:bg-accent transition-colors"
-              >
-                <X className="size-5 sm:size-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* Session count */}
-          <div className="px-4 pb-3 border-b">
-            <p className="text-sm text-muted-foreground">
-              {loadingSpotSessions
-                ? "Loading sessions..."
-                : `${spotSessions.length} session${spotSessions.length !== 1 ? "s" : ""}`}
-            </p>
-          </div>
-
-          {/* Scrollable content */}
-          <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
-            {showAllSessions ? (
-              /* All Sessions view */
-              <div>
-                <button
-                  onClick={() => setShowAllSessions(false)}
-                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-3"
-                >
-                  <ArrowLeft className="size-4" />
-                  Back
-                </button>
-                <h3 className="text-sm font-semibold mb-3">All Sessions</h3>
-                <div className="space-y-3">
-                  {spotSessions.map((session) => {
-                    const photo = session.photos?.[0]?.photoUrl || session.photoUrl;
-                    return (
-                      <Link
-                        key={session.id}
-                        href={`/sessions/${session.id}`}
-                        className="block rounded-lg border bg-background/60 overflow-hidden hover:bg-accent/50 transition-colors"
-                      >
-                        {photo && (
-                          <div className="aspect-video w-full overflow-hidden">
-                            <img
-                              src={photo}
-                              alt={`Session on ${formatDate(session.date)}`}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        )}
-                        <div className="px-3 py-2.5">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              <p className="font-medium text-sm">{formatDate(session.date)}</p>
-                              {session.ignored && (
-                                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 shrink-0">
-                                  Ignored
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-center shrink-0">
-                              {Array.from({ length: 5 }).map((_, i) => (
-                                <svg
-                                  key={i}
-                                  className={`w-3 h-3 ${
-                                    i < session.rating ? "text-yellow-400" : "text-muted-foreground/30"
-                                  }`}
-                                  fill="currentColor"
-                                  viewBox="0 0 20 20"
-                                >
-                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                </svg>
-                              ))}
-                            </div>
-                          </div>
-                          {session.notes && (
-                            <p className="text-xs text-muted-foreground truncate mt-1">{session.notes}</p>
-                          )}
-                        </div>
-                      </Link>
-                    );
-                  })}
                 </div>
               </div>
-            ) : (
-              /* Default view: Alerts + Recent Sessions + Conditions */
-              <>
-                {/* Session match alerts */}
-                <SpotAlertCard spotId={selectedSpot.id} sessionCount={spotSessions.length} />
 
-                {/* Alert tuning nudge */}
-                {!selectedSpot.conditionWeights && (
-                  <button
-                    onClick={() => setEditSpotOpen(true)}
-                    className="w-full rounded-lg border border-dashed border-muted-foreground/30 px-3 py-2.5 text-left hover:border-muted-foreground/50 transition-colors"
-                  >
-                    <p className="text-xs text-muted-foreground">
-                      Set your spot type to improve alert accuracy.{" "}
-                      <span className="text-primary font-medium">Tune alerts</span>
-                    </p>
-                  </button>
-                )}
+              {/* Session count */}
+              <div className="px-4 pb-3 border-b">
+                <p className="text-sm text-muted-foreground">
+                  {loadingSpotSessions
+                    ? "Loading sessions..."
+                    : `${spotSessions.length} session${spotSessions.length !== 1 ? "s" : ""}`}
+                </p>
+              </div>
 
-                {/* 5-day forecast score breakdown */}
-                <ForecastScores spotId={selectedSpot.id} />
-
-                {/* Edit Spot Dialog */}
-                <EditSpotDialog
-                  spot={selectedSpot}
-                  open={editSpotOpen}
-                  onOpenChange={setEditSpotOpen}
-                  onSave={handleSpotSaved}
-                />
-
-                {/* Recent Sessions section */}
-                {loadingSpotSessions ? (
-                  <div className="flex justify-center py-4">
-                    <Loader2 className="size-5 animate-spin text-muted-foreground" />
-                  </div>
-                ) : spotSessions.length > 0 ? (
+              {/* Scrollable content */}
+              <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
+                {showAllSessions ? (
+                  /* All Sessions view */
                   <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-sm font-semibold">Recent Sessions</h3>
-                      {spotSessions.length > 2 && (
-                        <button
-                          onClick={() => setShowAllSessions(true)}
-                          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                          View all
-                        </button>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      {[...spotSessions].sort((a, b) => b.rating - a.rating).slice(0, 2).map((session) => {
+                    <button
+                      onClick={() => setShowAllSessions(false)}
+                      className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-3"
+                    >
+                      <ArrowLeft className="size-4" />
+                      Back
+                    </button>
+                    <h3 className="text-sm font-semibold mb-3">All Sessions</h3>
+                    <div className="space-y-3">
+                      {spotSessions.map((session) => {
                         const photo = session.photos?.[0]?.photoUrl || session.photoUrl;
                         return (
-                          <Link
+                          <button
                             key={session.id}
-                            href={`/sessions/${session.id}`}
-                            className="block rounded-lg border bg-background/60 overflow-hidden hover:bg-accent/50 transition-colors"
+                            onClick={() => handleViewSession(session)}
+                            className="block w-full text-left rounded-lg border bg-background/60 overflow-hidden hover:bg-accent/50 transition-colors"
                           >
                             {photo && (
                               <div className="aspect-video w-full overflow-hidden">
@@ -585,10 +522,10 @@ export default function DashboardPage() {
                                 />
                               </div>
                             )}
-                            <div className="px-3 py-2">
+                            <div className="px-3 py-2.5">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-1.5 min-w-0">
-                                  <p className="font-medium text-sm truncate">{formatDate(session.date)}</p>
+                                  <p className="font-medium text-sm">{formatDate(session.date)}</p>
                                   {session.ignored && (
                                     <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 shrink-0">
                                       Ignored
@@ -599,7 +536,7 @@ export default function DashboardPage() {
                                   {Array.from({ length: 5 }).map((_, i) => (
                                     <svg
                                       key={i}
-                                      className={`w-2.5 h-2.5 ${
+                                      className={`w-3 h-3 ${
                                         i < session.rating ? "text-yellow-400" : "text-muted-foreground/30"
                                       }`}
                                       fill="currentColor"
@@ -614,31 +551,125 @@ export default function DashboardPage() {
                                 <p className="text-xs text-muted-foreground truncate mt-1">{session.notes}</p>
                               )}
                             </div>
-                          </Link>
+                          </button>
                         );
                       })}
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center py-4">
-                    <p className="text-sm text-muted-foreground">No sessions at this spot yet</p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-2"
-                      onClick={() => router.push(`/sessions/new?spotId=${selectedSpot.id}`)}
-                    >
-                      <Plus className="size-3 mr-1" />
-                      Add Session
-                    </Button>
-                  </div>
-                )}
+                  /* Default view: Alerts + Recent Sessions + Conditions */
+                  <>
+                    {/* Session match alerts */}
+                    <SpotAlertCard spotId={selectedSpot.id} sessionCount={spotSessions.length} />
 
-                {/* Conditions Timeline */}
-                <SpotConditions spotId={selectedSpot.id} />
-              </>
-            )}
-          </div>
+                    {/* Alert tuning nudge */}
+                    {!selectedSpot.conditionWeights && (
+                      <button
+                        onClick={() => setPaneView("edit")}
+                        className="w-full rounded-lg border border-dashed border-muted-foreground/30 px-3 py-2.5 text-left hover:border-muted-foreground/50 transition-colors"
+                      >
+                        <p className="text-xs text-muted-foreground">
+                          Set your spot type to improve alert accuracy.{" "}
+                          <span className="text-primary font-medium">Tune alerts</span>
+                        </p>
+                      </button>
+                    )}
+
+                    {/* 5-day forecast score breakdown */}
+                    <ForecastScores spotId={selectedSpot.id} />
+
+                    {/* Recent Sessions section */}
+                    {loadingSpotSessions ? (
+                      <div className="flex justify-center py-4">
+                        <Loader2 className="size-5 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : spotSessions.length > 0 ? (
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="text-sm font-semibold">Recent Sessions</h3>
+                          {spotSessions.length > 2 && (
+                            <button
+                              onClick={() => setShowAllSessions(true)}
+                              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                              View all
+                            </button>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          {[...spotSessions].sort((a, b) => b.rating - a.rating).slice(0, 2).map((session) => {
+                            const photo = session.photos?.[0]?.photoUrl || session.photoUrl;
+                            return (
+                              <button
+                                key={session.id}
+                                onClick={() => handleViewSession(session)}
+                                className="block w-full text-left rounded-lg border bg-background/60 overflow-hidden hover:bg-accent/50 transition-colors"
+                              >
+                                {photo && (
+                                  <div className="aspect-video w-full overflow-hidden">
+                                    <img
+                                      src={photo}
+                                      alt={`Session on ${formatDate(session.date)}`}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                )}
+                                <div className="px-3 py-2">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                      <p className="font-medium text-sm truncate">{formatDate(session.date)}</p>
+                                      {session.ignored && (
+                                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 shrink-0">
+                                          Ignored
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center shrink-0">
+                                      {Array.from({ length: 5 }).map((_, i) => (
+                                        <svg
+                                          key={i}
+                                          className={`w-2.5 h-2.5 ${
+                                            i < session.rating ? "text-yellow-400" : "text-muted-foreground/30"
+                                          }`}
+                                          fill="currentColor"
+                                          viewBox="0 0 20 20"
+                                        >
+                                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                        </svg>
+                                      ))}
+                                    </div>
+                                  </div>
+                                  {session.notes && (
+                                    <p className="text-xs text-muted-foreground truncate mt-1">{session.notes}</p>
+                                  )}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <p className="text-sm text-muted-foreground">No sessions at this spot yet</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-2"
+                          onClick={() => router.push(`/sessions/new?spotId=${selectedSpot.id}`)}
+                        >
+                          <Plus className="size-3 mr-1" />
+                          Add Session
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Conditions Timeline */}
+                    <SpotConditions spotId={selectedSpot.id} />
+                  </>
+                )}
+              </div>
+            </>
+          )}
         </div>
       )}
 
