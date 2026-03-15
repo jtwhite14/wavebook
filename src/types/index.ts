@@ -33,6 +33,7 @@ export interface ForecastData {
   latitude: number;
   longitude: number;
   hourly: HourlyForecast[];
+  utcOffsetSeconds: number;
   fetchedAt: Date;
 }
 

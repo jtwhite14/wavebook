@@ -55,6 +55,7 @@ interface OpenMeteoMarineResponse {
 interface OpenMeteoWeatherResponse {
   latitude: number;
   longitude: number;
+  utc_offset_seconds: number;
   hourly: {
     time: string[];
     wind_speed_10m?: number[];
@@ -253,14 +254,16 @@ export async function fetchCurrentConditions(
   try {
     const forecast = await fetchMarineForecast(latitude, longitude);
 
-    // Find the closest hour to now
-    const now = new Date();
+    // Find the closest hour to now.
+    // Forecast times are local (timezone:"auto"), parsed as UTC on server,
+    // so shift "now" by the UTC offset to compare in the same space.
+    const nowLocalMs = Date.now() + forecast.utcOffsetSeconds * 1000;
     let closestHour = forecast.hourly[0];
     let minDiff = Infinity;
 
     for (const hour of forecast.hourly) {
       const hourTime = new Date(hour.time);
-      const diff = Math.abs(hourTime.getTime() - now.getTime());
+      const diff = Math.abs(hourTime.getTime() - nowLocalMs);
       if (diff < minDiff) {
         minDiff = diff;
         closestHour = hour;
@@ -309,6 +312,7 @@ function transformForecastResponse(
     latitude: marineData.latitude,
     longitude: marineData.longitude,
     hourly,
+    utcOffsetSeconds: marineData.utc_offset_seconds ?? 0,
     fetchedAt: new Date(),
   };
 }
@@ -446,12 +450,16 @@ export async function fetchHourlyTimeline(
     visibility: weatherData?.hourly?.visibility?.[index] ?? null,
   }));
 
-  // Find the closest hour to sessionTime
-  const sessionMs = sessionTime.getTime();
+  // Find the closest hour to sessionTime.
+  // Open-Meteo returns local times (no offset) due to timezone:"auto".
+  // On the server (UTC), new Date("2026-03-10T10:00") parses as 10:00 UTC,
+  // so we must shift sessionTime by utc_offset_seconds to compare in local time.
+  const utcOffsetMs = (marineData?.utc_offset_seconds ?? weatherData?.utc_offset_seconds ?? 0) * 1000;
+  const sessionLocalMs = sessionTime.getTime() + utcOffsetMs;
   let closestIndex = 0;
   let minDiff = Infinity;
   allHours.forEach((h, i) => {
-    const diff = Math.abs(new Date(h.time).getTime() - sessionMs);
+    const diff = Math.abs(new Date(h.time).getTime() - sessionLocalMs);
     if (diff < minDiff) {
       minDiff = diff;
       closestIndex = i;
