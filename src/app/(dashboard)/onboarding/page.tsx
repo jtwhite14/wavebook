@@ -449,7 +449,7 @@ export default function OnboardingPage() {
   return (
     <div className="max-w-3xl mx-auto py-8">
       <div className="text-center mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold">Welcome to SurfSync</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold">Welcome to Wavebook</h1>
         <p className="text-muted-foreground mt-2">
           Import your surf photos to create your session history
         </p>
@@ -953,7 +953,7 @@ export default function OnboardingPage() {
                   !
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  SurfSync will now analyze your sessions against ocean
+                  Wavebook will now analyze your sessions against ocean
                   conditions to predict when the surf will be great for you.
                 </p>
               </div>

@@ -33,7 +33,7 @@ function LoginContent() {
       <Card className="w-full max-w-md mx-4">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 text-5xl">🏄</div>
-          <CardTitle className="text-2xl">Welcome to SurfSync</CardTitle>
+          <CardTitle className="text-2xl">Welcome to Wavebook</CardTitle>
           <CardDescription>
             Track your surf sessions and get personalized predictions
           </CardDescription>
@@ -76,7 +76,7 @@ function LoginContent() {
           </Button>
 
           <p className="text-xs text-center text-muted-foreground">
-            By signing in, you agree to allow SurfSync to access your Google
+            By signing in, you agree to allow Wavebook to access your Google
             Calendar (read-only) for surf session planning.
           </p>
         </CardContent>

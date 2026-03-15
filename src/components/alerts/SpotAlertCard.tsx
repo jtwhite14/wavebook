@@ -25,7 +25,7 @@ export function SpotAlertCard({ spotId, sessionCount, alerts: prefetchedAlerts }
   // Load dismissed alerts from localStorage once
   useEffect(() => {
     try {
-      const stored = localStorage.getItem(`surfsynch:dismissed-alerts:${spotId}`);
+      const stored = localStorage.getItem(`wavebook:dismissed-alerts:${spotId}`);
       if (stored) {
         const parsed = JSON.parse(stored) as Record<string, DismissedEntry>;
         const now = Date.now();
@@ -62,7 +62,7 @@ export function SpotAlertCard({ spotId, sessionCount, alerts: prefetchedAlerts }
     setDismissedMap(prev => {
       const next = { ...prev, [key]: { score: alert.effectiveScore, at: Date.now() } };
       try {
-        localStorage.setItem(`surfsynch:dismissed-alerts:${spotId}`, JSON.stringify(next));
+        localStorage.setItem(`wavebook:dismissed-alerts:${spotId}`, JSON.stringify(next));
       } catch { /* quota exceeded */ }
       return next;
     });

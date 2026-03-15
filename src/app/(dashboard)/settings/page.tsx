@@ -379,7 +379,7 @@ export default function SettingsPage() {
           ) : calendarConnected ? (
             <>
               <p className="text-sm text-muted-foreground">
-                Your Google Calendar is connected. SurfSync can see your busy/free
+                Your Google Calendar is connected. Wavebook can see your busy/free
                 times to suggest optimal surf windows.
               </p>
               <div className="flex gap-2">
@@ -452,11 +452,11 @@ export default function SettingsPage() {
       {/* About */}
       <Card>
         <CardHeader>
-          <CardTitle>About SurfSync</CardTitle>
+          <CardTitle>About Wavebook</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm text-muted-foreground">
           <p>
-            SurfSync helps you track your surf sessions and predicts the best times
+            Wavebook helps you track your surf sessions and predicts the best times
             to surf based on your past experiences.
           </p>
           <p>

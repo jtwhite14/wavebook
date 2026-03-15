@@ -35,7 +35,7 @@ export default async function UploadPage({
             This upload link has expired
           </h1>
           <p className="text-muted-foreground text-sm">
-            Please scan a new QR code from the SurfSynch dashboard to upload
+            Please scan a new QR code from the Wavebook dashboard to upload
             photos.
           </p>
         </div>

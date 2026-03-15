@@ -1,4 +1,4 @@
--- SurfSync Initial Migration
+-- Wavebook Initial Migration
 -- Run this SQL in your Supabase SQL editor to create all tables
 
 -- Users table (extended from NextAuth defaults)

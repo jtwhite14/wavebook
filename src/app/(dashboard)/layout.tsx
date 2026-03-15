@@ -155,7 +155,7 @@ export default function DashboardLayout({
             </button>
             <Link href="/" className="flex items-center gap-2 ml-3">
               <BookOpen className="size-5 text-primary" />
-              <span className="font-bold text-sm">SurfSync</span>
+              <span className="font-bold text-sm">Wavebook</span>
             </Link>
           </header>
 
@@ -187,7 +187,7 @@ function SidebarContent({
       <div className={`flex flex-col gap-3 p-3 border-b border-sidebar-border ${collapsed ? "items-center" : ""}`}>
         <Link href="/" className={`flex items-center gap-2.5 ${collapsed ? "justify-center" : "px-1.5"} py-1`}>
           <BookOpen className="size-5 text-primary shrink-0" />
-          {!collapsed && <span className="font-bold text-sidebar-foreground">SurfSync</span>}
+          {!collapsed && <span className="font-bold text-sidebar-foreground">Wavebook</span>}
         </Link>
       </div>
 

@@ -1,4 +1,4 @@
-# SurfSync - Surf Session Tracking & Prediction App
+# Wavebook - Surf Session Tracking & Prediction App
 
 Track your surf sessions, analyze conditions, and get personalized predictions for the best times to surf based on your history.
 
@@ -35,7 +35,7 @@ Track your surf sessions, analyze conditions, and get personalized predictions f
 ### 1. Clone and Install
 
 ```bash
-cd surfsynch
+cd wavebook
 npm install
 ```
 
@@ -105,7 +105,7 @@ Open [http://localhost:3000](http://localhost:3000)
 ## Project Structure
 
 ```
-surfsynch/
+wavebook/
 ├── src/
 │   ├── app/
 │   │   ├── (auth)/           # Login pages
@@ -134,7 +134,7 @@ surfsynch/
 
 ## How Predictions Work
 
-SurfSync compares upcoming forecast conditions to your past sessions to find similar conditions to days you rated highly.
+Wavebook compares upcoming forecast conditions to your past sessions to find similar conditions to days you rated highly.
 
 **Matching criteria**:
 - Wave height within +/-0.5m

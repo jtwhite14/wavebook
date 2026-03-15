@@ -18,12 +18,12 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "SurfSync - Track Your Surf Sessions",
+  title: "Wavebook - Track Your Surf Sessions",
   description: "Log surf sessions, track conditions, and get surf predictions based on your history",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "SurfSync",
+    title: "Wavebook",
   },
 };
 

@@ -173,7 +173,7 @@ export function UploadClient({ token }: { token: string }) {
       {/* Header */}
       <header className="border-b border-border px-4 py-4 text-center">
         <h1 className="text-xl font-bold text-foreground">
-          SurfSynch
+          Wavebook
         </h1>
       </header>
 
@@ -184,7 +184,7 @@ export function UploadClient({ token }: { token: string }) {
             <>
               <p className="text-muted-foreground text-center mb-6 text-sm">
                 Select surf photos from your phone to upload them to your
-                SurfSynch account.
+                Wavebook account.
               </p>
               <button
                 onClick={openFilePicker}
