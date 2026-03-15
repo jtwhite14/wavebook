@@ -104,12 +104,13 @@ async function processSpot(spot: {
   if (sessionsWithConditions.length === 0) return 0;
 
   // Fetch or use cached forecast
-  const forecast = await getOrFetchForecast(
+  const forecastResult = await getOrFetchForecast(
     spot.id,
     parseFloat(spot.latitude),
     parseFloat(spot.longitude)
   );
-  if (!forecast || forecast.length === 0) return 0;
+  if (!forecastResult || forecastResult.hourly.length === 0) return 0;
+  const { hourly: forecast, utcOffsetSeconds } = forecastResult;
 
   // Parse sessions for matching
   const sessionsForMatching: SessionForMatching[] = sessionsWithConditions.map(s => ({
@@ -130,7 +131,7 @@ async function processSpot(spot: {
   }));
 
   const weights: ConditionWeights = (spot.conditionWeights as ConditionWeights) ?? DEFAULT_CONDITION_WEIGHTS;
-  const alerts = generateAlerts(forecastHours, sessionsForMatching, weights);
+  const alerts = generateAlerts(forecastHours, sessionsForMatching, weights, 70, new Date(), utcOffsetSeconds);
 
   // Expire old alerts that are no longer relevant
   const existingAlerts = await db.query.spotAlerts.findMany({
@@ -196,15 +197,16 @@ async function getOrFetchForecast(
   spotId: string,
   latitude: number,
   longitude: number
-): Promise<HourlyForecast[] | null> {
+): Promise<{ hourly: HourlyForecast[]; utcOffsetSeconds: number } | null> {
   // Check cache
   const cached = await db.query.spotForecasts.findFirst({
     where: eq(spotForecasts.spotId, spotId),
   });
 
   if (cached && (Date.now() - cached.fetchedAt.getTime()) < FORECAST_CACHE_TTL) {
-    const data = cached.forecastData as { hourly?: HourlyForecast[] };
-    return data.hourly ?? null;
+    const data = cached.forecastData as { hourly?: HourlyForecast[]; utcOffsetSeconds?: number };
+    if (!data.hourly) return null;
+    return { hourly: data.hourly, utcOffsetSeconds: data.utcOffsetSeconds ?? 0 };
   }
 
   try {
@@ -243,12 +245,13 @@ async function getOrFetchForecast(
       },
     });
 
-    return forecast.hourly;
+    return { hourly: forecast.hourly, utcOffsetSeconds: forecast.utcOffsetSeconds };
   } catch (error) {
     console.error(`Error fetching forecast for spot ${spotId}:`, error);
     if (cached) {
-      const data = cached.forecastData as { hourly?: HourlyForecast[] };
-      return data.hourly ?? null;
+      const data = cached.forecastData as { hourly?: HourlyForecast[]; utcOffsetSeconds?: number };
+      if (!data.hourly) return null;
+      return { hourly: data.hourly, utcOffsetSeconds: data.utcOffsetSeconds ?? 0 };
     }
     return null;
   }

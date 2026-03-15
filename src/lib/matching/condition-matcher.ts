@@ -326,9 +326,15 @@ export function generateAlerts(
   sessions: SessionForMatching[],
   weights: ConditionWeights = DEFAULT_CONDITION_WEIGHTS,
   threshold: number = 70,
-  now: Date = new Date()
+  now: Date = new Date(),
+  utcOffsetSeconds: number = 0
 ): ComputedAlert[] {
   if (sessions.length === 0) return [];
+
+  // Forecast timestamps are local times parsed as UTC on the server
+  // (e.g. "2026-03-15T07:00" → 07:00 UTC, but it really means 07:00 local).
+  // Shift `now` into the same "local-as-UTC" space so comparisons are correct.
+  const nowLocalMs = now.getTime() + utcOffsetSeconds * 1000;
 
   // Filter sessions by seasonal window (±60 days, fall back to ±90, then all)
   const targetDate = now;
@@ -351,9 +357,10 @@ export function generateAlerts(
     if (!isDaylightHour(localHour)) continue;
 
     // Skip past hours (allow current hour — still has remaining minutes)
-    if (fh.timestamp.getTime() + 3600000 <= now.getTime()) continue;
+    // Compare in local-as-UTC space so timezone doesn't cause false filtering
+    if (fh.timestamp.getTime() + 3600000 <= nowLocalMs) continue;
 
-    const daysOut = (fh.timestamp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+    const daysOut = (fh.timestamp.getTime() - nowLocalMs) / (1000 * 60 * 60 * 24);
     const forecastConfidence = getForecastConfidence(daysOut);
 
     let bestForThisHour: ComputedAlert | null = null;
