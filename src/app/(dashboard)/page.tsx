@@ -42,7 +42,9 @@ const SpotMap = dynamic(() => import("@/components/map/SpotMap"), {
 export default function DashboardPage() {
   const router = useRouter();
   const [spots, setSpots] = useState<SurfSpot[]>([]);
+  const [sessions, setSessions] = useState<SurfSessionWithConditions[]>([]);
   const [loading, setLoading] = useState(true);
+  const [panelOpen, setPanelOpen] = useState(true);
 
   const [homeLocation, setHomeLocation] = useState<{ latitude: number; longitude: number } | null>(null);
 
@@ -185,9 +187,11 @@ export default function DashboardPage() {
     Promise.all([
       fetch("/api/spots").then((r) => (r.ok ? r.json() : { spots: [] })),
       fetch("/api/user/location").then((r) => (r.ok ? r.json() : { latitude: null, longitude: null })),
+      fetch("/api/sessions?limit=5").then((r) => (r.ok ? r.json() : { sessions: [] })),
     ])
-      .then(([spotsData, locationData]) => {
+      .then(([spotsData, locationData, sessionsData]) => {
         setSpots(spotsData.spots || []);
+        setSessions(sessionsData.sessions || []);
         if (locationData.latitude && locationData.longitude) {
           setHomeLocation({ latitude: locationData.latitude, longitude: locationData.longitude });
         }
@@ -400,6 +404,63 @@ export default function DashboardPage() {
                   <Plus className="size-3 mr-1" />
                   Add Session
                 </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Recent Sessions panel — visible when no spot is selected */}
+      {!selectedSpot && addSpotMode === "idle" && sessions.length > 0 && (
+        <div className="absolute top-4 left-4 z-10 w-[calc(100%-2rem)] sm:w-80">
+          <div className="rounded-lg border bg-background/90 backdrop-blur-sm shadow-lg overflow-hidden">
+            <button
+              onClick={() => setPanelOpen((o) => !o)}
+              className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium hover:bg-accent/50 transition-colors"
+            >
+              <span>Recent Sessions</span>
+              {panelOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+            </button>
+            {panelOpen && (
+              <div className="border-t max-h-80 overflow-y-auto">
+                {sessions.map((session) => {
+                  const photo = session.photos?.[0]?.photoUrl || session.photoUrl;
+                  return (
+                    <Link
+                      key={session.id}
+                      href={`/sessions/${session.id}`}
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-accent/50 transition-colors"
+                    >
+                      {photo && (
+                        <img
+                          src={photo}
+                          alt=""
+                          className="w-10 h-10 rounded object-cover shrink-0"
+                        />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">
+                          {session.spot?.name || "Unknown Spot"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{formatDate(session.date)}</p>
+                      </div>
+                      <div className="flex items-center shrink-0">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <svg
+                            key={i}
+                            className={`w-2.5 h-2.5 ${
+                              i < session.rating ? "text-yellow-400" : "text-muted-foreground/30"
+                            }`}
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                        ))}
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </div>
