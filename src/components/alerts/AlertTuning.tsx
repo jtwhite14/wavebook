@@ -91,7 +91,7 @@ export function AlertTuning() {
     }
   }
 
-  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   function handleWeightChange(key: keyof ConditionWeights, level: number) {
     const value = level === 0 ? 0.3 : level === 1 ? 0.6 : 1.0;

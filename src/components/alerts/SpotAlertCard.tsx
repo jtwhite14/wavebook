@@ -7,7 +7,7 @@ import { SpotAlertResponse, MarineConditions } from "@/types";
 import { formatWaveHeight, formatWavePeriod, getDirectionText, formatWindSpeed } from "@/lib/api/open-meteo";
 import { formatDate } from "@/lib/utils/date";
 
-interface SpotAlertResponseCardProps {
+interface SpotAlertCardProps {
   spotId: string;
   sessionCount: number;
   /** Pre-fetched alerts. If provided, skips the fetch. */
@@ -16,7 +16,7 @@ interface SpotAlertResponseCardProps {
 
 interface DismissedEntry { score: number; at: number }
 
-export function SpotAlertResponseCard({ spotId, sessionCount, alerts: prefetchedAlerts }: SpotAlertResponseCardProps) {
+export function SpotAlertCard({ spotId, sessionCount, alerts: prefetchedAlerts }: SpotAlertCardProps) {
   const [alerts, setAlerts] = useState<SpotAlertResponse[]>(prefetchedAlerts ?? []);
   const [loading, setLoading] = useState(!prefetchedAlerts);
   const [activeIndex, setActiveIndex] = useState(0);
