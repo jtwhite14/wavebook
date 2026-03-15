@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { extractExifData, isExifSupported } from "@/lib/utils/exif";
 import { SurfSpot } from "@/lib/db/schema";
 import { findNearestSpot } from "@/lib/utils/geo";
+import { groupPhotosBySession, PhotoGroup } from "@/lib/utils/photo-grouping";
 
 const MAX_FILE_SIZE = 4 * 1024 * 1024;
 const MAX_DIMENSION = 2048;
@@ -79,13 +80,13 @@ export function SessionForm({ spots, defaultSpotId }: SessionFormProps) {
   const router = useRouter();
   const [step, setStep] = useState<"photo" | "details">("photo");
 
-  // Photo upload state
+  // Photo upload state - now supports multiple
   const [uploadSessionId, setUploadSessionId] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isCreatingSession, setIsCreatingSession] = useState(false);
-  const [photo, setPhoto] = useState<UploadedPhoto | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [localPhotoFile, setLocalPhotoFile] = useState<File | null>(null);
+  const [photos, setPhotos] = useState<UploadedPhoto[]>([]);
+  const [photoGroups, setPhotoGroups] = useState<PhotoGroup[]>([]);
+  const [selectedGroupIndex, setSelectedGroupIndex] = useState(0);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -118,21 +119,63 @@ export function SessionForm({ spots, defaultSpotId }: SessionFormProps) {
     createUploadSession();
   }, []);
 
+  // Re-group photos whenever the photo list changes
+  useEffect(() => {
+    if (photos.length === 0) {
+      setPhotoGroups([]);
+      return;
+    }
+    const groups = groupPhotosBySession(photos);
+    setPhotoGroups(groups);
+    // Keep selected group in bounds
+    setSelectedGroupIndex((prev) => Math.min(prev, groups.length - 1));
+  }, [photos]);
+
+  // Apply EXIF data from the selected group
+  const applyGroupExifData = useCallback((group: PhotoGroup) => {
+    if (group.earliestTime) {
+      const dt = group.earliestTime;
+      setDate(dt);
+      const hours = dt.getHours().toString().padStart(2, "0");
+      const minutes = dt.getMinutes().toString().padStart(2, "0");
+      setStartTime(`${hours}:${minutes}`);
+
+      if (group.latestTime && group.latestTime.getTime() !== group.earliestTime.getTime()) {
+        const endHours = group.latestTime.getHours().toString().padStart(2, "0");
+        const endMinutes = group.latestTime.getMinutes().toString().padStart(2, "0");
+        setEndTime(`${endHours}:${endMinutes}`);
+      }
+      toast.success("Date and time extracted from photos");
+    }
+
+    if (group.centroidLat && group.centroidLng && spots.length > 0) {
+      const nearest = findNearestSpot(group.centroidLat, group.centroidLng, spots);
+      if (nearest && nearest.distance < 10) {
+        setSpotId(nearest.spot.id);
+        toast.success(`Location matched to ${nearest.spot.name}`);
+      }
+    }
+  }, [spots]);
+
   // Poll for photos uploaded via QR code
   useEffect(() => {
-    if (!uploadSessionId || step !== "photo" || photo) return;
+    if (!uploadSessionId || step !== "photo") return;
 
     const poll = async () => {
       try {
         const res = await fetch(`/api/upload-sessions?id=${uploadSessionId}`);
         if (res.ok) {
           const data = await res.json();
-          const photos = data.uploadSession?.photos || data.photos;
-          if (photos && photos.length > 0) {
-            const uploaded = photos[photos.length - 1];
-            setPhoto(uploaded);
-            setPhotoPreview(uploaded.photoUrl);
-            applyExifData(uploaded.exifData);
+          const uploadedPhotos = data.uploadSession?.photos || data.photos;
+          if (uploadedPhotos && uploadedPhotos.length > 0) {
+            // Merge new photos (avoid duplicates by id)
+            setPhotos((prev) => {
+              const existingIds = new Set(prev.map((p) => p.id));
+              const newPhotos = uploadedPhotos.filter(
+                (p: UploadedPhoto) => !existingIds.has(p.id)
+              );
+              return [...prev, ...newPhotos];
+            });
           }
         }
       } catch {
@@ -144,87 +187,82 @@ export function SessionForm({ spots, defaultSpotId }: SessionFormProps) {
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current);
     };
-  }, [uploadSessionId, step, photo]);
+  }, [uploadSessionId, step]);
 
-  const applyExifData = useCallback((exifData: UploadedPhoto["exifData"]) => {
-    if (!exifData) return;
-
-    if (exifData.dateTime) {
-      const dt = new Date(exifData.dateTime);
-      setDate(dt);
-      const hours = dt.getHours().toString().padStart(2, "0");
-      const minutes = dt.getMinutes().toString().padStart(2, "0");
-      setStartTime(`${hours}:${minutes}`);
-      toast.success("Date and time extracted from photo");
-    }
-
-    if (exifData.latitude && exifData.longitude && spots.length > 0) {
-      const nearest = findNearestSpot(exifData.latitude, exifData.longitude, spots);
-      if (nearest && nearest.distance < 10) {
-        setSpotId(nearest.spot.id);
-        toast.success(`Location matched to ${nearest.spot.name}`);
-      }
-    }
-  }, [spots]);
-
-  // Handle direct file upload from this device
+  // Handle direct file upload from this device (now supports multiple)
   const handleDesktopUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
-    setPhotoPreview(URL.createObjectURL(file));
-    setLocalPhotoFile(file);
+    for (const file of Array.from(files)) {
+      let exifData: UploadedPhoto["exifData"] = null;
 
-    // Extract EXIF data locally
-    if (isExifSupported(file)) {
-      try {
-        const exifData = await extractExifData(file);
-        applyExifData(exifData as UploadedPhoto["exifData"]);
-      } catch (error) {
-        console.error("Error extracting EXIF:", error);
-      }
-    }
-
-    // If we have an upload session, also upload via the public route so it's stored
-    if (token) {
-      try {
-        let exifData = {};
-        if (isExifSupported(file)) {
-          exifData = await extractExifData(file);
+      // Extract EXIF data locally
+      if (isExifSupported(file)) {
+        try {
+          exifData = await extractExifData(file) as UploadedPhoto["exifData"];
+        } catch (error) {
+          console.error("Error extracting EXIF:", error);
         }
-        const processedFile = await resizeImage(file);
-        const formData = new FormData();
-        formData.append("file", processedFile, file.name);
-        formData.append("token", token);
-        formData.append("exifData", JSON.stringify(exifData));
+      }
 
-        const res = await fetch("/api/upload/public", {
-          method: "POST",
-          body: formData,
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setPhoto({
-            id: data.photo.id,
-            photoUrl: data.photo.photoUrl,
-            exifData: null,
+      // Upload via the public route if we have a token
+      if (token) {
+        try {
+          const processedFile = await resizeImage(file);
+          const formData = new FormData();
+          formData.append("file", processedFile, file.name);
+          formData.append("token", token);
+          formData.append("exifData", JSON.stringify(exifData || {}));
+
+          const res = await fetch("/api/upload/public", {
+            method: "POST",
+            body: formData,
           });
-          setPhotoPreview(data.photo.photoUrl);
-          setLocalPhotoFile(null); // No need to re-upload on submit
+          if (res.ok) {
+            const data = await res.json();
+            setPhotos((prev) => [
+              ...prev,
+              {
+                id: data.photo.id,
+                photoUrl: data.photo.photoUrl,
+                exifData,
+              },
+            ]);
+            continue;
+          }
+        } catch {
+          // Fall through to local preview
         }
-      } catch {
-        // Keep the local file as fallback
       }
+
+      // Fallback: add as local preview
+      const localUrl = URL.createObjectURL(file);
+      setPhotos((prev) => [
+        ...prev,
+        {
+          id: `local-${Date.now()}-${Math.random()}`,
+          photoUrl: localUrl,
+          exifData,
+        },
+      ]);
     }
 
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleContinueToDetails = () => {
-    if (!photoPreview) {
-      toast.error("Please upload a photo first");
+    if (photos.length === 0) {
+      toast.error("Please upload at least one photo");
       return;
     }
+
+    // Apply EXIF from the selected group
+    const group = photoGroups[selectedGroupIndex];
+    if (group) {
+      applyGroupExifData(group);
+    }
+
     setStep("details");
   };
 
@@ -232,11 +270,18 @@ export function SessionForm({ spots, defaultSpotId }: SessionFormProps) {
     setStep("details");
   };
 
-  const handleRemovePhoto = () => {
-    setPhoto(null);
-    setPhotoPreview(null);
-    setLocalPhotoFile(null);
+  const handleRemovePhoto = (photoId: string) => {
+    setPhotos((prev) => prev.filter((p) => p.id !== photoId));
   };
+
+  const handleClearAllPhotos = () => {
+    setPhotos([]);
+    setPhotoGroups([]);
+    setSelectedGroupIndex(0);
+  };
+
+  // Get photos for the currently selected group
+  const selectedGroupPhotos = photoGroups[selectedGroupIndex]?.photos ?? photos;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -249,28 +294,11 @@ export function SessionForm({ spots, defaultSpotId }: SessionFormProps) {
     setIsSubmitting(true);
 
     try {
-      // Determine photo URL
-      let photoUrl: string | null = photo?.photoUrl || null;
-
-      // If we have a local file that wasn't uploaded via the session, upload it now
-      if (localPhotoFile && !photoUrl) {
-        setUploadingPhoto(true);
-        const formData = new FormData();
-        formData.append("file", localPhotoFile);
-
-        const uploadResponse = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (uploadResponse.ok) {
-          const uploadData = await uploadResponse.json();
-          photoUrl = uploadData.url;
-        } else {
-          toast.error("Failed to upload photo");
-        }
-        setUploadingPhoto(false);
-      }
+      // Collect photo URLs from the selected group
+      const groupPhotos = photoGroups[selectedGroupIndex]?.photos ?? [];
+      const photoUrls = groupPhotos
+        .map((p) => p.photoUrl)
+        .filter((url) => !url.startsWith("blob:"));
 
       // Create session
       const [startHours, startMinutes] = startTime.split(":").map(Number);
@@ -294,7 +322,8 @@ export function SessionForm({ spots, defaultSpotId }: SessionFormProps) {
           endTime: sessionEndTime?.toISOString() || null,
           rating,
           notes: notes.trim() || null,
-          photoUrl,
+          photoUrl: photoUrls[0] || null,
+          photoUrls: photoUrls.length > 0 ? photoUrls : null,
         }),
       });
 
@@ -318,7 +347,7 @@ export function SessionForm({ spots, defaultSpotId }: SessionFormProps) {
   const StepIndicator = () => (
     <div className="flex items-center justify-center gap-2 mb-6">
       {[
-        { key: "photo", label: "Photo" },
+        { key: "photo", label: "Photos" },
         { key: "details", label: "Details" },
       ].map((s, idx) => (
         <div key={s.key} className="flex items-center gap-2">
@@ -369,31 +398,109 @@ export function SessionForm({ spots, defaultSpotId }: SessionFormProps) {
 
         <Card>
           <CardHeader className="text-center">
-            <CardTitle>Add a Photo</CardTitle>
+            <CardTitle>Add Photos</CardTitle>
             <CardDescription>
-              Scan the QR code with your phone to upload a photo, or upload
-              directly from this device. Date, time, and location will be
-              extracted automatically.
+              Upload your session photos. Photos taken at a similar time and
+              location will be automatically grouped into one session.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {photoPreview ? (
+            {photos.length > 0 ? (
               <div className="space-y-4">
-                <div className="relative flex justify-center">
-                  <img
-                    src={photoPreview}
-                    alt="Session photo"
-                    className="max-h-72 rounded-lg object-contain"
-                  />
+                {/* Photo grid */}
+                <div className="grid grid-cols-3 gap-2">
+                  {photos.map((photo) => (
+                    <div key={photo.id} className="relative aspect-square rounded-lg overflow-hidden group">
+                      <img
+                        src={photo.photoUrl}
+                        alt="Session photo"
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemovePhoto(photo.id)}
+                        className="absolute top-1 right-1 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                  {/* Add more button in grid */}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="aspect-square rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center hover:border-muted-foreground/50 transition-colors"
+                  >
+                    <svg className="w-6 h-6 text-muted-foreground/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Group indicator */}
+                {photoGroups.length > 1 && (
+                  <div className="rounded-lg bg-muted/50 p-3 space-y-2">
+                    <p className="text-sm font-medium">
+                      {photoGroups.length} session groups detected
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Photos were grouped by time and location. Select which group to log.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {photoGroups.map((group, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setSelectedGroupIndex(idx)}
+                          className={cn(
+                            "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+                            idx === selectedGroupIndex
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted hover:bg-muted/80 text-muted-foreground"
+                          )}
+                        >
+                          Group {idx + 1} ({group.photos.length} photo{group.photos.length !== 1 ? "s" : ""})
+                          {group.earliestTime && (
+                            <span className="ml-1 opacity-70">
+                              {format(group.earliestTime, "h:mma")}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {photoGroups.length === 1 && photos.length > 1 && (
+                  <div className="rounded-lg bg-muted/50 p-3">
+                    <p className="text-sm text-muted-foreground">
+                      All {photos.length} photos grouped as one session
+                      {photoGroups[0].earliestTime && (
+                        <span> from {format(photoGroups[0].earliestTime, "h:mma")}</span>
+                      )}
+                      {photoGroups[0].latestTime && photoGroups[0].earliestTime &&
+                        photoGroups[0].latestTime.getTime() !== photoGroups[0].earliestTime.getTime() && (
+                        <span> to {format(photoGroups[0].latestTime, "h:mma")}</span>
+                      )}
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex justify-between items-center">
                   <Button
                     type="button"
-                    variant="destructive"
+                    variant="ghost"
                     size="sm"
-                    className="absolute top-2 right-2"
-                    onClick={handleRemovePhoto}
+                    onClick={handleClearAllPhotos}
+                    className="text-destructive hover:text-destructive"
                   >
-                    Remove
+                    Clear all
                   </Button>
+                  <Badge variant="secondary">
+                    {photos.length} photo{photos.length !== 1 ? "s" : ""}
+                  </Badge>
                 </div>
               </div>
             ) : (
@@ -414,7 +521,7 @@ export function SessionForm({ spots, defaultSpotId }: SessionFormProps) {
                       />
                     </div>
                     <p className="text-xs text-muted-foreground text-center">
-                      Scan with your phone to upload a photo
+                      Scan with your phone to upload photos
                     </p>
                   </div>
                 ) : null}
@@ -442,26 +549,27 @@ export function SessionForm({ spots, defaultSpotId }: SessionFormProps) {
                     </svg>
                     Upload from this device
                   </Button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleDesktopUpload}
-                  />
                 </div>
               </>
             )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={handleDesktopUpload}
+            />
           </CardContent>
         </Card>
 
         <div className="flex justify-between">
           <Button variant="ghost" size="sm" onClick={handleSkipPhoto}>
-            Skip photo
+            Skip photos
           </Button>
           <Button
             size="lg"
-            disabled={!photoPreview}
+            disabled={photos.length === 0}
             onClick={handleContinueToDetails}
           >
             Continue
@@ -476,20 +584,35 @@ export function SessionForm({ spots, defaultSpotId }: SessionFormProps) {
     <form onSubmit={handleSubmit} className="space-y-6">
       <StepIndicator />
 
-      {/* Photo preview thumbnail */}
-      {photoPreview && (
+      {/* Photo preview thumbnails */}
+      {selectedGroupPhotos.length > 0 && (
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="w-20 h-20 rounded-lg overflow-hidden border flex-shrink-0">
-                <img
-                  src={photoPreview}
-                  alt="Session photo"
-                  className="w-full h-full object-cover"
-                />
+              <div className="flex -space-x-2 flex-shrink-0">
+                {selectedGroupPhotos.slice(0, 4).map((photo, idx) => (
+                  <div
+                    key={photo.id}
+                    className="w-14 h-14 rounded-lg overflow-hidden border-2 border-background flex-shrink-0"
+                    style={{ zIndex: 4 - idx }}
+                  >
+                    <img
+                      src={photo.photoUrl}
+                      alt="Session photo"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ))}
+                {selectedGroupPhotos.length > 4 && (
+                  <div className="w-14 h-14 rounded-lg border-2 border-background bg-muted flex items-center justify-center flex-shrink-0 text-xs font-medium text-muted-foreground">
+                    +{selectedGroupPhotos.length - 4}
+                  </div>
+                )}
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium">Photo attached</p>
+                <p className="text-sm font-medium">
+                  {selectedGroupPhotos.length} photo{selectedGroupPhotos.length !== 1 ? "s" : ""} attached
+                </p>
                 <p className="text-xs text-muted-foreground">
                   Date and location auto-filled from photo metadata
                 </p>
@@ -666,7 +789,7 @@ export function SessionForm({ spots, defaultSpotId }: SessionFormProps) {
         <Button type="submit" disabled={isSubmitting || !spotId}>
           {isSubmitting
             ? uploadingPhoto
-              ? "Uploading photo..."
+              ? "Uploading photos..."
               : "Saving..."
             : "Log Session"}
         </Button>

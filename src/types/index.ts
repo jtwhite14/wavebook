@@ -132,6 +132,7 @@ export interface SurfSessionWithConditions {
   rating: number;
   notes: string | null;
   photoUrl: string | null;
+  photos?: { id: string; photoUrl: string; sortOrder: number }[];
   createdAt: Date;
   updatedAt: Date;
   conditions?: {

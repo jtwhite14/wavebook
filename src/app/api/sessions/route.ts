@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { db, surfSessions, sessionConditions, surfSpots } from "@/lib/db";
+import { db, surfSessions, sessionConditions, surfSpots, sessionPhotos } from "@/lib/db";
 import { eq, and, desc } from "drizzle-orm";
 import { z } from "zod";
 import { fetchHistoricalConditions, fetchCurrentConditions } from "@/lib/api/open-meteo";
@@ -14,6 +14,7 @@ const createSessionSchema = z.object({
   rating: z.number().min(1).max(5),
   notes: z.string().optional().nullable(),
   photoUrl: z.string().url().optional().nullable(),
+  photoUrls: z.array(z.string().url()).optional().nullable(),
 });
 
 export async function GET(request: NextRequest) {
@@ -37,6 +38,7 @@ export async function GET(request: NextRequest) {
         with: {
           conditions: true,
           spot: true,
+          photos: true,
         },
       });
 
@@ -55,6 +57,7 @@ export async function GET(request: NextRequest) {
       with: {
         conditions: true,
         spot: true,
+        photos: true,
       },
     });
 
@@ -107,6 +110,24 @@ export async function POST(request: NextRequest) {
         photoUrl: validated.photoUrl || null,
       })
       .returning();
+
+    // Insert session photos
+    const allPhotoUrls: string[] = [];
+    if (validated.photoUrls && validated.photoUrls.length > 0) {
+      allPhotoUrls.push(...validated.photoUrls);
+    } else if (validated.photoUrl) {
+      allPhotoUrls.push(validated.photoUrl);
+    }
+
+    if (allPhotoUrls.length > 0) {
+      await db.insert(sessionPhotos).values(
+        allPhotoUrls.map((url, index) => ({
+          sessionId: newSession.id,
+          photoUrl: url,
+          sortOrder: index,
+        }))
+      );
+    }
 
     // Try to fetch historical conditions for the session time
     const sessionDate = new Date(validated.startTime);
@@ -167,6 +188,7 @@ export async function POST(request: NextRequest) {
       with: {
         conditions: true,
         spot: true,
+        photos: true,
       },
     });
 

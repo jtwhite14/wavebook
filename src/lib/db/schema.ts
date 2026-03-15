@@ -142,6 +142,17 @@ export const spotForecasts = pgTable("spot_forecasts", {
   fetchedAt: timestamp("fetched_at").defaultNow().notNull(),
 });
 
+// Session Photos table (multiple photos per session)
+export const sessionPhotos = pgTable("session_photos", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  sessionId: uuid("session_id")
+    .notNull()
+    .references(() => surfSessions.id, { onDelete: "cascade" }),
+  photoUrl: text("photo_url").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   surfSpots: many(surfSpots),
@@ -174,7 +185,7 @@ export const surfSpotsRelations = relations(surfSpots, ({ one, many }) => ({
   forecasts: many(spotForecasts),
 }));
 
-export const surfSessionsRelations = relations(surfSessions, ({ one }) => ({
+export const surfSessionsRelations = relations(surfSessions, ({ one, many }) => ({
   spot: one(surfSpots, {
     fields: [surfSessions.spotId],
     references: [surfSpots.id],
@@ -186,6 +197,14 @@ export const surfSessionsRelations = relations(surfSessions, ({ one }) => ({
   conditions: one(sessionConditions, {
     fields: [surfSessions.id],
     references: [sessionConditions.sessionId],
+  }),
+  photos: many(sessionPhotos),
+}));
+
+export const sessionPhotosRelations = relations(sessionPhotos, ({ one }) => ({
+  session: one(surfSessions, {
+    fields: [sessionPhotos.sessionId],
+    references: [surfSessions.id],
   }),
 }));
 
@@ -252,6 +271,8 @@ export type SessionCondition = typeof sessionConditions.$inferSelect;
 export type NewSessionCondition = typeof sessionConditions.$inferInsert;
 export type SpotForecast = typeof spotForecasts.$inferSelect;
 export type NewSpotForecast = typeof spotForecasts.$inferInsert;
+export type SessionPhoto = typeof sessionPhotos.$inferSelect;
+export type NewSessionPhoto = typeof sessionPhotos.$inferInsert;
 export type UploadSession = typeof uploadSessions.$inferSelect;
 export type NewUploadSession = typeof uploadSessions.$inferInsert;
 export type UploadPhoto = typeof uploadPhotos.$inferSelect;

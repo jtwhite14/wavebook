@@ -20,9 +20,16 @@ export function SessionCard({ session }: SessionCardProps) {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <h3 className="font-medium truncate">{session.spot?.name}</h3>
-                {session.photoUrl && (
-                  <Badge variant="secondary" className="shrink-0">Photo</Badge>
-                )}
+                {(() => {
+                  const photoCount = session.photos?.length ?? (session.photoUrl ? 1 : 0);
+                  if (photoCount > 1) {
+                    return <Badge variant="secondary" className="shrink-0">{photoCount} Photos</Badge>;
+                  }
+                  if (photoCount === 1) {
+                    return <Badge variant="secondary" className="shrink-0">Photo</Badge>;
+                  }
+                  return null;
+                })()}
               </div>
               <p className="text-sm text-muted-foreground">
                 {formatDate(session.date)} at {formatTime(session.startTime)}
@@ -68,15 +75,39 @@ export function SessionCard({ session }: SessionCardProps) {
                   </svg>
                 ))}
               </div>
-              {session.photoUrl && (
-                <div className="mt-2 w-16 h-16 rounded overflow-hidden">
-                  <img
-                    src={session.photoUrl}
-                    alt="Session"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
+              {(() => {
+                const photos = session.photos && session.photos.length > 0
+                  ? session.photos
+                  : session.photoUrl
+                    ? [{ id: "legacy", photoUrl: session.photoUrl, sortOrder: 0 }]
+                    : [];
+                if (photos.length === 0) return null;
+                if (photos.length === 1) {
+                  return (
+                    <div className="mt-2 w-16 h-16 rounded overflow-hidden">
+                      <img src={photos[0].photoUrl} alt="Session" className="w-full h-full object-cover" />
+                    </div>
+                  );
+                }
+                // Multi-photo: stacked thumbnails
+                return (
+                  <div className="mt-2 relative w-16 h-16">
+                    {photos.slice(0, 3).map((photo, idx) => (
+                      <div
+                        key={photo.id}
+                        className="absolute w-14 h-14 rounded overflow-hidden border border-background"
+                        style={{
+                          top: idx * 2,
+                          left: idx * 2,
+                          zIndex: 3 - idx,
+                        }}
+                      >
+                        <img src={photo.photoUrl} alt="Session" className="w-full h-full object-cover" />
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </CardContent>

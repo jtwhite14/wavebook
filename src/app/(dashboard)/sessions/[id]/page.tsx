@@ -17,6 +17,7 @@ export default function SessionDetailPage() {
   const [session, setSession] = useState<SurfSessionWithConditions | null>(null);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -173,56 +174,118 @@ export default function SessionDetailPage() {
         </div>
       </div>
 
-      {/* Hero photo */}
-      {session.photoUrl && (
-        <div className="relative -mx-4 sm:mx-0 sm:rounded-2xl overflow-hidden">
-          <img
-            src={session.photoUrl}
-            alt="Session photo"
-            className="w-full h-[320px] sm:h-[400px] object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-8">
-            <h1 className="text-3xl sm:text-4xl font-bold text-white">
+      {/* Photo gallery */}
+      {(() => {
+        const allPhotos = session.photos && session.photos.length > 0
+          ? session.photos.sort((a, b) => a.sortOrder - b.sortOrder)
+          : session.photoUrl
+            ? [{ id: "legacy", photoUrl: session.photoUrl, sortOrder: 0 }]
+            : [];
+
+        if (allPhotos.length > 0) {
+          return (
+            <div className="space-y-2">
+              {/* Main photo */}
+              <div className="relative -mx-4 sm:mx-0 sm:rounded-2xl overflow-hidden">
+                <img
+                  src={allPhotos[activePhotoIndex]?.photoUrl}
+                  alt="Session photo"
+                  className="w-full h-[320px] sm:h-[400px] object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-8">
+                  <h1 className="text-3xl sm:text-4xl font-bold text-white">
+                    {session.spot?.name || "Session"}
+                  </h1>
+                  <div className="flex items-center gap-3 mt-2">
+                    <span className="text-white/70">{formatFullDate(session.date)}</span>
+                    <span className="text-white/30">|</span>
+                    <span className="text-white/70">
+                      {formatTime(session.startTime)}
+                      {session.endTime && ` - ${formatTime(session.endTime)}`}
+                    </span>
+                    <div className="flex items-center ml-1">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <svg
+                          key={i}
+                          className={`w-4 h-4 ${
+                            i < session.rating ? "text-yellow-400" : "text-white/20"
+                          }`}
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Navigation arrows for multi-photo */}
+                {allPhotos.length > 1 && (
+                  <>
+                    <button
+                      onClick={() => setActivePhotoIndex((prev) => (prev - 1 + allPhotos.length) % allPhotos.length)}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 rounded-full flex items-center justify-center hover:bg-black/60 transition-colors"
+                    >
+                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => setActivePhotoIndex((prev) => (prev + 1) % allPhotos.length)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 rounded-full flex items-center justify-center hover:bg-black/60 transition-colors"
+                    >
+                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                    {/* Dot indicators */}
+                    <div className="absolute top-3 right-3 bg-black/50 rounded-full px-2 py-0.5 text-xs text-white">
+                      {activePhotoIndex + 1} / {allPhotos.length}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Thumbnail strip for multi-photo */}
+              {allPhotos.length > 1 && (
+                <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0">
+                  {allPhotos.map((photo, idx) => (
+                    <button
+                      key={photo.id}
+                      onClick={() => setActivePhotoIndex(idx)}
+                      className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden transition-all ${
+                        idx === activePhotoIndex
+                          ? "ring-2 ring-primary opacity-100"
+                          : "opacity-60 hover:opacity-90"
+                      }`}
+                    >
+                      <img
+                        src={photo.photoUrl}
+                        alt={`Photo ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        // Header without photo
+        return (
+          <div>
+            <h1 className="text-3xl font-bold">
               {session.spot?.name || "Session"}
             </h1>
-            <div className="flex items-center gap-3 mt-2">
-              <span className="text-white/70">{formatFullDate(session.date)}</span>
-              <span className="text-white/30">|</span>
-              <span className="text-white/70">
-                {formatTime(session.startTime)}
-                {session.endTime && ` - ${formatTime(session.endTime)}`}
-              </span>
-              <div className="flex items-center ml-1">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <svg
-                    key={i}
-                    className={`w-4 h-4 ${
-                      i < session.rating ? "text-yellow-400" : "text-white/20"
-                    }`}
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                ))}
-              </div>
-            </div>
+            <p className="text-muted-foreground">
+              {formatFullDate(session.date)}
+            </p>
           </div>
-        </div>
-      )}
-
-      {/* Header without photo */}
-      {!session.photoUrl && (
-        <div>
-          <h1 className="text-3xl font-bold">
-            {session.spot?.name || "Session"}
-          </h1>
-          <p className="text-muted-foreground">
-            {formatFullDate(session.date)}
-          </p>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Notes */}
       {session.notes && (
