@@ -51,10 +51,10 @@ export default function SessionsPage() {
 
   if (loading) {
     return (
-      <div className="max-w-lg mx-auto space-y-6">
+      <div className="max-w-3xl mx-auto space-y-6">
         <div className="h-8 bg-muted rounded w-1/4 animate-pulse"></div>
-        <div className="space-y-6">
-          {[1, 2, 3].map((i) => (
+        <div className="grid grid-cols-2 gap-6">
+          {[1, 2, 3, 4].map((i) => (
             <div key={i} className="rounded-xl overflow-hidden">
               <div className="h-10 bg-muted animate-pulse" />
               <div className="aspect-[4/3] bg-muted animate-pulse" />
@@ -67,7 +67,7 @@ export default function SessionsPage() {
   }
 
   return (
-    <div className="max-w-lg mx-auto space-y-6">
+    <div className="max-w-3xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Sessions</h1>
         <Button asChild>
@@ -121,7 +121,7 @@ export default function SessionsPage() {
 
       {/* Sessions feed */}
       {filteredSessions.length > 0 ? (
-        <div className="space-y-6">
+        <div className="grid grid-cols-2 gap-6">
           {filteredSessions.map((session) => (
             <SessionCard key={session.id} session={session} />
           ))}
