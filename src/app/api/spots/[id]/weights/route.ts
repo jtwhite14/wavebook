@@ -99,6 +99,6 @@ export async function PUT(
   }
 }
 
-function clamp(value: number, min = 0, max = 1): number {
+function clamp(value: number, min = 0, max = 2): number {
   return Math.max(min, Math.min(max, Number(value) || 0));
 }

@@ -99,11 +99,11 @@ export function AlertTuningSection({ spotId, onSave }: AlertTuningSectionProps) 
   }
 
   function handleWeightChange(key: keyof ConditionWeights, level: number) {
-    const value = level === 0 ? 0.3 : level === 1 ? 0.6 : level === 2 ? 1.0 : 0;
+    const value = level === 0 ? 0.3 : level === 1 ? 0.6 : level === 2 ? 1.0 : level === 3 ? 1.5 : 0;
     const newWeights = { ...weights, [key]: value };
 
     // Clear follow-up preference when weight is "Not very" or "I don't know"
-    if (level === 0 || level === 3) {
+    if (level === 0 || level === 4) {
       if (key === "swellHeight") newWeights.preferredWaveSize = undefined;
       if (key === "swellPeriod") newWeights.preferredSwellPeriod = undefined;
       if (key === "windSpeed") newWeights.preferredWind = undefined;
@@ -168,10 +168,11 @@ export function AlertTuningSection({ spotId, onSave }: AlertTuningSectionProps) 
   }
 
   function weightToLevel(value: number): number {
-    if (value === 0) return 3; // I don't know
+    if (value === 0) return 4; // I don't know
     if (value <= 0.45) return 0;
     if (value <= 0.8) return 1;
-    return 2;
+    if (value <= 1.2) return 2;
+    return 3; // Critical
   }
 
   if (loading) {
@@ -239,9 +240,9 @@ export function AlertTuningSection({ spotId, onSave }: AlertTuningSectionProps) 
             selected={weights.preferredSwellPeriod ?? []}
             onSelect={(v) => handleSmartPreferenceChange("preferredSwellPeriod", "swellPeriod", v)}
           />
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">Exposure</span>
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-medium text-muted-foreground">Exposure</span>
               <ImportanceDots value={swellDirLevel} onChange={(level) => handleWeightChange("swellDirection", level)} />
             </div>
             <SwellExposurePicker
@@ -269,9 +270,9 @@ export function AlertTuningSection({ spotId, onSave }: AlertTuningSectionProps) 
             selected={weights.preferredWind ?? []}
             onSelect={(v) => handleSmartPreferenceChange("preferredWind", "windSpeed", v)}
           />
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">Direction</span>
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-medium text-muted-foreground">Direction</span>
               <ImportanceDots value={windDirLevel} onChange={(level) => handleWeightChange("windDirection", level)} />
             </div>
             <WindDirectionPicker
@@ -333,7 +334,7 @@ function TuningSection({
         )}
       </button>
       {open && (
-        <div className="px-3 pb-3 pt-1 space-y-3 border-t">
+        <div className="px-4 pb-4 pt-2 space-y-4 border-t">
           {children}
         </div>
       )}
@@ -357,19 +358,19 @@ function PreferenceGroup({
   onSelect: (value: string) => void;
 }) {
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-muted-foreground">{label}</span>
+    <div className="space-y-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-sm font-medium text-muted-foreground">{label}</span>
         <ImportanceDots value={importance} onChange={onImportanceChange} />
       </div>
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-wrap gap-2">
         {options.map(opt => {
           const isSelected = selected.includes(opt.value);
           return (
             <button
               key={opt.value}
               onClick={() => onSelect(opt.value)}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+              className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors ${
                 isSelected
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted text-muted-foreground hover:bg-accent"
@@ -388,41 +389,41 @@ function ImportanceDots({
   value,
   onChange,
 }: {
-  value: number; // 0 = low, 1 = medium, 2 = high, 3 = any/idk
+  value: number; // 0 = low, 1 = medium, 2 = high, 3 = critical, 4 = any/idk
   onChange: (level: number) => void;
 }) {
-  const labels = ["Low", "Med", "High", "Any"];
+  const labels = ["Low", "Med", "High", "Critical", "Any"];
 
-  function cycle(e: React.MouseEvent) {
+  function handleClick(level: number, e: React.MouseEvent) {
     e.stopPropagation();
-    // Cycle: any(3) → low(0) → med(1) → high(2) → any(3)
-    if (value === 3) onChange(0);
-    else if (value === 2) onChange(3);
-    else onChange(value + 1);
+    onChange(level);
   }
 
   return (
-    <button
-      onClick={cycle}
-      className="flex items-center gap-1.5 px-1.5 py-0.5 rounded hover:bg-muted/50 transition-colors"
-      title={`Priority: ${labels[value]} — click to change`}
-    >
-      <span className="text-[10px] text-muted-foreground leading-none">{labels[value]}</span>
-      <div className="flex gap-[3px]">
-        {[0, 1, 2].map(i => (
-          <div
-            key={i}
-            className={`w-[5px] h-[5px] rounded-full transition-colors ${
-              value === 3
-                ? "bg-muted-foreground/25"
-                : i <= value
-                  ? "bg-primary"
-                  : "bg-muted-foreground/25"
+    <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+      {[0, 1, 2, 3, 4].map(level => {
+        const isActive = value === level;
+        const levelLabel = labels[level];
+        return (
+          <button
+            key={level}
+            onClick={(e) => handleClick(level, e)}
+            className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+              isActive
+                ? level === 3
+                  ? "bg-orange-500 text-white"
+                  : level === 4
+                    ? "bg-muted text-muted-foreground ring-1 ring-border"
+                    : "bg-primary text-primary-foreground"
+                : "bg-muted/50 text-muted-foreground/60 hover:bg-muted hover:text-muted-foreground"
             }`}
-          />
-        ))}
-      </div>
-    </button>
+            title={`Priority: ${levelLabel}`}
+          >
+            {levelLabel}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
