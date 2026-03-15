@@ -3,14 +3,12 @@
 import { useState, useRef, useCallback } from "react";
 import { extractExifData, isExifSupported } from "@/lib/utils/exif";
 
-interface UploadedPhoto {
-  url: string;
+interface PhotoEntry {
+  localUrl: string;
+  remoteUrl?: string;
   name: string;
-}
-
-interface FailedUpload {
-  name: string;
-  error: string;
+  status: "pending" | "processing" | "uploading" | "done" | "failed";
+  error?: string;
 }
 
 const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4MB (Vercel limit)
@@ -86,12 +84,63 @@ function resizeImage(file: File): Promise<Blob> {
 }
 
 export function UploadClient({ token }: { token: string }) {
-  const [uploadedPhotos, setUploadedPhotos] = useState<UploadedPhoto[]>([]);
-  const [failedUploads, setFailedUploads] = useState<FailedUpload[]>([]);
+  const [photos, setPhotos] = useState<PhotoEntry[]>([]);
   const [isUploading, setIsUploading] = useState(false);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [totalFiles, setTotalFiles] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const processAndUpload = useCallback(
+    async (file: File, index: number) => {
+      const updatePhoto = (updates: Partial<PhotoEntry>) => {
+        setPhotos((prev) =>
+          prev.map((p, i) => (i === index ? { ...p, ...updates } : p))
+        );
+      };
+
+      try {
+        updatePhoto({ status: "processing" });
+
+        // Extract EXIF data if supported
+        let exifData = {};
+        if (isExifSupported(file)) {
+          exifData = await extractExifData(file);
+        }
+
+        // Resize if too large for Vercel's 4.5MB limit
+        const processedFile = await resizeImage(file);
+
+        updatePhoto({ status: "uploading" });
+
+        const formData = new FormData();
+        formData.append("file", processedFile, file.name);
+        formData.append("token", token);
+        formData.append("exifData", JSON.stringify(exifData));
+
+        const response = await fetch("/api/upload/public", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(
+            errorData.error || `Upload failed (${response.status})`
+          );
+        }
+
+        const data = await response.json();
+        updatePhoto({
+          status: "done",
+          remoteUrl: data.photoUrl,
+        });
+      } catch (error) {
+        updatePhoto({
+          status: "failed",
+          error: error instanceof Error ? error.message : "Upload failed",
+        });
+      }
+    },
+    [token]
+  );
 
   const handleFiles = useCallback(
     async (files: FileList) => {
@@ -99,58 +148,28 @@ export function UploadClient({ token }: { token: string }) {
       if (fileArray.length === 0) return;
 
       setIsUploading(true);
-      setTotalFiles(fileArray.length);
-      setCurrentIndex(0);
 
-      for (let i = 0; i < fileArray.length; i++) {
-        setCurrentIndex(i + 1);
-        const file = fileArray[i];
+      // Immediately show all photos as local thumbnails
+      const startIndex = photos.length;
+      const newEntries: PhotoEntry[] = fileArray.map((file) => ({
+        localUrl: URL.createObjectURL(file),
+        name: file.name,
+        status: "pending" as const,
+      }));
+      setPhotos((prev) => [...prev, ...newEntries]);
 
-        try {
-          // Extract EXIF data if supported
-          let exifData = {};
-          if (isExifSupported(file)) {
-            exifData = await extractExifData(file);
-          }
-
-          // Resize if too large for Vercel's 4.5MB limit
-          const processedFile = await resizeImage(file);
-
-          const formData = new FormData();
-          formData.append("file", processedFile, file.name);
-          formData.append("token", token);
-          formData.append("exifData", JSON.stringify(exifData));
-
-          const response = await fetch("/api/upload/public", {
-            method: "POST",
-            body: formData,
-          });
-
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.error || `Upload failed (${response.status})`);
-          }
-
-          const data = await response.json();
-
-          setUploadedPhotos((prev) => [
-            ...prev,
-            { url: data.photoUrl || URL.createObjectURL(file), name: file.name },
-          ]);
-        } catch (error) {
-          setFailedUploads((prev) => [
-            ...prev,
-            {
-              name: file.name,
-              error: error instanceof Error ? error.message : "Upload failed",
-            },
-          ]);
-        }
+      // Process up to 3 photos at a time
+      const CONCURRENCY = 3;
+      for (let i = 0; i < fileArray.length; i += CONCURRENCY) {
+        const batch = fileArray.slice(i, i + CONCURRENCY);
+        await Promise.all(
+          batch.map((file, j) => processAndUpload(file, startIndex + i + j))
+        );
       }
 
       setIsUploading(false);
     },
-    [token]
+    [photos.length, processAndUpload]
   );
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -165,8 +184,10 @@ export function UploadClient({ token }: { token: string }) {
     fileInputRef.current?.click();
   };
 
-  const hasUploaded = uploadedPhotos.length > 0;
-  const totalUploaded = uploadedPhotos.length;
+  const donePhotos = photos.filter((p) => p.status === "done");
+  const failedPhotos = photos.filter((p) => p.status === "failed");
+  const hasPhotos = photos.length > 0;
+  const totalUploaded = donePhotos.length;
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -180,7 +201,7 @@ export function UploadClient({ token }: { token: string }) {
       <div className="flex-1 px-4 py-6">
         {/* Upload area */}
         <div className="mb-6">
-          {!isUploading && !hasUploaded && (
+          {!isUploading && !hasPhotos && (
             <>
               <p className="text-muted-foreground text-center mb-6 text-sm">
                 Select surf photos from your phone to upload them to your
@@ -197,24 +218,21 @@ export function UploadClient({ token }: { token: string }) {
 
           {isUploading && (
             <div className="text-center">
-              <div className="mb-4">
-                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-primary border-r-transparent" />
-              </div>
               <p className="text-foreground font-medium">
-                Uploading {currentIndex} of {totalFiles} photos...
+                Uploading {donePhotos.length} of {photos.length} photos...
               </p>
               <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-muted">
                 <div
                   className="h-full rounded-full bg-primary transition-all duration-300"
                   style={{
-                    width: `${(currentIndex / totalFiles) * 100}%`,
+                    width: `${(donePhotos.length / photos.length) * 100}%`,
                   }}
                 />
               </div>
             </div>
           )}
 
-          {!isUploading && hasUploaded && (
+          {!isUploading && hasPhotos && (
             <div className="text-center mb-6">
               <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-primary/20 flex items-center justify-center">
                 <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -232,12 +250,12 @@ export function UploadClient({ token }: { token: string }) {
         </div>
 
         {/* Failed uploads */}
-        {failedUploads.length > 0 && (
+        {failedPhotos.length > 0 && (
           <div className="mb-6 rounded-lg bg-destructive/10 border border-destructive/20 p-3">
             <p className="text-destructive text-sm font-medium mb-1">
-              {failedUploads.length} upload{failedUploads.length !== 1 ? "s" : ""} failed
+              {failedPhotos.length} upload{failedPhotos.length !== 1 ? "s" : ""} failed
             </p>
-            {failedUploads.map((f, i) => (
+            {failedPhotos.map((f, i) => (
               <p key={i} className="text-destructive/80 text-xs truncate">
                 {f.name}: {f.error}
               </p>
@@ -246,23 +264,37 @@ export function UploadClient({ token }: { token: string }) {
         )}
 
         {/* Photo thumbnails grid */}
-        {uploadedPhotos.length > 0 && (
+        {photos.length > 0 && (
           <div className="mb-6">
             <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide mb-2">
-              Uploaded Photos
+              {isUploading ? "Photos" : "Uploaded Photos"}
             </p>
             <div className="grid grid-cols-3 gap-2">
-              {uploadedPhotos.map((photo, i) => (
+              {photos.map((photo, i) => (
                 <div
                   key={i}
-                  className="aspect-square overflow-hidden rounded-lg bg-muted"
+                  className="relative aspect-square overflow-hidden rounded-lg bg-muted"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={photo.url}
+                    src={photo.remoteUrl || photo.localUrl}
                     alt={photo.name}
                     className="h-full w-full object-cover"
                   />
+                  {(photo.status === "pending" ||
+                    photo.status === "processing" ||
+                    photo.status === "uploading") && (
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-r-transparent" />
+                    </div>
+                  )}
+                  {photo.status === "failed" && (
+                    <div className="absolute inset-0 bg-destructive/40 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -270,7 +302,7 @@ export function UploadClient({ token }: { token: string }) {
         )}
 
         {/* Add more photos button */}
-        {!isUploading && hasUploaded && (
+        {!isUploading && hasPhotos && (
           <button
             onClick={openFilePicker}
             className="w-full rounded-xl border-2 border-primary px-6 py-4 text-lg font-semibold text-primary active:bg-primary/10 transition-colors"
