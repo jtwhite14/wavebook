@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db, surfSpots } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
-import { ConditionWeights, DEFAULT_CONDITION_WEIGHTS, VALID_CARDINAL_DIRECTIONS, CardinalDirection, VALID_PREFERRED_WAVE_SIZES, VALID_PREFERRED_SWELL_PERIODS, VALID_PREFERRED_WINDS } from "@/types";
+import { ConditionWeights, DEFAULT_CONDITION_WEIGHTS, VALID_CARDINAL_DIRECTIONS, CardinalDirection, VALID_PREFERRED_WAVE_SIZES, VALID_PREFERRED_SWELL_PERIODS, VALID_PREFERRED_WINDS, VALID_PREFERRED_TIDES } from "@/types";
 
 export async function GET(
   request: NextRequest,
@@ -63,9 +63,10 @@ export async function PUT(
       windSpeed: clamp(body.windSpeed ?? 0.7),
       windDirection: clamp(body.windDirection ?? 0.6),
       waveEnergy: clamp(body.waveEnergy ?? 0.8),
-      preferredTide: ['any', 'low', 'mid', 'high', 'incoming', 'outgoing'].includes(body.preferredTide)
-        ? body.preferredTide
-        : 'any',
+      preferredTide: Array.isArray(body.preferredTide)
+        ? body.preferredTide.filter((v: string) => VALID_PREFERRED_TIDES.includes(v as any))
+        : typeof body.preferredTide === 'string' && VALID_PREFERRED_TIDES.includes(body.preferredTide as any) ? [body.preferredTide]
+        : undefined,
       preferredWaveSize: Array.isArray(body.preferredWaveSize)
         ? body.preferredWaveSize.filter((v: string) => VALID_PREFERRED_WAVE_SIZES.includes(v as any))
         : VALID_PREFERRED_WAVE_SIZES.includes(body.preferredWaveSize) ? [body.preferredWaveSize]

@@ -105,19 +105,19 @@ export const DEFAULT_CONDITION_WEIGHTS: ConditionWeights = {
 export const WEIGHT_PRESETS: Record<string, { label: string; weights: Partial<ConditionWeights> }> = {
   allAround: {
     label: "All-around",
-    weights: { swellHeight: 0.8, swellPeriod: 0.7, swellDirection: 0.9, tideHeight: 0.5, windSpeed: 0.7, windDirection: 0.6, waveEnergy: 0.8, preferredTide: 'any' },
+    weights: { swellHeight: 0.8, swellPeriod: 0.7, swellDirection: 0.9, tideHeight: 0.5, windSpeed: 0.7, windDirection: 0.6, waveEnergy: 0.8 },
   },
   reefBreak: {
     label: "Reef break",
-    weights: { swellHeight: 0.7, swellPeriod: 0.9, swellDirection: 1.0, tideHeight: 0.9, windSpeed: 0.8, windDirection: 0.7, waveEnergy: 0.8, preferredTide: 'low', preferredWind: ['offshore'], preferredSwellPeriod: ['long'] },
+    weights: { swellHeight: 0.7, swellPeriod: 0.9, swellDirection: 1.0, tideHeight: 0.9, windSpeed: 0.8, windDirection: 0.7, waveEnergy: 0.8, preferredTide: ['low'], preferredWind: ['offshore'], preferredSwellPeriod: ['long'] },
   },
   beachBreak: {
     label: "Beach break",
-    weights: { swellHeight: 0.9, swellPeriod: 0.6, swellDirection: 0.7, tideHeight: 0.4, windSpeed: 0.9, windDirection: 0.7, waveEnergy: 0.9, preferredTide: 'any', preferredWind: ['glassy'] },
+    weights: { swellHeight: 0.9, swellPeriod: 0.6, swellDirection: 0.7, tideHeight: 0.4, windSpeed: 0.9, windDirection: 0.7, waveEnergy: 0.9, preferredWind: ['glassy'] },
   },
   pointBreak: {
     label: "Point break",
-    weights: { swellHeight: 0.7, swellPeriod: 0.8, swellDirection: 1.0, tideHeight: 0.6, windSpeed: 0.7, windDirection: 0.8, waveEnergy: 0.8, preferredTide: 'mid', preferredWind: ['offshore'], preferredSwellPeriod: ['long'] },
+    weights: { swellHeight: 0.7, swellPeriod: 0.8, swellDirection: 1.0, tideHeight: 0.6, windSpeed: 0.7, windDirection: 0.8, waveEnergy: 0.8, preferredTide: ['mid'], preferredWind: ['offshore'], preferredSwellPeriod: ['long'] },
   },
 };
 

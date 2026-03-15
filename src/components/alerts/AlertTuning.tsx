@@ -40,6 +40,10 @@ export function AlertTuningSection({ spotId, onSave }: AlertTuningSectionProps) 
         if (w.preferredWind && !Array.isArray(w.preferredWind)) {
           w.preferredWind = [w.preferredWind];
         }
+        // Migrate legacy single-value tide preference to array
+        if (w.preferredTide && typeof w.preferredTide === 'string') {
+          w.preferredTide = w.preferredTide === 'any' ? undefined : [w.preferredTide];
+        }
         setWeights(w);
         setActivePreset(detectPreset(w));
       })
@@ -98,16 +102,16 @@ export function AlertTuningSection({ spotId, onSave }: AlertTuningSectionProps) 
   }
 
   function handleWeightChange(key: keyof ConditionWeights, level: number) {
-    const value = level === 0 ? 0.3 : level === 1 ? 0.6 : 1.0;
+    const value = level === 0 ? 0.3 : level === 1 ? 0.6 : level === 2 ? 1.0 : 0;
     const newWeights = { ...weights, [key]: value };
 
-    // Clear follow-up preference when weight drops to "Not very"
-    if (level === 0) {
+    // Clear follow-up preference when weight is "Not very" or "I don't know"
+    if (level === 0 || level === 3) {
       if (key === "swellHeight") newWeights.preferredWaveSize = undefined;
       if (key === "swellPeriod") newWeights.preferredSwellPeriod = undefined;
       if (key === "windSpeed") newWeights.preferredWind = undefined;
       if (key === "windDirection") newWeights.preferredWindDirections = undefined;
-      if (key === "tideHeight") newWeights.preferredTide = "any";
+      if (key === "tideHeight") newWeights.preferredTide = undefined;
     }
 
     setWeights(newWeights);
@@ -119,21 +123,19 @@ export function AlertTuningSection({ spotId, onSave }: AlertTuningSectionProps) 
     key: K,
     value: string,
   ) {
+    // "unknown" means "I don't know" — clear all selections
+    if (value === "unknown") {
+      const newWeights = { ...weights, [key]: undefined };
+      setWeights(newWeights);
+      setActivePreset(null);
+      debouncedSave(newWeights);
+      return;
+    }
     const current = (weights[key] as string[] | undefined) ?? [];
     const updated = current.includes(value)
       ? current.filter(v => v !== value)
       : [...current, value];
     const newWeights = { ...weights, [key]: updated.length > 0 ? updated : undefined };
-    setWeights(newWeights);
-    setActivePreset(null);
-    debouncedSave(newWeights);
-  }
-
-  function handlePreferenceChange<K extends keyof ConditionWeights>(
-    key: K,
-    value: ConditionWeights[K] | undefined,
-  ) {
-    const newWeights = { ...weights, [key]: value };
     setWeights(newWeights);
     setActivePreset(null);
     debouncedSave(newWeights);
@@ -152,6 +154,7 @@ export function AlertTuningSection({ spotId, onSave }: AlertTuningSectionProps) 
   }
 
   function weightToLevel(value: number): number {
+    if (value === 0) return 3; // I don't know
     if (value <= 0.45) return 0;
     if (value <= 0.8) return 1;
     return 2;
@@ -200,7 +203,7 @@ export function AlertTuningSection({ spotId, onSave }: AlertTuningSectionProps) 
             onChange={level => handleWeightChange("swellHeight", level)}
           />
           <FollowUpRow
-            visible={swellHeightLevel >= 1}
+            visible={swellHeightLevel >= 1 && swellHeightLevel !== 3}
             label="What size waves?"
             options={[
               { value: "small", label: "Small (<3ft)" },
@@ -218,7 +221,7 @@ export function AlertTuningSection({ spotId, onSave }: AlertTuningSectionProps) 
             onChange={level => handleWeightChange("swellPeriod", level)}
           />
           <FollowUpRow
-            visible={swellPeriodLevel >= 1}
+            visible={swellPeriodLevel >= 1 && swellPeriodLevel !== 3}
             label="What swell period?"
             options={[
               { value: "short", label: "Short (<8s)" },
@@ -234,7 +237,7 @@ export function AlertTuningSection({ spotId, onSave }: AlertTuningSectionProps) 
             value={swellDirLevel}
             onChange={level => handleWeightChange("swellDirection", level)}
           />
-          {swellDirLevel >= 1 && (
+          {swellDirLevel >= 1 && swellDirLevel !== 3 && (
             <div className="pl-1 pb-1">
               <SwellExposurePicker
                 value={weights.swellExposure ?? []}
@@ -254,7 +257,7 @@ export function AlertTuningSection({ spotId, onSave }: AlertTuningSectionProps) 
             onChange={level => handleWeightChange("windSpeed", level)}
           />
           <FollowUpRow
-            visible={windSpeedLevel >= 1}
+            visible={windSpeedLevel >= 1 && windSpeedLevel !== 3}
             label="What wind conditions?"
             options={[
               { value: "glassy", label: "Light/Glassy" },
@@ -271,7 +274,7 @@ export function AlertTuningSection({ spotId, onSave }: AlertTuningSectionProps) 
             value={windDirLevel}
             onChange={level => handleWeightChange("windDirection", level)}
           />
-          {windDirLevel >= 1 && (
+          {windDirLevel >= 1 && windDirLevel !== 3 && (
             <div className="pl-1 pb-1">
               <WindDirectionPicker
                 value={weights.preferredWindDirections ?? []}
@@ -291,18 +294,17 @@ export function AlertTuningSection({ spotId, onSave }: AlertTuningSectionProps) 
             onChange={level => handleWeightChange("tideHeight", level)}
           />
           <FollowUpRow
-            visible={tideLevel >= 1}
+            visible={tideLevel >= 1 && tideLevel !== 3}
             label="Best tide?"
             options={[
-              { value: "any", label: "Any" },
               { value: "low", label: "Low" },
               { value: "mid", label: "Mid" },
               { value: "high", label: "High" },
               { value: "incoming", label: "Incoming" },
               { value: "outgoing", label: "Outgoing" },
             ]}
-            selected={weights.preferredTide ? [weights.preferredTide] : []}
-            onChange={(v) => handlePreferenceChange("preferredTide", (v || "any") as ConditionWeights["preferredTide"])}
+            selected={weights.preferredTide ?? []}
+            onChange={(v) => handleMultiPreferenceChange("preferredTide", v)}
           />
         </div>
       </div>
@@ -319,17 +321,22 @@ function WeightRow({
   value: number;
   onChange: (level: number) => void;
 }) {
-  const levels = ["Not very", "Somewhat", "Very"];
+  const levels: { text: string; level: number }[] = [
+    { text: "Not very", level: 0 },
+    { text: "Somewhat", level: 1 },
+    { text: "Very", level: 2 },
+    { text: "I don't know", level: 3 },
+  ];
   return (
     <div className="pt-2">
       <label className="text-xs text-muted-foreground mb-1 block">{label}</label>
       <div className="flex gap-1">
-        {levels.map((text, i) => (
+        {levels.map(({ text, level }) => (
           <button
-            key={i}
-            onClick={() => onChange(i)}
-            className={`flex-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
-              value === i
+            key={level}
+            onClick={() => onChange(level)}
+            className={`flex-1 px-1.5 py-1 rounded text-xs font-medium transition-colors ${
+              value === level
                 ? "bg-primary text-primary-foreground"
                 : "bg-muted text-muted-foreground hover:bg-accent"
             }`}
@@ -355,6 +362,7 @@ function FollowUpRow({
   selected: string[];
   onChange: (value: string) => void;
 }) {
+  const isIdk = selected.length === 0;
   return (
     <div
       className={`overflow-hidden transition-all duration-200 ${
@@ -364,6 +372,16 @@ function FollowUpRow({
       <div className="pl-1 pt-1 pb-1">
         <label className="text-xs text-muted-foreground mb-1 block">{label}</label>
         <div className="flex flex-wrap gap-1">
+          <button
+            onClick={() => onChange("unknown")}
+            className={`px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${
+              isIdk
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:bg-accent"
+            }`}
+          >
+            I don&apos;t know
+          </button>
           {options.map((opt) => (
             <button
               key={opt.value}

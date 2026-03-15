@@ -211,14 +211,21 @@ function getWindPreferenceMultiplier(windSpeed: number | null, pref: PreferredWi
   return 1.0;
 }
 
-function getTidePreferenceMultiplier(tideHeight: number | null, pref: string | undefined): number {
-  if (tideHeight == null || !pref || pref === 'any') return 1.0;
-  // Approximate tide ranges (meters relative to mean)
-  if (pref === 'low') return tideHeight < -0.3 ? PREF_BONUS : (tideHeight > 0.3 ? PREF_PENALTY : 1.0);
-  if (pref === 'high') return tideHeight > 0.3 ? PREF_BONUS : (tideHeight < -0.3 ? PREF_PENALTY : 1.0);
-  if (pref === 'mid') return (tideHeight >= -0.3 && tideHeight <= 0.3) ? PREF_BONUS : PREF_PENALTY;
-  // incoming/outgoing can't be determined from a single height snapshot
-  return 1.0;
+function getTidePreferenceMultiplier(tideHeight: number | null, pref: string | string[] | undefined): number {
+  if (tideHeight == null || !pref) return 1.0;
+  const prefs = Array.isArray(pref) ? pref : pref === 'any' ? [] : [pref];
+  if (prefs.length === 0) return 1.0;
+
+  // Check if any preferred tide matches — best match wins
+  function singleTideMultiplier(p: string): number {
+    if (p === 'low') return tideHeight! < -0.3 ? PREF_BONUS : (tideHeight! > 0.3 ? PREF_PENALTY : 1.0);
+    if (p === 'high') return tideHeight! > 0.3 ? PREF_BONUS : (tideHeight! < -0.3 ? PREF_PENALTY : 1.0);
+    if (p === 'mid') return (tideHeight! >= -0.3 && tideHeight! <= 0.3) ? PREF_BONUS : PREF_PENALTY;
+    // incoming/outgoing can't be determined from a single height snapshot
+    return 1.0;
+  }
+
+  return Math.max(...prefs.map(singleTideMultiplier));
 }
 
 // ── Core matching ──
