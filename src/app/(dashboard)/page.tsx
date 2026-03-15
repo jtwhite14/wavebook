@@ -21,6 +21,7 @@ import {
   Trash2,
   MapPin,
   AlertTriangle,
+  SlidersHorizontal,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -76,16 +77,28 @@ export default function DashboardPage() {
   const [isSavingLocation, setIsSavingLocation] = useState(false);
   const [dismissedLocationBanner, setDismissedLocationBanner] = useState(false);
 
-  const spotsWithoutLocation = useMemo(
-    () => spots.filter((s) => parseFloat(s.latitude) === 0 && parseFloat(s.longitude) === 0),
-    [spots]
-  );
+  const spotsNeedingAttention = useMemo(() => {
+    const items: { spot: SurfSpot; missingLocation: boolean; missingTuning: boolean }[] = [];
+    for (const s of spots) {
+      const missingLocation = parseFloat(s.latitude) === 0 && parseFloat(s.longitude) === 0;
+      const missingTuning = !s.conditionWeights;
+      if (missingLocation || missingTuning) {
+        items.push({ spot: s, missingLocation, missingTuning });
+      }
+    }
+    return items;
+  }, [spots]);
 
   const handleFixLocation = (spot: SurfSpot) => {
     setSelectedSpot(null);
     setFixLocationSpot(spot);
     setNewSpotMarker(null);
     setAddSpotMode("fixing-picking");
+  };
+
+  const handleFixTuning = async (spot: SurfSpot) => {
+    await handleSpotClick(spot);
+    setEditSpotOpen(true);
   };
 
   const handleCancelFixLocation = () => {
@@ -336,32 +349,46 @@ export default function DashboardPage() {
         {...(initialViewState && { initialViewState })}
       />
 
-      {/* Missing location banner */}
-      {spotsWithoutLocation.length > 0 && !dismissedLocationBanner && !selectedSpot && addSpotMode === "idle" && (
+      {/* Spots needing attention banner */}
+      {spotsNeedingAttention.length > 0 && !dismissedLocationBanner && !selectedSpot && addSpotMode === "idle" && (
         <div className="absolute top-4 left-4 right-4 sm:left-auto sm:right-4 z-20 sm:w-96">
           <div className="rounded-lg border border-amber-500/40 bg-background/95 backdrop-blur-sm shadow-lg p-4">
             <div className="flex items-start gap-3">
               <AlertTriangle className="size-5 text-amber-500 shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium">
-                  {spotsWithoutLocation.length === 1
-                    ? "1 spot is missing a location"
-                    : `${spotsWithoutLocation.length} spots are missing locations`}
+                  {spotsNeedingAttention.length === 1
+                    ? "1 spot needs your attention"
+                    : `${spotsNeedingAttention.length} spots need your attention`}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Spots need locations for alerts and conditions to work.
+                  Complete your spots to get accurate alerts and conditions.
                 </p>
                 <div className="mt-3 space-y-2">
-                  {spotsWithoutLocation.map((spot) => (
-                    <button
-                      key={spot.id}
-                      onClick={() => handleFixLocation(spot)}
-                      className="flex items-center gap-2 w-full rounded-md border border-dashed px-3 py-2 text-left hover:bg-accent/50 transition-colors"
-                    >
-                      <MapPin className="size-3.5 text-muted-foreground shrink-0" />
-                      <span className="text-sm truncate flex-1">{spot.name}</span>
-                      <span className="text-xs text-primary font-medium shrink-0">Set location</span>
-                    </button>
+                  {spotsNeedingAttention.map(({ spot, missingLocation, missingTuning }) => (
+                    <div key={spot.id} className="rounded-md border border-dashed px-3 py-2 space-y-1.5">
+                      <p className="text-sm font-medium truncate">{spot.name}</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {missingLocation && (
+                          <button
+                            onClick={() => handleFixLocation(spot)}
+                            className="inline-flex items-center gap-1.5 rounded-full bg-accent/50 px-2.5 py-1 text-xs hover:bg-accent transition-colors"
+                          >
+                            <MapPin className="size-3" />
+                            <span>Set location</span>
+                          </button>
+                        )}
+                        {missingTuning && (
+                          <button
+                            onClick={() => handleFixTuning(spot)}
+                            className="inline-flex items-center gap-1.5 rounded-full bg-accent/50 px-2.5 py-1 text-xs hover:bg-accent transition-colors"
+                          >
+                            <SlidersHorizontal className="size-3" />
+                            <span>Tune alerts</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
