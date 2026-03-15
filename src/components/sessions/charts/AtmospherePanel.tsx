@@ -20,11 +20,11 @@ interface AtmospherePanelProps {
   sessionIndex: number;
 }
 
-const cHumidity = "oklch(0.696 0.17 162.48)";
+const cHumidity = "oklch(0.512 0.273 263.49)";
 const cPrecip = "oklch(0.627 0.265 303.9)";
 const cPressure = "oklch(0.645 0.246 16.439)";
 const cCloud = "oklch(0.769 0.188 70.08)";
-const cVisibility = "oklch(0.82 0.17 90)";
+const cVisibility = "oklch(0.848 0.173 86.06)";
 
 const metrics = [
   { key: "Humidity", unit: "%", decimals: 0, color: cHumidity },

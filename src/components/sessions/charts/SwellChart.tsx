@@ -26,7 +26,7 @@ interface SwellChartProps {
   sessionIndex: number;
 }
 
-const c1 = "oklch(0.82 0.17 90)";     // yellow — height
+const c1 = "oklch(0.848 0.173 86.06)";     // yellow — height
 const c2 = "oklch(0.769 0.188 70.08)"; // orange — period
 
 export function SwellChart({ data, sessionIndex }: SwellChartProps) {

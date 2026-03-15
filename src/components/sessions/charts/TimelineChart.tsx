@@ -9,7 +9,7 @@ import {
 import { getDirectionText } from "@/lib/api/open-meteo";
 
 const axisColor = "oklch(0.45 0 0)";
-const sessionColor = "oklch(0.82 0.17 90)";
+const sessionColor = "oklch(0.848 0.173 86.06)";
 
 function formatHour(time: string) {
   const d = new Date(time);

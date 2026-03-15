@@ -21,8 +21,8 @@ interface WaveChartProps {
   sessionIndex: number;
 }
 
-const c1 = "oklch(0.82 0.17 90)";   // yellow — sig wave
-const c2 = "oklch(0.696 0.17 162.48)"; // teal — wind wave
+const c1 = "oklch(0.848 0.173 86.06)";   // yellow — sig wave
+const c2 = "oklch(0.512 0.273 263.49)"; // blue — wind wave
 
 export function WaveChart({ data, sessionIndex }: WaveChartProps) {
   const chartData = data.map((h) => ({

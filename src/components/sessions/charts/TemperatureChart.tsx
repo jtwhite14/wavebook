@@ -22,7 +22,7 @@ interface TemperatureChartProps {
 }
 
 const cAir = "oklch(0.769 0.188 70.08)";  // warm orange
-const cWater = "oklch(0.696 0.17 162.48)"; // cool teal
+const cWater = "oklch(0.512 0.273 263.49)"; // cool blue
 
 export function TemperatureChart({ data, sessionIndex }: TemperatureChartProps) {
   const chartData = data.map((h) => ({
