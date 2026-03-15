@@ -23,6 +23,7 @@ export interface MarineConditions {
   cloudCover: number | null;
   visibility: number | null;
   tideHeight: number | null;
+  waveEnergy: number | null;
   weatherCode: number | null;
   isDay: boolean | null;
   timestamp: Date;

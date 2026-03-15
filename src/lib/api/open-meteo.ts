@@ -1,6 +1,7 @@
 import { MarineConditions, HourlyForecast, ForecastData } from "@/types";
 import { fetchTideHeight, fetchTideTimeline } from "./noaa-tides";
 import { fetchNdbcWaveData, fetchNdbcTimeline } from "./noaa-ndbc";
+import { calculateWaveEnergy } from "@/lib/wave-energy";
 
 const MARINE_API_BASE = "https://marine-api.open-meteo.com/v1/marine";
 const HISTORICAL_API_BASE = "https://archive-api.open-meteo.com/v1/era5";
@@ -305,6 +306,7 @@ export async function fetchHistoricalConditions(
       cloudCover: wi >= 0 ? (weatherData!.hourly.cloud_cover?.[wi] ?? null) : null,
       visibility: wi >= 0 ? (weatherData!.hourly.visibility?.[wi] ?? null) : null,
       tideHeight,
+      waveEnergy: calculateWaveEnergy(primarySwellHeight, primarySwellPeriod),
       weatherCode: wi >= 0 ? (weatherData!.hourly.weather_code?.[wi] ?? null) : null,
       isDay: wi >= 0 && weatherData!.hourly.is_day?.[wi] != null ? weatherData!.hourly.is_day[wi] === 1 : null,
       timestamp: new Date(marineTimes[mi] || weatherTimes[wi]),
@@ -352,35 +354,40 @@ function transformForecastResponse(
   marineData: OpenMeteoMarineResponse,
   weatherData: OpenMeteoWeatherResponse | null
 ): ForecastData {
-  const hourly: HourlyForecast[] = marineData.hourly.time.map((time, index) => ({
-    time,
-    timestamp: new Date(time),
-    waveHeight: marineData.hourly.wave_height?.[index] ?? null,
-    wavePeriod: marineData.hourly.wave_period?.[index] ?? null,
-    waveDirection: marineData.hourly.wave_direction?.[index] ?? null,
-    primarySwellHeight: marineData.hourly.swell_wave_height?.[index] ?? null,
-    primarySwellPeriod: marineData.hourly.swell_wave_period?.[index] ?? null,
-    primarySwellDirection: marineData.hourly.swell_wave_direction?.[index] ?? null,
-    secondarySwellHeight: marineData.hourly.secondary_swell_wave_height?.[index] ?? null,
-    secondarySwellPeriod: marineData.hourly.secondary_swell_wave_period?.[index] ?? null,
-    secondarySwellDirection: marineData.hourly.secondary_swell_wave_direction?.[index] ?? null,
-    windWaveHeight: marineData.hourly.wind_wave_height?.[index] ?? null,
-    windWavePeriod: marineData.hourly.wind_wave_period?.[index] ?? null,
-    windWaveDirection: marineData.hourly.wind_wave_direction?.[index] ?? null,
-    windSpeed: weatherData?.hourly?.wind_speed_10m?.[index] ?? null,
-    windDirection: weatherData?.hourly?.wind_direction_10m?.[index] ?? null,
-    windGust: weatherData?.hourly?.wind_gusts_10m?.[index] ?? null,
-    airTemp: weatherData?.hourly?.temperature_2m?.[index] ?? null,
-    seaSurfaceTemp: weatherData?.hourly?.sea_surface_temperature?.[index] ?? null,
-    humidity: weatherData?.hourly?.relative_humidity_2m?.[index] ?? null,
-    precipitation: weatherData?.hourly?.precipitation?.[index] ?? null,
-    pressureMsl: weatherData?.hourly?.pressure_msl?.[index] ?? null,
-    cloudCover: weatherData?.hourly?.cloud_cover?.[index] ?? null,
-    visibility: weatherData?.hourly?.visibility?.[index] ?? null,
-    tideHeight: null,
-    weatherCode: weatherData?.hourly?.weather_code?.[index] ?? null,
-    isDay: weatherData?.hourly?.is_day?.[index] != null ? weatherData.hourly.is_day[index] === 1 : null,
-  }));
+  const hourly: HourlyForecast[] = marineData.hourly.time.map((time, index) => {
+    const swellHt = marineData.hourly.swell_wave_height?.[index] ?? null;
+    const swellPd = marineData.hourly.swell_wave_period?.[index] ?? null;
+    return {
+      time,
+      timestamp: new Date(time),
+      waveHeight: marineData.hourly.wave_height?.[index] ?? null,
+      wavePeriod: marineData.hourly.wave_period?.[index] ?? null,
+      waveDirection: marineData.hourly.wave_direction?.[index] ?? null,
+      primarySwellHeight: swellHt,
+      primarySwellPeriod: swellPd,
+      primarySwellDirection: marineData.hourly.swell_wave_direction?.[index] ?? null,
+      secondarySwellHeight: marineData.hourly.secondary_swell_wave_height?.[index] ?? null,
+      secondarySwellPeriod: marineData.hourly.secondary_swell_wave_period?.[index] ?? null,
+      secondarySwellDirection: marineData.hourly.secondary_swell_wave_direction?.[index] ?? null,
+      windWaveHeight: marineData.hourly.wind_wave_height?.[index] ?? null,
+      windWavePeriod: marineData.hourly.wind_wave_period?.[index] ?? null,
+      windWaveDirection: marineData.hourly.wind_wave_direction?.[index] ?? null,
+      windSpeed: weatherData?.hourly?.wind_speed_10m?.[index] ?? null,
+      windDirection: weatherData?.hourly?.wind_direction_10m?.[index] ?? null,
+      windGust: weatherData?.hourly?.wind_gusts_10m?.[index] ?? null,
+      airTemp: weatherData?.hourly?.temperature_2m?.[index] ?? null,
+      seaSurfaceTemp: weatherData?.hourly?.sea_surface_temperature?.[index] ?? null,
+      humidity: weatherData?.hourly?.relative_humidity_2m?.[index] ?? null,
+      precipitation: weatherData?.hourly?.precipitation?.[index] ?? null,
+      pressureMsl: weatherData?.hourly?.pressure_msl?.[index] ?? null,
+      cloudCover: weatherData?.hourly?.cloud_cover?.[index] ?? null,
+      visibility: weatherData?.hourly?.visibility?.[index] ?? null,
+      tideHeight: null,
+      waveEnergy: calculateWaveEnergy(swellHt, swellPd),
+      weatherCode: weatherData?.hourly?.weather_code?.[index] ?? null,
+      isDay: weatherData?.hourly?.is_day?.[index] != null ? weatherData.hourly.is_day[index] === 1 : null,
+    };
+  });
 
   return {
     latitude: marineData.latitude,
@@ -511,35 +518,40 @@ export async function fetchHourlyTimeline(
   }
 
   // Build full hourly array
-  const allHours: HourlyForecast[] = times.map((time, index) => ({
-    time,
-    timestamp: new Date(time),
-    waveHeight: marineData?.hourly?.wave_height?.[index] ?? null,
-    wavePeriod: marineData?.hourly?.wave_period?.[index] ?? null,
-    waveDirection: marineData?.hourly?.wave_direction?.[index] ?? null,
-    primarySwellHeight: marineData?.hourly?.swell_wave_height?.[index] ?? null,
-    primarySwellPeriod: marineData?.hourly?.swell_wave_period?.[index] ?? null,
-    primarySwellDirection: marineData?.hourly?.swell_wave_direction?.[index] ?? null,
-    secondarySwellHeight: marineData?.hourly?.secondary_swell_wave_height?.[index] ?? null,
-    secondarySwellPeriod: marineData?.hourly?.secondary_swell_wave_period?.[index] ?? null,
-    secondarySwellDirection: marineData?.hourly?.secondary_swell_wave_direction?.[index] ?? null,
-    windWaveHeight: marineData?.hourly?.wind_wave_height?.[index] ?? null,
-    windWavePeriod: marineData?.hourly?.wind_wave_period?.[index] ?? null,
-    windWaveDirection: marineData?.hourly?.wind_wave_direction?.[index] ?? null,
-    windSpeed: weatherData?.hourly?.wind_speed_10m?.[index] ?? null,
-    windDirection: weatherData?.hourly?.wind_direction_10m?.[index] ?? null,
-    windGust: weatherData?.hourly?.wind_gusts_10m?.[index] ?? null,
-    airTemp: weatherData?.hourly?.temperature_2m?.[index] ?? null,
-    seaSurfaceTemp: weatherData?.hourly?.sea_surface_temperature?.[index] ?? null,
-    humidity: weatherData?.hourly?.relative_humidity_2m?.[index] ?? null,
-    precipitation: weatherData?.hourly?.precipitation?.[index] ?? null,
-    pressureMsl: weatherData?.hourly?.pressure_msl?.[index] ?? null,
-    cloudCover: weatherData?.hourly?.cloud_cover?.[index] ?? null,
-    visibility: weatherData?.hourly?.visibility?.[index] ?? null,
-    tideHeight: tideByHour.get(time) ?? null,
-    weatherCode: weatherData?.hourly?.weather_code?.[index] ?? null,
-    isDay: weatherData?.hourly?.is_day?.[index] != null ? weatherData.hourly.is_day[index] === 1 : null,
-  }));
+  const allHours: HourlyForecast[] = times.map((time, index) => {
+    const swellHt = marineData?.hourly?.swell_wave_height?.[index] ?? null;
+    const swellPd = marineData?.hourly?.swell_wave_period?.[index] ?? null;
+    return {
+      time,
+      timestamp: new Date(time),
+      waveHeight: marineData?.hourly?.wave_height?.[index] ?? null,
+      wavePeriod: marineData?.hourly?.wave_period?.[index] ?? null,
+      waveDirection: marineData?.hourly?.wave_direction?.[index] ?? null,
+      primarySwellHeight: swellHt,
+      primarySwellPeriod: swellPd,
+      primarySwellDirection: marineData?.hourly?.swell_wave_direction?.[index] ?? null,
+      secondarySwellHeight: marineData?.hourly?.secondary_swell_wave_height?.[index] ?? null,
+      secondarySwellPeriod: marineData?.hourly?.secondary_swell_wave_period?.[index] ?? null,
+      secondarySwellDirection: marineData?.hourly?.secondary_swell_wave_direction?.[index] ?? null,
+      windWaveHeight: marineData?.hourly?.wind_wave_height?.[index] ?? null,
+      windWavePeriod: marineData?.hourly?.wind_wave_period?.[index] ?? null,
+      windWaveDirection: marineData?.hourly?.wind_wave_direction?.[index] ?? null,
+      windSpeed: weatherData?.hourly?.wind_speed_10m?.[index] ?? null,
+      windDirection: weatherData?.hourly?.wind_direction_10m?.[index] ?? null,
+      windGust: weatherData?.hourly?.wind_gusts_10m?.[index] ?? null,
+      airTemp: weatherData?.hourly?.temperature_2m?.[index] ?? null,
+      seaSurfaceTemp: weatherData?.hourly?.sea_surface_temperature?.[index] ?? null,
+      humidity: weatherData?.hourly?.relative_humidity_2m?.[index] ?? null,
+      precipitation: weatherData?.hourly?.precipitation?.[index] ?? null,
+      pressureMsl: weatherData?.hourly?.pressure_msl?.[index] ?? null,
+      cloudCover: weatherData?.hourly?.cloud_cover?.[index] ?? null,
+      visibility: weatherData?.hourly?.visibility?.[index] ?? null,
+      tideHeight: tideByHour.get(time) ?? null,
+      waveEnergy: calculateWaveEnergy(swellHt, swellPd),
+      weatherCode: weatherData?.hourly?.weather_code?.[index] ?? null,
+      isDay: weatherData?.hourly?.is_day?.[index] != null ? weatherData.hourly.is_day[index] === 1 : null,
+    };
+  });
 
   // NDBC buoy fallback: if Open-Meteo marine returned no wave data for the
   // entire timeline, backfill from the nearest NOAA buoy
@@ -562,6 +574,7 @@ export async function fetchHourlyTimeline(
           hour.primarySwellHeight = obs.waveHeight;
           hour.primarySwellPeriod = obs.dominantPeriod;
           hour.primarySwellDirection = obs.meanWaveDirection;
+          hour.waveEnergy = calculateWaveEnergy(obs.waveHeight, obs.dominantPeriod);
         }
       }
     }

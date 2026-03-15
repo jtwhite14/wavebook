@@ -12,6 +12,7 @@ import {
   formatTideHeight,
   getDirectionText,
 } from "@/lib/api/open-meteo";
+import { formatWaveEnergy, getEnergyLabel, calculateWaveEnergy } from "@/lib/wave-energy";
 
 interface ConditionsDisplayProps {
   conditions: MarineConditions;
@@ -87,6 +88,21 @@ export function ConditionsDisplay({ conditions, compact = false }: ConditionsDis
               <ConditionItem label="Wave Height" value={formatWaveHeight(conditions.waveHeight)} />
               <ConditionItem label="Period" value={formatWavePeriod(conditions.wavePeriod)} />
               <ConditionItem label="Direction" value={formatDirection(conditions.waveDirection)} />
+              {(() => {
+                const energy = conditions.waveEnergy ?? calculateWaveEnergy(conditions.primarySwellHeight, conditions.primarySwellPeriod);
+                if (energy == null) return null;
+                return (
+                  <ConditionItem
+                    label="Energy"
+                    value={
+                      <span className="inline-flex items-center gap-1.5">
+                        {formatWaveEnergy(energy)}
+                        <span className="text-muted-foreground font-normal text-xs">({getEnergyLabel(energy)})</span>
+                      </span>
+                    }
+                  />
+                );
+              })()}
             </div>
 
             {/* Swell breakdown */}
