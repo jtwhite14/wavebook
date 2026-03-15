@@ -17,9 +17,10 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { extractExifData, isExifSupported } from "@/lib/utils/exif";
-import { SurfSpot } from "@/lib/db/schema";
+import { SurfSpot, Surfboard, Wetsuit } from "@/lib/db/schema";
 import { findNearestSpot } from "@/lib/utils/geo";
 import { groupPhotosBySession, PhotoGroup } from "@/lib/utils/photo-grouping";
+import { EquipmentSelect } from "@/components/equipment/EquipmentSelect";
 
 const MAX_FILE_SIZE = 4 * 1024 * 1024;
 const MAX_DIMENSION = 2048;
@@ -68,6 +69,8 @@ function resizeImage(file: File): Promise<Blob> {
 interface SessionFormProps {
   spots: SurfSpot[];
   defaultSpotId?: string;
+  surfboards?: Surfboard[];
+  wetsuits?: Wetsuit[];
 }
 
 interface UploadedPhoto {
@@ -86,6 +89,8 @@ interface SessionDraft {
   photoUrls: string[];
   expanded: boolean;
   activePhotoIndex: number;
+  surfboardId: string;
+  wetsuitId: string;
 }
 
 function deriveSessionDraft(group: PhotoGroup, spots: SurfSpot[], defaultSpotId?: string): SessionDraft {
@@ -118,10 +123,10 @@ function deriveSessionDraft(group: PhotoGroup, spots: SurfSpot[], defaultSpotId?
     .map((p) => p.photoUrl)
     .filter((url) => !url.startsWith("blob:"));
 
-  return { spotId, date, startTime, endTime, rating: 3, notes: "", photoUrls, expanded: false, activePhotoIndex: 0 };
+  return { spotId, date, startTime, endTime, rating: 3, notes: "", photoUrls, expanded: false, activePhotoIndex: 0, surfboardId: "", wetsuitId: "" };
 }
 
-export function SessionForm({ spots, defaultSpotId }: SessionFormProps) {
+export function SessionForm({ spots, defaultSpotId, surfboards = [], wetsuits = [] }: SessionFormProps) {
   const router = useRouter();
   const [step, setStep] = useState<"photo" | "details">("photo");
 
@@ -276,6 +281,8 @@ export function SessionForm({ spots, defaultSpotId }: SessionFormProps) {
       photoUrls: [],
       expanded: true,
       activePhotoIndex: 0,
+      surfboardId: "",
+      wetsuitId: "",
     }]);
     setStep("details");
   };
@@ -343,6 +350,8 @@ export function SessionForm({ spots, defaultSpotId }: SessionFormProps) {
             notes: draft.notes.trim() || null,
             photoUrl: draft.photoUrls[0] || null,
             photoUrls: draft.photoUrls.length > 0 ? draft.photoUrls : null,
+            surfboardId: draft.surfboardId && draft.surfboardId !== "none" ? draft.surfboardId : null,
+            wetsuitId: draft.wetsuitId && draft.wetsuitId !== "none" ? draft.wetsuitId : null,
           }),
         });
 
@@ -696,7 +705,7 @@ export function SessionForm({ spots, defaultSpotId }: SessionFormProps) {
 
                 {/* Thumbnail strip for multi-photo */}
                 {draft.photoUrls.length > 1 && (
-                  <div className="flex gap-2 overflow-x-auto pb-1">
+                  <div className="flex gap-2 overflow-x-auto py-1">
                     {draft.photoUrls.map((url, i) => (
                       <button
                         key={i}
