@@ -6,6 +6,9 @@ import {
   formatWavePeriod,
   formatWindSpeed,
   formatTemperature,
+  formatVisibility,
+  formatPressure,
+  formatPrecipitation,
   getDirectionText,
 } from "@/lib/api/open-meteo";
 
@@ -158,13 +161,10 @@ export function ConditionsDisplay({ conditions, compact = false }: ConditionsDis
         <h4 className="text-sm font-medium text-muted-foreground mb-3">Weather</h4>
         <div className="grid grid-cols-2 gap-4">
           <ConditionItem label="Humidity" value={formatValue(conditions.humidity, "%")} />
-          <ConditionItem label="Precipitation" value={formatValue(conditions.precipitation, " mm", 1)} />
-          <ConditionItem label="Pressure" value={formatValue(conditions.pressureMsl, " hPa")} />
+          <ConditionItem label="Precipitation" value={formatPrecipitation(conditions.precipitation)} />
+          <ConditionItem label="Pressure" value={formatPressure(conditions.pressureMsl)} />
           <ConditionItem label="Cloud Cover" value={formatValue(conditions.cloudCover, "%")} />
-          <ConditionItem
-            label="Visibility"
-            value={conditions.visibility !== null ? `${(conditions.visibility / 1000).toFixed(1)} km` : "N/A"}
-          />
+          <ConditionItem label="Visibility" value={formatVisibility(conditions.visibility)} />
         </div>
       </div>
     </div>

@@ -301,11 +301,12 @@ export function getDirectionText(degrees: number | null): string {
 }
 
 /**
- * Format wave height for display
+ * Format wave height for display (meters → feet)
  */
 export function formatWaveHeight(meters: number | null): string {
   if (meters === null) return "N/A";
-  return `${meters.toFixed(1)}m`;
+  const feet = meters * 3.28084;
+  return `${feet.toFixed(1)} ft`;
 }
 
 /**
@@ -317,17 +318,46 @@ export function formatWavePeriod(seconds: number | null): string {
 }
 
 /**
- * Format wind speed for display
+ * Format wind speed for display (km/h → mph)
  */
 export function formatWindSpeed(kmh: number | null): string {
   if (kmh === null) return "N/A";
-  return `${kmh.toFixed(0)} km/h`;
+  const mph = kmh * 0.621371;
+  return `${mph.toFixed(0)} mph`;
 }
 
 /**
- * Format temperature for display
+ * Format temperature for display (°C → °F)
  */
 export function formatTemperature(celsius: number | null): string {
   if (celsius === null) return "N/A";
-  return `${celsius.toFixed(1)}°C`;
+  const fahrenheit = celsius * 9 / 5 + 32;
+  return `${fahrenheit.toFixed(0)}°F`;
+}
+
+/**
+ * Format visibility for display (meters → miles)
+ */
+export function formatVisibility(meters: number | null): string {
+  if (meters === null) return "N/A";
+  const miles = meters / 1609.344;
+  return `${miles.toFixed(1)} mi`;
+}
+
+/**
+ * Format pressure for display (hPa → inHg)
+ */
+export function formatPressure(hpa: number | null): string {
+  if (hpa === null) return "N/A";
+  const inHg = hpa * 0.02953;
+  return `${inHg.toFixed(2)} inHg`;
+}
+
+/**
+ * Format precipitation for display (mm → inches)
+ */
+export function formatPrecipitation(mm: number | null): string {
+  if (mm === null) return "N/A";
+  const inches = mm / 25.4;
+  return `${inches.toFixed(2)} in`;
 }

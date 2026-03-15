@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ConditionsDisplay } from "@/components/sessions/ConditionsDisplay";
 import { toast } from "sonner";
 import { formatDate, formatTime, formatRelative } from "@/lib/utils/date";
+import { formatWaveHeight, formatWindSpeed } from "@/lib/api/open-meteo";
 import { SurfSpot, SurfSession } from "@/lib/db/schema";
 import type { MarineConditions, SurfSessionWithConditions } from "@/types";
 
@@ -356,7 +357,7 @@ function ForecastDisplay({ spotId, lat, lng }: { spotId: string; lat: number; ln
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Waves</span>
-                  <span>{minWave.toFixed(1)} - {maxWave.toFixed(1)}m</span>
+                  <span>{formatWaveHeight(minWave)} - {formatWaveHeight(maxWave)}</span>
                 </div>
                 {middayHour.primarySwellPeriod && (
                   <div className="flex justify-between">
@@ -367,7 +368,7 @@ function ForecastDisplay({ spotId, lat, lng }: { spotId: string; lat: number; ln
                 {middayHour.windSpeed !== null && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Wind</span>
-                    <span>{middayHour.windSpeed.toFixed(0)} km/h</span>
+                    <span>{formatWindSpeed(middayHour.windSpeed)}</span>
                   </div>
                 )}
               </div>

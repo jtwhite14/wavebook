@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatDate, formatTime } from "@/lib/utils/date";
-import { formatWaveHeight } from "@/lib/api/open-meteo";
+import { formatWaveHeight, formatWindSpeed } from "@/lib/api/open-meteo";
 import { SurfSessionWithConditions } from "@/types";
 
 interface SessionCardProps {
@@ -47,7 +47,7 @@ export function SessionCard({ session }: SessionCardProps) {
                   )}
                   {session.conditions.windSpeed && (
                     <span className="inline-flex items-center px-2 py-1 rounded-full bg-gray-500/15 text-gray-400">
-                      {parseFloat(session.conditions.windSpeed).toFixed(0)} km/h
+                      {formatWindSpeed(parseFloat(session.conditions.windSpeed))}
                     </span>
                   )}
                 </div>
