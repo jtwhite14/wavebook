@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import dynamic from "next/dynamic";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,7 +42,7 @@ export default function SettingsPage() {
   const [phoneDisplay, setPhoneDisplay] = useState("");
   const [smsEnabled, setSmsEnabled] = useState(false);
   const [phoneLoading, setPhoneLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [phoneSaving, setPhoneSaving] = useState(false);
 
   // Track saved values to detect changes
   const [savedPhone, setSavedPhone] = useState("");
@@ -51,14 +51,10 @@ export default function SettingsPage() {
 
   const phoneE164 = toE164(phoneDisplay);
 
-  const hasChanges = useMemo(() => {
-    const phoneChanged = phoneE164 !== savedPhone;
-    const smsChanged = smsEnabled !== savedSmsEnabled;
-    const locationChanged =
-      homeLocation?.latitude !== savedLocation?.latitude ||
-      homeLocation?.longitude !== savedLocation?.longitude;
-    return phoneChanged || smsChanged || locationChanged;
-  }, [phoneE164, savedPhone, smsEnabled, savedSmsEnabled, homeLocation, savedLocation]);
+  const hasPhoneChanges = phoneE164 !== savedPhone || smsEnabled !== savedSmsEnabled;
+  const hasLocationChanges =
+    homeLocation?.latitude !== savedLocation?.latitude ||
+    homeLocation?.longitude !== savedLocation?.longitude;
 
   useEffect(() => {
     fetchHomeLocation();
@@ -114,56 +110,48 @@ export default function SettingsPage() {
     }
   }
 
-  async function handleSaveAll() {
-    setSaving(true);
+  async function handleSavePhone() {
+    setPhoneSaving(true);
     try {
-      const promises: Promise<Response>[] = [];
-
-      // Save phone + SMS settings
-      promises.push(
-        fetch("/api/user/phone", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ phoneNumber: phoneE164 || "", smsEnabled }),
-        })
-      );
-
-      // Save location if changed
-      if (
-        homeLocation &&
-        (homeLocation.latitude !== savedLocation?.latitude ||
-          homeLocation.longitude !== savedLocation?.longitude)
-      ) {
-        promises.push(
-          fetch("/api/user/location", {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(homeLocation),
-          })
-        );
-      }
-
-      const results = await Promise.all(promises);
-      const allOk = results.every((r) => r.ok);
-
-      if (allOk) {
-        toast.success("Settings saved");
+      const res = await fetch("/api/user/phone", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phoneNumber: phoneE164 || "", smsEnabled }),
+      });
+      if (res.ok) {
+        toast.success("Phone settings saved");
         setSavedPhone(phoneE164);
         setSavedSmsEnabled(smsEnabled);
-        if (homeLocation) setSavedLocation({ ...homeLocation });
       } else {
-        const phoneRes = results[0];
-        if (!phoneRes.ok) {
-          const data = await phoneRes.json();
-          toast.error(data.error || "Failed to save settings");
-        } else {
-          toast.error("Failed to save location");
-        }
+        const data = await res.json();
+        toast.error(data.error || "Failed to save phone settings");
       }
     } catch {
-      toast.error("Failed to save settings");
+      toast.error("Failed to save phone settings");
     } finally {
-      setSaving(false);
+      setPhoneSaving(false);
+    }
+  }
+
+  async function handleSaveLocation() {
+    if (!homeLocation) return;
+    setLocationSaving(true);
+    try {
+      const res = await fetch("/api/user/location", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(homeLocation),
+      });
+      if (res.ok) {
+        toast.success("Location saved");
+        setSavedLocation({ ...homeLocation });
+      } else {
+        toast.error("Failed to save location");
+      }
+    } catch {
+      toast.error("Failed to save location");
+    } finally {
+      setLocationSaving(false);
     }
   }
 
@@ -280,6 +268,13 @@ export default function SettingsPage() {
                     disabled={phoneE164.length !== 12}
                   />
                 </div>
+                <Button
+                  size="sm"
+                  onClick={handleSavePhone}
+                  disabled={!hasPhoneChanges || phoneSaving}
+                >
+                  {phoneSaving ? "Saving..." : "Save"}
+                </Button>
               </>
             )}
           </div>
@@ -349,25 +344,24 @@ export default function SettingsPage() {
                   ? `Location: ${homeLocation.latitude.toFixed(4)}, ${homeLocation.longitude.toFixed(4)}`
                   : "Click the map to set your home location"}
               </p>
-              {homeLocation && (
-                <Button variant="outline" size="sm" onClick={handleClearLocation} disabled={locationSaving}>
-                  Clear Location
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={handleSaveLocation}
+                  disabled={!hasLocationChanges || !homeLocation || locationSaving}
+                >
+                  {locationSaving ? "Saving..." : "Save"}
                 </Button>
-              )}
+                {homeLocation && (
+                  <Button variant="outline" size="sm" onClick={handleClearLocation} disabled={locationSaving}>
+                    Clear
+                  </Button>
+                )}
+              </div>
             </>
           )}
         </CardContent>
       </Card>
-
-      {/* Save Button */}
-      <Button
-        onClick={handleSaveAll}
-        disabled={!hasChanges || saving}
-        className="w-full"
-        size="lg"
-      >
-        {saving ? "Saving..." : "Save Settings"}
-      </Button>
 
       {/* About */}
       <Card>
