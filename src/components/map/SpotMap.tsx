@@ -130,7 +130,7 @@ export default function SpotMap({
   const flyToSpot = useCallback((spot: SurfSpot) => {
     mapRef.current?.flyTo({
       center: [parseFloat(spot.longitude), parseFloat(spot.latitude)],
-      zoom: 12,
+      zoom: 14,
       duration: 1000,
       padding: flyToPadding,
     });
@@ -246,7 +246,7 @@ export default function SpotMap({
               if (onSharedSpotClick) onSharedSpotClick(shared);
               mapRef.current?.flyTo({
                 center: [lng, lat],
-                zoom: 12,
+                zoom: 14,
                 duration: 1000,
                 padding: flyToPadding,
               });
