@@ -143,6 +143,13 @@ export async function POST(
       ...(typeof weightWaveEnergy === "number" && { weightWaveEnergy: clampWeight(weightWaveEnergy).toString() }),
     }).returning();
 
+    // Fire-and-forget: recompute alerts for this spot with the new profile
+    const origin = request.nextUrl.origin;
+    fetch(`${origin}/api/spots/${id}/compute-alerts`, {
+      method: "POST",
+      headers: { cookie: request.headers.get("cookie") ?? "" },
+    }).catch(err => console.error("Background alert recompute failed:", err));
+
     return NextResponse.json({ profile: formatProfile(profile) }, { status: 201 });
   } catch (error) {
     console.error("Error creating profile:", error);

@@ -35,7 +35,6 @@ import {
 import { toast } from "sonner";
 import { SpotConditions } from "@/components/spots/SpotConditions";
 import { SpotAlertCard } from "@/components/alerts/SpotAlertCard";
-import { ForecastScores } from "@/components/alerts/ForecastScores";
 import { WeeklyForecast } from "@/components/forecast/WeeklyForecast";
 import { SpotPaneSessionDetail } from "@/components/spots/SpotPaneSessionDetail";
 import { SpotPaneEditSpot } from "@/components/spots/SpotPaneEditSpot";
@@ -707,10 +706,7 @@ export default function DashboardPage() {
                     )}
 
 
-                    {/* 5-day forecast score breakdown */}
-                    <ForecastScores spotId={selectedSpot.id} />
-
-                    {/* Weekly conditions forecast */}
+                    {/* Weekly forecast with integrated scores */}
                     <WeeklyForecast spotId={selectedSpot.id} />
 
                     {/* Recent Sessions section */}
