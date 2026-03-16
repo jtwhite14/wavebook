@@ -7,6 +7,12 @@ import { SurfSpot } from "@/lib/db/schema";
 import SpotMarker from "./SpotMarker";
 import "mapbox-gl/dist/mapbox-gl.css";
 
+interface SharedSpotMarkerData {
+  shareId: string;
+  spot: { id: string; name: string; latitude: string; longitude: string };
+  sharedBy: { id: string; name: string | null };
+}
+
 interface SpotMapProps {
   spots: SurfSpot[];
   onSpotClick?: (spot: SurfSpot) => void;
@@ -23,6 +29,10 @@ interface SpotMapProps {
   flyToPadding?: { top?: number; bottom?: number; left?: number; right?: number };
   /** Set of spot IDs that have active alerts */
   alertSpotIds?: Set<string>;
+  /** Shared spots from other users */
+  sharedSpots?: SharedSpotMarkerData[];
+  /** Callback when a shared spot marker is clicked */
+  onSharedSpotClick?: (sharedSpot: SharedSpotMarkerData) => void;
 }
 
 const DEFAULT_VIEW_STATE = {
@@ -44,6 +54,8 @@ export default function SpotMap({
   initialViewState = DEFAULT_VIEW_STATE,
   flyToPadding,
   alertSpotIds,
+  sharedSpots,
+  onSharedSpotClick,
 }: SpotMapProps) {
   const mapRef = useRef<MapRef>(null);
   const [viewState, setViewState] = useState(initialViewState);
@@ -207,6 +219,44 @@ export default function SpotMap({
             }}
           >
             <SpotMarker spot={spot} isSelected={selectedSpotId === spot.id} hasAlert={alertSpotIds?.has(spot.id)} />
+          </Marker>
+        );
+      })}
+
+      {/* Shared spot markers */}
+      {sharedSpots?.map((shared) => {
+        const lng = parseFloat(shared.spot.longitude);
+        const lat = parseFloat(shared.spot.latitude);
+        return (
+          <Marker
+            key={`shared-${shared.shareId}`}
+            longitude={lng}
+            latitude={lat}
+            anchor="bottom"
+            onClick={(e) => {
+              e.originalEvent.stopPropagation();
+              if (onSharedSpotClick) onSharedSpotClick(shared);
+              mapRef.current?.flyTo({
+                center: [lng, lat],
+                zoom: 12,
+                duration: 1000,
+                padding: flyToPadding,
+              });
+            }}
+          >
+            <div className="relative group cursor-pointer">
+              <svg
+                className="w-8 h-8 drop-shadow-lg transition-all duration-200 ease-in-out text-blue-500 hover:scale-110"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+              </svg>
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-background border rounded-md shadow-lg whitespace-nowrap text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                {shared.spot.name}
+                <span className="text-xs text-muted-foreground ml-1">(shared)</span>
+              </div>
+            </div>
           </Marker>
         );
       })}

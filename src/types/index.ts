@@ -227,6 +227,44 @@ export interface ExifData {
   longitude?: number;
 }
 
+// Spot sharing types
+export interface SpotShareResponse {
+  id: string;
+  spotId: string;
+  sharedByUserId: string;
+  sharedWithUserId: string;
+  status: 'pending' | 'accepted' | 'declined';
+  inviteCode: string;
+  createdAt: Date;
+  respondedAt: Date | null;
+  sharedWith?: {
+    id: string;
+    name: string | null;
+    email: string;
+  };
+  sharedBy?: {
+    id: string;
+    name: string | null;
+    email: string;
+  };
+}
+
+export interface SharedSpotView {
+  shareId: string;
+  spot: {
+    id: string;
+    name: string;
+    latitude: string;
+    longitude: string;
+    description: string | null;
+  };
+  sharedBy: {
+    id: string;
+    name: string | null;
+  };
+  highRatedSessionCount: number;
+}
+
 // API response types
 export interface ApiResponse<T> {
   success: boolean;

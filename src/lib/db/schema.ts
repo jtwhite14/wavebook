@@ -288,6 +288,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   accounts: many(accounts),
   sessions: many(sessions),
   uploadSessions: many(uploadSessions),
+  spotSharesSent: many(spotShares, { relationName: "sharedBy" }),
+  spotSharesReceived: many(spotShares, { relationName: "sharedWith" }),
 }));
 
 export const accountsRelations = relations(accounts, ({ one }) => ({
@@ -313,6 +315,7 @@ export const surfSpotsRelations = relations(surfSpots, ({ one, many }) => ({
   forecasts: many(spotForecasts),
   alerts: many(spotAlerts),
   conditionProfiles: many(conditionProfiles),
+  shares: many(spotShares),
 }));
 
 export const surfSessionsRelations = relations(surfSessions, ({ one, many }) => ({
@@ -406,6 +409,27 @@ export const spotAlertsRelations = relations(spotAlerts, ({ one }) => ({
   }),
 }));
 
+// Spot Shares table (per-spot sharing with other users)
+export const spotShares = pgTable("spot_shares", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  spotId: uuid("spot_id")
+    .notNull()
+    .references(() => surfSpots.id, { onDelete: "cascade" }),
+  sharedByUserId: uuid("shared_by_user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  sharedWithUserId: uuid("shared_with_user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  status: varchar("status", { length: 20 }).notNull().default("pending"), // pending | accepted | declined
+  inviteCode: varchar("invite_code", { length: 64 }).notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  respondedAt: timestamp("responded_at"),
+}, (table) => [
+  uniqueIndex("uq_spot_shares_trio").on(table.spotId, table.sharedByUserId, table.sharedWithUserId),
+  index("idx_spot_shares_shared_with").on(table.sharedWithUserId),
+]);
+
 // Upload Sessions table (for QR code photo upload flow)
 export const uploadSessions = pgTable("upload_sessions", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -432,6 +456,23 @@ export const uploadPhotos = pgTable("upload_photos", {
   existingSessionDate: timestamp("existing_session_date"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+export const spotSharesRelations = relations(spotShares, ({ one }) => ({
+  spot: one(surfSpots, {
+    fields: [spotShares.spotId],
+    references: [surfSpots.id],
+  }),
+  sharedBy: one(users, {
+    fields: [spotShares.sharedByUserId],
+    references: [users.id],
+    relationName: "sharedBy",
+  }),
+  sharedWith: one(users, {
+    fields: [spotShares.sharedWithUserId],
+    references: [users.id],
+    relationName: "sharedWith",
+  }),
+}));
 
 export const uploadSessionsRelations = relations(uploadSessions, ({ one, many }) => ({
   user: one(users, {
@@ -473,3 +514,5 @@ export type Surfboard = typeof surfboards.$inferSelect;
 export type NewSurfboard = typeof surfboards.$inferInsert;
 export type Wetsuit = typeof wetsuits.$inferSelect;
 export type NewWetsuit = typeof wetsuits.$inferInsert;
+export type SpotShare = typeof spotShares.$inferSelect;
+export type NewSpotShare = typeof spotShares.$inferInsert;

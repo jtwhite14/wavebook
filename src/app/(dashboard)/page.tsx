@@ -25,6 +25,7 @@ import {
   BellOff,
   Bell,
   Target,
+  Share2,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -40,8 +41,12 @@ import { WeeklyForecast } from "@/components/forecast/WeeklyForecast";
 import { SpotPaneSessionDetail } from "@/components/spots/SpotPaneSessionDetail";
 import { SpotPaneEditSpot } from "@/components/spots/SpotPaneEditSpot";
 import { SpotPaneProfiles } from "@/components/profiles/SpotPaneProfiles";
+import { SpotSharePanel } from "@/components/sharing/SpotSharePanel";
+import { IncomingInvites } from "@/components/sharing/IncomingInvites";
+import { SharedSpotsList } from "@/components/sharing/SharedSpotsList";
+import { SharedSpotPane } from "@/components/sharing/SharedSpotPane";
 import type { SurfSpot } from "@/lib/db/schema";
-import type { SurfSessionWithConditions } from "@/types";
+import type { SurfSessionWithConditions, SharedSpotView } from "@/types";
 
 const SpotMap = dynamic(() => import("@/components/map/SpotMap"), {
   ssr: false,
@@ -74,11 +79,21 @@ export default function DashboardPage() {
   const [loadingSpotSessions, setLoadingSpotSessions] = useState(false);
   const [isDeletingSpot, setIsDeletingSpot] = useState(false);
   const [showAllSessions, setShowAllSessions] = useState(false);
-  const [paneView, setPaneView] = useState<"spot" | "session" | "edit" | "profiles">("spot");
+  const [paneView, setPaneView] = useState<"spot" | "session" | "edit" | "profiles" | "shares">("spot");
   const [viewingSession, setViewingSession] = useState<SurfSessionWithConditions | null>(null);
   const [alertSpotIds, setAlertSpotIds] = useState<Set<string>>(new Set());
   const [alertSummaries, setAlertSummaries] = useState<Array<{ spotId: string; spotName: string; effectiveScore: number; forecastHour: string; timeWindow: string; conditions: string }>>([]);
   const [panelTab, setPanelTab] = useState<"sessions" | "alerts">("alerts");
+
+  // Sharing state
+  const [sharedSpots, setSharedSpots] = useState<SharedSpotView[]>([]);
+  const [incomingInvites, setIncomingInvites] = useState<Array<{
+    id: string;
+    inviteCode: string;
+    spot: { id: string; name: string };
+    sharedBy: { id: string; name: string | null; email: string };
+  }>>([]);
+  const [selectedSharedSpot, setSelectedSharedSpot] = useState<SharedSpotView | null>(null);
 
   // Missing location prompt
   const [fixLocationSpot, setFixLocationSpot] = useState<SurfSpot | null>(null);
@@ -210,10 +225,27 @@ export default function DashboardPage() {
 
   const handleCloseSpotDetail = () => {
     setSelectedSpot(null);
+    setSelectedSharedSpot(null);
     setSpotSessions([]);
     setShowAllSessions(false);
     setPaneView("spot");
     setViewingSession(null);
+  };
+
+  const handleSharedSpotClick = (sharedSpot: SharedSpotView) => {
+    setSelectedSpot(null);
+    setSelectedSharedSpot(sharedSpot);
+  };
+
+  const handleInviteResolved = (inviteId: string, action: "accept" | "decline") => {
+    setIncomingInvites((prev) => prev.filter((i) => i.id !== inviteId));
+    if (action === "accept") {
+      // Refresh shared spots
+      fetch("/api/shares/spots")
+        .then((r) => (r.ok ? r.json() : { sharedSpots: [] }))
+        .then((data) => setSharedSpots(data.sharedSpots || []))
+        .catch(() => {});
+    }
   };
 
   const handleViewSession = (session: SurfSessionWithConditions) => {
@@ -278,10 +310,14 @@ export default function DashboardPage() {
       fetch("/api/spots").then((r) => (r.ok ? r.json() : { spots: [] })),
       fetch("/api/user/location").then((r) => (r.ok ? r.json() : { latitude: null, longitude: null })),
       fetch("/api/sessions?limit=5").then((r) => (r.ok ? r.json() : { sessions: [] })),
+      fetch("/api/shares/spots").then((r) => (r.ok ? r.json() : { sharedSpots: [] })),
+      fetch("/api/shares/incoming").then((r) => (r.ok ? r.json() : { invites: [] })),
     ])
-      .then(([spotsData, locationData, sessionsData]) => {
+      .then(([spotsData, locationData, sessionsData, sharedSpotsData, invitesData]) => {
         setSpots(spotsData.spots || []);
         setSessions(sessionsData.sessions || []);
+        setSharedSpots(sharedSpotsData.sharedSpots || []);
+        setIncomingInvites(invitesData.invites || []);
         if (locationData.latitude && locationData.longitude) {
           setHomeLocation({ latitude: locationData.latitude, longitude: locationData.longitude });
         }
@@ -386,6 +422,15 @@ export default function DashboardPage() {
         newSpotMarker={newSpotMarker}
         flyToPadding={flyToPadding}
         alertSpotIds={alertSpotIds}
+        sharedSpots={sharedSpots.map((s) => ({
+          shareId: s.shareId,
+          spot: s.spot,
+          sharedBy: s.sharedBy,
+        }))}
+        onSharedSpotClick={(shared) => {
+          const full = sharedSpots.find((s) => s.shareId === shared.shareId);
+          if (full) handleSharedSpotClick(full);
+        }}
         {...(initialViewState && { initialViewState })}
       />
 
@@ -459,6 +504,12 @@ export default function DashboardPage() {
                 handleBackToSpot();
               }}
             />
+          ) : paneView === "shares" ? (
+            <SpotSharePanel
+              spotId={selectedSpot.id}
+              spotName={selectedSpot.name}
+              onBack={handleBackToSpot}
+            />
           ) : paneView === "profiles" ? (
             <SpotPaneProfiles
               spotId={selectedSpot.id}
@@ -498,6 +549,10 @@ export default function DashboardPage() {
                       <DropdownMenuItem onClick={() => setPaneView("profiles")}>
                         <Target className="size-3.5 mr-2" />
                         Condition Profiles
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setPaneView("shares")}>
+                        <Share2 className="size-3.5 mr-2" />
+                        Share
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={handleToggleSilence}>
                         {selectedSpot.alertsSilenced ? (
@@ -738,8 +793,26 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* Shared spot detail pane */}
+      {selectedSharedSpot && !selectedSpot && addSpotMode === "idle" && (
+        <SharedSpotPane
+          sharedSpot={selectedSharedSpot}
+          onClose={() => setSelectedSharedSpot(null)}
+        />
+      )}
+
+      {/* Incoming invites banner */}
+      {incomingInvites.length > 0 && !selectedSpot && !selectedSharedSpot && addSpotMode === "idle" && !spotsNeedingAttention.length && (
+        <div className="absolute top-4 left-4 right-4 sm:left-auto sm:right-4 z-20 sm:w-96">
+          <IncomingInvites
+            invites={incomingInvites}
+            onResolved={handleInviteResolved}
+          />
+        </div>
+      )}
+
       {/* Recent Sessions / Alerts panel — visible when no spot is selected */}
-      {!selectedSpot && addSpotMode === "idle" && (sessions.length > 0 || alertSummaries.length > 0) && (
+      {!selectedSpot && !selectedSharedSpot && addSpotMode === "idle" && (sessions.length > 0 || alertSummaries.length > 0 || sharedSpots.length > 0) && (
         <div className="absolute bottom-4 left-4 right-4 sm:bottom-auto sm:right-auto sm:top-4 z-10 sm:w-80">
           <div className="rounded-lg border bg-background/90 backdrop-blur-sm shadow-lg overflow-hidden">
             {/* Tab header */}
@@ -851,6 +924,16 @@ export default function DashboardPage() {
                       </button>
                     );
                   })
+                )}
+                {/* Shared spots in alerts tab */}
+                {sharedSpots.length > 0 && (
+                  <>
+                    <div className="border-t" />
+                    <SharedSpotsList
+                      sharedSpots={sharedSpots}
+                      onSpotClick={handleSharedSpotClick}
+                    />
+                  </>
                 )}
               </div>
             )}
