@@ -116,57 +116,65 @@ type Step =
   | "name"
   | "preset"
   | "waveSize"
-  | "swellPeriod"
-  | "swellDirection"
-  | "windSpeed"
-  | "windDirection"
-  | "tide"
-  | "season"
   | "exc_waveSize"
+  | "swellPeriod"
   | "exc_swellPeriod"
+  | "swellDirection"
   | "exc_swellDirection"
+  | "windSpeed"
   | "exc_windSpeed"
+  | "windDirection"
   | "exc_windDirection"
-  | "exc_tide";
+  | "tide"
+  | "exc_tide"
+  | "season"
+  | "exc_season"
+  | "quality";
 
 const BASE_STEPS: Step[] = [
   "name",
   "preset",
   "waveSize",
+  "exc_waveSize",
   "swellPeriod",
+  "exc_swellPeriod",
   "swellDirection",
+  "exc_swellDirection",
   "windSpeed",
+  "exc_windSpeed",
   "windDirection",
+  "exc_windDirection",
   "tide",
+  "exc_tide",
   "season",
+  "exc_season",
+  "quality",
 ];
 
-// Map from target step → exclusion step
-const EXCLUSION_STEP_FOR: Partial<Record<Step, Step>> = {
-  waveSize: "exc_waveSize",
-  swellPeriod: "exc_swellPeriod",
-  swellDirection: "exc_swellDirection",
-  windSpeed: "exc_windSpeed",
-  windDirection: "exc_windDirection",
-  tide: "exc_tide",
-};
+// Exclusion steps that can be skipped
+const EXCLUSION_STEPS = new Set<Step>([
+  "exc_waveSize", "exc_swellPeriod", "exc_swellDirection",
+  "exc_windSpeed", "exc_windDirection", "exc_tide", "exc_season",
+]);
 
 const STEP_QUESTIONS: Record<Step, string> = {
   name: "What should we call this profile?",
   preset: "What type of break is this?",
   waveSize: "What size waves work here?",
-  swellPeriod: "What swell period is ideal?",
-  swellDirection: "What direction should the swell come from?",
-  windSpeed: "What wind conditions work?",
-  windDirection: "What wind direction is best?",
-  tide: "What tide levels work?",
-  season: "When does this spot work best?",
   exc_waveSize: "What wave sizes don't work?",
+  swellPeriod: "What swell period is ideal?",
   exc_swellPeriod: "What swell periods don't work?",
+  swellDirection: "What direction should the swell come from?",
   exc_swellDirection: "What swell directions don't work?",
+  windSpeed: "What wind conditions work?",
   exc_windSpeed: "What wind conditions don't work?",
+  windDirection: "What wind direction is best?",
   exc_windDirection: "What wind directions don't work?",
+  tide: "What tide levels work?",
   exc_tide: "What tide levels don't work?",
+  season: "When does this spot work best?",
+  exc_season: "What months don't work?",
+  quality: "How would you describe this spot?",
 };
 
 export function ProfileWizard({
@@ -179,7 +187,6 @@ export function ProfileWizard({
   onDirectionEditStop,
   directionEditState,
 }: ProfileWizardProps) {
-  const [steps, setSteps] = useState<Step[]>(BASE_STEPS);
   const [stepIndex, setStepIndex] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -228,6 +235,7 @@ export function ProfileWizard({
   const [excludeSwellPeriod, setExcludeSwellPeriod] = useState<string[]>(exc?.swellPeriod ?? []);
   const [excludeWindSpeed, setExcludeWindSpeed] = useState<string[]>(exc?.windSpeed ?? []);
   const [excludeTide, setExcludeTide] = useState<string[]>(exc?.tideHeight ?? []);
+  const [excludeMonths, setExcludeMonths] = useState<number[]>([]);
 
   // Importance weights
   const [wSwellHeight, setWSwellHeight] = useState(profile?.weightSwellHeight ?? 0.8);
@@ -240,13 +248,14 @@ export function ProfileWizard({
 
   const [activePreset, setActivePreset] = useState<string | null>(null);
 
+  const steps = BASE_STEPS;
   const currentStep = steps[stepIndex];
   const isFirst = stepIndex === 0;
   const isLast = stepIndex === steps.length - 1;
   const isCompassStep = currentStep === "swellDirection" || currentStep === "windDirection"
     || currentStep === "exc_swellDirection" || currentStep === "exc_windDirection";
-  const isExclusionStep = currentStep?.startsWith("exc_");
-  const canAddExclusion = !isExclusionStep && EXCLUSION_STEP_FOR[currentStep] != null;
+  const isExclusionStep = EXCLUSION_STEPS.has(currentStep);
+  const isSkippable = isExclusionStep || currentStep === "preset";
 
   // Toggle helpers
   function togglePill<T extends string>(current: T[], value: T): T[] {
@@ -321,29 +330,6 @@ export function ProfileWizard({
     if (isFirst) return;
     setError(null);
     setStepIndex(prev => prev - 1);
-  }
-
-  function goToStep(idx: number) {
-    if (idx >= 0 && idx < steps.length) {
-      setError(null);
-      setStepIndex(idx);
-    }
-  }
-
-  function addExclusionStep() {
-    const excStep = EXCLUSION_STEP_FOR[currentStep];
-    if (!excStep) return;
-    // Insert the exclusion step right after the current one (if not already there)
-    const nextStep = steps[stepIndex + 1];
-    if (nextStep === excStep) {
-      // Already inserted, just go to it
-      setStepIndex(stepIndex + 1);
-      return;
-    }
-    const newSteps = [...steps];
-    newSteps.splice(stepIndex + 1, 0, excStep);
-    setSteps(newSteps);
-    setStepIndex(stepIndex + 1);
   }
 
   function buildExclusions(): ExclusionZones | null {
@@ -655,31 +641,59 @@ export function ProfileWizard({
 
       case "season":
         return (
-          <div className="space-y-4">
-            {/* Months */}
-            <div className="space-y-1.5">
-              <span className="text-xs font-medium text-muted-foreground">
-                Active months <span className="text-muted-foreground/50">(all if none)</span>
-              </span>
-              <div className="flex flex-wrap gap-1.5">
-                {MONTHS.map(m => (
-                  <button
-                    key={m.value}
-                    onClick={() => toggleMonth(m.value)}
-                    className={cn(
-                      "px-2 py-1 rounded-full text-xs font-medium transition-colors border",
-                      activeMonths.includes(m.value)
-                        ? "border-primary text-primary bg-primary/10"
-                        : "border-transparent bg-muted text-muted-foreground hover:bg-accent"
-                    )}
-                  >
-                    {m.label}
-                  </button>
-                ))}
-              </div>
+          <div className="space-y-1.5">
+            <span className="text-xs font-medium text-muted-foreground">
+              Select the months this spot works <span className="text-muted-foreground/50">(all if none)</span>
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {MONTHS.map(m => (
+                <button
+                  key={m.value}
+                  onClick={() => toggleMonth(m.value)}
+                  className={cn(
+                    "px-2 py-1 rounded-full text-xs font-medium transition-colors border",
+                    activeMonths.includes(m.value)
+                      ? "border-primary text-primary bg-primary/10"
+                      : "border-transparent bg-muted text-muted-foreground hover:bg-accent"
+                  )}
+                >
+                  {m.label}
+                </button>
+              ))}
             </div>
+          </div>
+        );
 
-            {/* Consistency */}
+      case "exc_season":
+        return (
+          <div className="space-y-1.5">
+            <span className="text-xs font-medium text-muted-foreground">
+              Select months that never work
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {MONTHS.map(m => (
+                <button
+                  key={m.value}
+                  onClick={() => setExcludeMonths(prev =>
+                    prev.includes(m.value) ? prev.filter(v => v !== m.value) : [...prev, m.value]
+                  )}
+                  className={cn(
+                    "px-2 py-1 rounded-full text-xs font-medium transition-colors border",
+                    excludeMonths.includes(m.value)
+                      ? "border-destructive text-destructive bg-destructive/10"
+                      : "border-transparent bg-muted text-muted-foreground hover:bg-accent"
+                  )}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+
+      case "quality":
+        return (
+          <div className="space-y-4">
             <div className="space-y-1.5">
               <span className="text-xs font-medium text-muted-foreground">How consistent?</span>
               <div className="flex gap-1.5">
@@ -695,7 +709,6 @@ export function ProfileWizard({
               </div>
             </div>
 
-            {/* Quality ceiling */}
             <div className="space-y-1.5">
               <span className="text-xs font-medium text-muted-foreground">Quality ceiling</span>
               <div className="flex gap-1.5">
@@ -717,19 +730,9 @@ export function ProfileWizard({
     }
   }
 
-  // On compass steps, offset the card to the right so it doesn't cover the compass.
-  // The spot is centered on the page; we shift the card right and the flyTo padding
-  // keeps the spot + card combo visually centered.
-  const cardPositionClass = isCompassStep
-    ? "absolute inset-0 z-30 pointer-events-none flex items-start justify-end pr-[5vw] sm:pr-[8vw]"
-    : "absolute inset-0 z-30 pointer-events-none flex flex-col items-center";
-
   return (
-    <div className={cardPositionClass}>
-      <div className={cn(
-        "pointer-events-auto w-[420px] max-w-[92vw]",
-        isCompassStep ? "mt-[15vh]" : "mt-[12vh] sm:mt-[15vh]"
-      )}>
+    <div className="absolute inset-0 z-30 pointer-events-none">
+      <div className="pointer-events-auto w-[420px] max-w-[92vw] m-4 sm:m-4">
         <div className="rounded-xl border bg-background/95 backdrop-blur-sm shadow-2xl overflow-hidden">
           {/* Question + close button */}
           <div className="px-5 pt-4 pb-3 flex items-start gap-3">
@@ -759,22 +762,12 @@ export function ProfileWizard({
                 variant="ghost"
                 size="sm"
                 onClick={goBack}
-                className="h-8 px-2"
+                className="h-8 px-2 mr-auto"
               >
                 <ChevronLeft className="size-4" />
               </Button>
             )}
-            {canAddExclusion && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={addExclusionStep}
-                className="h-8 text-destructive/70 hover:text-destructive mr-auto"
-              >
-                + Doesn&apos;t work
-              </Button>
-            )}
-            {currentStep === "preset" && (
+            {isSkippable && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -805,12 +798,6 @@ export function ProfileWizard({
           </div>
         </div>
 
-        {/* Downward pointer arrow — only on non-compass steps */}
-        {!isCompassStep && (
-          <div className="flex justify-center -mt-px">
-            <div className="w-3 h-3 rotate-45 bg-background/95 border-r border-b -mt-1.5" />
-          </div>
-        )}
       </div>
     </div>
   );
