@@ -230,6 +230,14 @@ export const conditionProfiles = pgTable("condition_profiles", {
   reinforcementCount: integer("reinforcement_count").notNull().default(0),
   lastReinforcedAt: timestamp("last_reinforced_at"),
   source: varchar("source", { length: 20 }).notNull().default("manual"), // 'manual' | 'auto_generated'
+  // Per-profile importance weights (0-2.0 scale)
+  weightSwellHeight: decimal("weight_swell_height", { precision: 3, scale: 2 }).notNull().default("0.80"),
+  weightSwellPeriod: decimal("weight_swell_period", { precision: 3, scale: 2 }).notNull().default("0.70"),
+  weightSwellDirection: decimal("weight_swell_direction", { precision: 3, scale: 2 }).notNull().default("0.90"),
+  weightTideHeight: decimal("weight_tide_height", { precision: 3, scale: 2 }).notNull().default("0.50"),
+  weightWindSpeed: decimal("weight_wind_speed", { precision: 3, scale: 2 }).notNull().default("0.70"),
+  weightWindDirection: decimal("weight_wind_direction", { precision: 3, scale: 2 }).notNull().default("0.60"),
+  weightWaveEnergy: decimal("weight_wave_energy", { precision: 3, scale: 2 }).notNull().default("0.80"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
@@ -490,6 +498,13 @@ export const uploadPhotosRelations = relations(uploadPhotos, ({ one }) => ({
     references: [uploadSessions.id],
   }),
 }));
+
+// Waitlist table
+export const waitlist = pgTable("waitlist", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: text("email").notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
 
 // Type exports
 export type User = typeof users.$inferSelect;

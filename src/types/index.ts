@@ -153,6 +153,13 @@ export interface ConditionProfileResponse {
   qualityCeiling: number; // 1-5
   reinforcementCount: number;
   source: 'manual' | 'auto_generated';
+  weightSwellHeight: number;
+  weightSwellPeriod: number;
+  weightSwellDirection: number;
+  weightTideHeight: number;
+  weightWindSpeed: number;
+  weightWindDirection: number;
+  weightWaveEnergy: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -173,6 +180,7 @@ export interface ProfileForMatching {
   reinforcementCount: number;
   consistency: 'low' | 'medium' | 'high';
   qualityCeiling: number; // 1-5
+  weights: ConditionWeights;
 }
 
 // Prediction types

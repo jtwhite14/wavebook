@@ -78,6 +78,13 @@
       "when": 1773666455276,
       "tag": "0010_opposite_inertia",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1773673208750,
+      "tag": "0011_volatile_hulk",
+      "breakpoints": true
     }
   ]
 }

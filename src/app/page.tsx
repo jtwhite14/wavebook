@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
+import { WaitlistForm } from "@/components/WaitlistForm";
 import {
   MapPin,
   BookOpen,
@@ -84,12 +85,9 @@ export default async function LandingPage() {
               just you and your sessions. Track conditions, log waves, and keep
               your spots to yourself.
             </p>
-            <Link
-              href="/login"
-              className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground font-medium px-8 py-3 text-sm hover:bg-primary/90 transition-colors mt-10"
-            >
-              Get Started
-            </Link>
+            <div className="mt-10">
+              <WaitlistForm />
+            </div>
           </div>
         </section>
 
@@ -171,12 +169,9 @@ export default async function LandingPage() {
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
               Paddle out with us.
             </h2>
-            <Link
-              href="/login"
-              className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground font-medium px-8 py-3 text-sm hover:bg-primary/90 transition-colors mt-8"
-            >
-              Get Started
-            </Link>
+            <div className="mt-8">
+              <WaitlistForm />
+            </div>
           </div>
         </section>
       </main>
