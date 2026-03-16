@@ -19,6 +19,13 @@ export function formatProfile(p: typeof conditionProfiles.$inferSelect): Conditi
     qualityCeiling: p.qualityCeiling,
     reinforcementCount: p.reinforcementCount,
     source: p.source as 'manual' | 'auto_generated',
+    weightSwellHeight: parseFloat(p.weightSwellHeight) || 0.8,
+    weightSwellPeriod: parseFloat(p.weightSwellPeriod) || 0.7,
+    weightSwellDirection: parseFloat(p.weightSwellDirection) || 0.9,
+    weightTideHeight: parseFloat(p.weightTideHeight) || 0.5,
+    weightWindSpeed: parseFloat(p.weightWindSpeed) || 0.7,
+    weightWindDirection: parseFloat(p.weightWindDirection) || 0.6,
+    weightWaveEnergy: parseFloat(p.weightWaveEnergy) || 0.8,
     createdAt: p.createdAt,
     updatedAt: p.updatedAt,
   };
