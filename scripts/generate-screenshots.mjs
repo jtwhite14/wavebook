@@ -1,9 +1,34 @@
 import puppeteer from "puppeteer";
 import path from "path";
 import { fileURLToPath } from "url";
+import { readFileSync, writeFileSync } from "fs";
+import https from "https";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = path.join(__dirname, "..", "public", "screenshots");
+
+// Read Mapbox token from .env.local
+const envPath = path.join(__dirname, "..", ".env.local");
+const envContent = readFileSync(envPath, "utf-8");
+const MAPBOX_TOKEN = envContent.match(/NEXT_PUBLIC_MAPBOX_TOKEN="([^"]+)"/)?.[1] ?? "";
+
+// Download a URL to a file
+function downloadToFile(url, dest) {
+  return new Promise((resolve, reject) => {
+    https.get(url, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        return downloadToFile(res.headers.location, dest).then(resolve, reject);
+      }
+      const chunks = [];
+      res.on("data", (c) => chunks.push(c));
+      res.on("end", () => {
+        writeFileSync(dest, Buffer.concat(chunks));
+        resolve();
+      });
+      res.on("error", reject);
+    }).on("error", reject);
+  });
+}
 
 const SHARED_STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -29,9 +54,16 @@ const SHARED_STYLES = `
   }
 `;
 
+// Mapbox Static API image for the map background
+// Center: -119.55, 34.38 | Zoom: 10.5 | Size: 1380x900 @2x
+const STATIC_MAP_URL = `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/-119.55,34.38,10.5,0/1280x900@2x?access_token=${MAPBOX_TOKEN}`;
+// Will be populated at runtime with base64 data URI
+let MAP_DATA_URI = "";
+
 // ─── Dashboard Screenshot ────────────────────────────────────
 const dashboardHTML = `<!DOCTYPE html>
-<html><head><style>
+<html><head>
+<style>
 ${SHARED_STYLES}
 
 .container { width: 1440px; height: 900px; display: flex; overflow: hidden; }
@@ -65,41 +97,10 @@ ${SHARED_STYLES}
 
 /* Map */
 .map-area {
-  flex: 1; position: relative;
-  background:
-    radial-gradient(ellipse at 60% 40%, oklch(0.18 0.03 220) 0%, transparent 60%),
-    radial-gradient(ellipse at 30% 70%, oklch(0.16 0.02 200) 0%, transparent 50%),
-    linear-gradient(180deg, oklch(0.14 0.01 220) 0%, oklch(0.11 0.01 210) 100%);
-}
-
-/* Fake map grid lines */
-.map-grid {
-  position: absolute; inset: 0;
-  background-image:
-    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-  background-size: 80px 80px;
-}
-
-/* Coastline */
-.coastline {
   position: absolute; inset: 0; overflow: hidden;
 }
-.coastline::before {
-  content: '';
-  position: absolute;
-  top: -20%; right: -10%; width: 70%; height: 140%;
-  background: oklch(0.12 0.02 200);
-  border-radius: 40% 0 0 60%;
-  transform: rotate(-5deg);
-}
-.coastline::after {
-  content: '';
-  position: absolute;
-  top: 10%; right: 15%; width: 50%; height: 80%;
-  background: oklch(0.10 0.015 210);
-  border-radius: 50% 20% 30% 40%;
-  opacity: 0.6;
+.map-img {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
 }
 
 /* Spot markers */
@@ -237,26 +238,25 @@ ${SHARED_STYLES}
   </div>
 
   <div style="flex:1; position:relative;">
-    <!-- Map background -->
+    <!-- Map with static satellite image -->
     <div class="map-area">
-      <div class="coastline"></div>
-      <div class="map-grid"></div>
+      <img class="map-img" src="__MAP_DATA_URI__" alt="map" />
 
-      <!-- Spot markers -->
-      <div class="marker selected" style="top: 280px; left: 520px;">
+      <!-- Spot markers positioned on the satellite image -->
+      <div class="marker selected" style="top: 52%; left: 58%;">
         <div class="marker-pin"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg></div>
       </div>
-      <div class="marker" style="top: 180px; left: 650px;">
+      <div class="marker" style="top: 32%; left: 42%;">
         <div class="marker-pin"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg></div>
         <div class="marker-alert"></div>
       </div>
-      <div class="marker" style="top: 420px; left: 780px;">
+      <div class="marker" style="top: 38%; left: 22%;">
         <div class="marker-pin"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg></div>
       </div>
-      <div class="marker" style="top: 350px; left: 900px;">
+      <div class="marker" style="top: 28%; left: 7%;">
         <div class="marker-pin"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg></div>
       </div>
-      <div class="marker marker-shared" style="top: 500px; left: 600px;">
+      <div class="marker marker-shared" style="top: 62%; left: 38%;">
         <div class="marker-pin"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg></div>
       </div>
 
@@ -991,13 +991,20 @@ ${SHARED_STYLES}
 
 // ─── Generate Screenshots ────────────────────────────────────
 async function generate() {
+  // Download the static satellite map image to disk
+  const mapFile = path.join(OUT_DIR, "_map-bg.png");
+  console.log("Downloading satellite map tile...");
+  await downloadToFile(STATIC_MAP_URL, mapFile);
+  console.log("✓ Map image downloaded");
+  const mapFileUri = `file://${mapFile}`;
+
   const browser = await puppeteer.launch({
     headless: true,
-    args: ["--no-sandbox", "--font-render-hinting=none"],
+    args: ["--no-sandbox", "--font-render-hinting=none", "--allow-file-access-from-files"],
   });
 
   const pages = [
-    { name: "dashboard", html: dashboardHTML },
+    { name: "dashboard", html: dashboardHTML.replace("__MAP_DATA_URI__", mapFileUri) },
     { name: "sessions", html: sessionsHTML },
     { name: "session-detail", html: sessionDetailHTML },
   ];
@@ -1005,7 +1012,10 @@ async function generate() {
   for (const { name, html } of pages) {
     const page = await browser.newPage();
     await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 2 });
-    await page.setContent(html, { waitUntil: "networkidle0" });
+    // Write HTML to temp file and navigate (so file:// images work)
+    const tmpHtml = path.join(OUT_DIR, `_${name}.html`);
+    writeFileSync(tmpHtml, html);
+    await page.goto(`file://${tmpHtml}`, { waitUntil: "networkidle0" });
     // Wait for fonts to load
     await page.evaluate(() => document.fonts.ready);
     const outPath = path.join(OUT_DIR, `${name}.png`);
@@ -1015,6 +1025,13 @@ async function generate() {
   }
 
   await browser.close();
+
+  // Clean up temp files
+  const { unlinkSync } = await import("fs");
+  for (const f of ["_dashboard.html", "_sessions.html", "_session-detail.html", "_map-bg.png"]) {
+    try { unlinkSync(path.join(OUT_DIR, f)); } catch {}
+  }
+
   console.log("\nDone! Screenshots saved to public/screenshots/");
 }
 
