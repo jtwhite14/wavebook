@@ -589,7 +589,7 @@ export function ProfileWizard({
       case "exc_windSpeed":
         return (
           <div className="flex flex-wrap gap-2">
-            {[...WIND_OPTIONS, { value: "onshore", label: "Onshore" }].map(opt => (
+            {WIND_OPTIONS.map(opt => (
               <ExclusionPill key={opt.value} active={excludeWindSpeed.includes(opt.value)} onClick={() => setExcludeWindSpeed(togglePill(excludeWindSpeed, opt.value))}>
                 {opt.label}
               </ExclusionPill>
