@@ -483,19 +483,19 @@ export default function DashboardPage() {
       {/* Spots needing attention banner */}
       {spotsNeedingAttention.length > 0 && !dismissedLocationBanner && !selectedSpot && addSpotMode === "idle" && (
         <div className="absolute top-4 left-4 right-4 sm:left-auto sm:right-4 z-20 sm:w-96">
-          <div className="rounded-lg border border-amber-500/40 bg-background/95 backdrop-blur-sm shadow-lg p-4">
-            <div className="flex items-start gap-3">
+          <div className="rounded-lg border border-amber-500/40 bg-background/95 backdrop-blur-sm shadow-lg p-4 max-h-[calc(100vh-2rem)] flex flex-col">
+            <div className="flex items-start gap-3 min-h-0">
               <AlertTriangle className="size-5 text-amber-500 shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">
+              <div className="flex-1 min-w-0 min-h-0 flex flex-col">
+                <p className="text-sm font-medium shrink-0">
                   {spotsNeedingAttention.length === 1
                     ? "1 spot needs your attention"
                     : `${spotsNeedingAttention.length} spots need your attention`}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground mt-1 shrink-0">
                   Complete your spots to get accurate alerts and conditions.
                 </p>
-                <div className="mt-3 space-y-2">
+                <div className="mt-3 space-y-2 overflow-y-auto pb-4">
                   {spotsNeedingAttention.map(({ spot, missingLocation, missingProfile }) => (
                     <div key={spot.id} className="rounded-md border border-dashed px-3 py-2 space-y-1.5">
                       <p className="text-sm font-medium truncate">{spot.name}</p>
