@@ -52,7 +52,7 @@ export function SwellExposurePicker({ value, onChange }: SwellExposurePickerProp
               onClick={() => toggle(entry.dir)}
               className={`w-9 h-9 rounded text-xs font-medium transition-colors ${
                 selected
-                  ? "bg-primary text-primary-foreground"
+                  ? "border border-primary text-primary bg-primary/10"
                   : "bg-muted text-muted-foreground hover:bg-accent"
               }`}
             >

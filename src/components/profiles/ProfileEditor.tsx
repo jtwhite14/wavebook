@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { SwellExposurePicker } from "@/components/spots/SwellExposurePicker";
 import type { CardinalDirection, ConditionProfileResponse } from "@/types";
 import { WEIGHT_PRESETS } from "@/types";
@@ -121,14 +121,6 @@ export function ProfileEditor({ spotId, profile, onSave, onCancel }: ProfileEdit
   // Spot type preset
   const [activePreset, setActivePreset] = useState<string | null>(null);
 
-  // Advanced overrides
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [advSwellHeight, setAdvSwellHeight] = useState(profile?.targetSwellHeight?.toString() ?? "");
-  const [advSwellPeriod, setAdvSwellPeriod] = useState(profile?.targetSwellPeriod?.toString() ?? "");
-  const [advSwellDir, setAdvSwellDir] = useState(profile?.targetSwellDirection?.toString() ?? "");
-  const [advWindSpeed, setAdvWindSpeed] = useState(profile?.targetWindSpeed?.toString() ?? "");
-  const [advWindDir, setAdvWindDir] = useState(profile?.targetWindDirection?.toString() ?? "");
-  const [advTideHeight, setAdvTideHeight] = useState(profile?.targetTideHeight?.toString() ?? "");
 
   function togglePill<T extends string>(current: T[], value: T): T[] {
     return current.includes(value) ? current.filter(v => v !== value) : [...current, value];
@@ -155,17 +147,6 @@ export function ProfileEditor({ spotId, profile, onSave, onCancel }: ProfileEdit
   }
 
   function buildTargets() {
-    if (showAdvanced) {
-      return {
-        targetSwellHeight: advSwellHeight ? parseFloat(advSwellHeight) : null,
-        targetSwellPeriod: advSwellPeriod ? parseFloat(advSwellPeriod) : null,
-        targetSwellDirection: advSwellDir ? parseFloat(advSwellDir) : null,
-        targetWindSpeed: advWindSpeed ? parseFloat(advWindSpeed) : null,
-        targetWindDirection: advWindDir ? parseFloat(advWindDir) : null,
-        targetTideHeight: advTideHeight ? parseFloat(advTideHeight) : null,
-      };
-    }
-
     return {
       targetSwellHeight: waveSize.length > 0 ? avgMidpoints(waveSize, WAVE_SIZE_MIDPOINTS) : null,
       targetSwellPeriod: swellPeriod.length > 0 ? avgMidpoints(swellPeriod, SWELL_PERIOD_MIDPOINTS) : null,
@@ -246,7 +227,7 @@ export function ProfileEditor({ spotId, profile, onSave, onCancel }: ProfileEdit
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {/* Name + Preset row */}
         <div className="space-y-1.5">
-          <Label htmlFor="profile-name">Profile name</Label>
+          <label htmlFor="profile-name" className="text-sm font-medium">Profile name</label>
           <Input
             id="profile-name"
             placeholder='e.g. "Winter NW swell"'
@@ -261,20 +242,19 @@ export function ProfileEditor({ spotId, profile, onSave, onCancel }: ProfileEdit
             <button
               key={key}
               onClick={() => applyPreset(key)}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+              className={cn(
+                "px-2.5 py-1 rounded-full text-xs font-medium transition-colors",
                 activePreset === key
-                  ? "bg-primary text-primary-foreground"
+                  ? "border border-primary text-primary bg-primary/10"
                   : "bg-muted text-muted-foreground hover:bg-accent"
-              }`}
+              )}
             >
               {preset.label}
             </button>
           ))}
         </div>
 
-        {!showAdvanced && (
-          <>
-            {/* ── Swell ── */}
+        {/* ── Swell ── */}
             <fieldset className="space-y-3 rounded-lg border border-border/50 px-3 py-3">
               <legend className="px-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Swell</legend>
 
@@ -332,8 +312,6 @@ export function ProfileEditor({ spotId, profile, onSave, onCancel }: ProfileEdit
                 </div>
               </ConditionRow>
             </fieldset>
-          </>
-        )}
 
         {/* Active Months */}
         <div className="space-y-1.5">
@@ -345,11 +323,12 @@ export function ProfileEditor({ spotId, profile, onSave, onCancel }: ProfileEdit
               <button
                 key={m.value}
                 onClick={() => toggleMonth(m.value)}
-                className={`px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${
+                className={cn(
+                  "px-2 py-0.5 rounded-full text-xs font-medium transition-colors",
                   activeMonths.includes(m.value)
-                    ? "bg-primary text-primary-foreground"
+                    ? "border border-primary text-primary bg-primary/10"
                     : "bg-muted text-muted-foreground hover:bg-accent"
-                }`}
+                )}
               >
                 {m.label}
               </button>
@@ -386,45 +365,6 @@ export function ProfileEditor({ spotId, profile, onSave, onCancel }: ProfileEdit
             </div>
           </div>
         </div>
-
-        {/* Advanced toggle */}
-        <button
-          onClick={() => setShowAdvanced(!showAdvanced)}
-          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          {showAdvanced ? "Use simple mode" : "Advanced: set exact values"}
-        </button>
-
-        {showAdvanced && (
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs">Swell height (m)</Label>
-                <Input type="number" step="0.1" value={advSwellHeight} onChange={e => setAdvSwellHeight(e.target.value)} />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Swell period (s)</Label>
-                <Input type="number" step="0.5" value={advSwellPeriod} onChange={e => setAdvSwellPeriod(e.target.value)} />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Swell direction (deg)</Label>
-                <Input type="number" step="1" value={advSwellDir} onChange={e => setAdvSwellDir(e.target.value)} />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Wind speed (km/h)</Label>
-                <Input type="number" step="1" value={advWindSpeed} onChange={e => setAdvWindSpeed(e.target.value)} />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Wind direction (deg)</Label>
-                <Input type="number" step="1" value={advWindDir} onChange={e => setAdvWindDir(e.target.value)} />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Tide height (ft)</Label>
-                <Input type="number" step="0.1" value={advTideHeight} onChange={e => setAdvTideHeight(e.target.value)} />
-              </div>
-            </div>
-          </div>
-        )}
 
         {error && (
           <p className="text-sm text-destructive">{error}</p>
@@ -486,11 +426,12 @@ function Pill({
   return (
     <button
       onClick={onClick}
-      className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+      className={cn(
+        "px-2.5 py-1 rounded-full text-xs font-medium transition-colors",
         active
-          ? "bg-primary text-primary-foreground"
+          ? "border border-primary text-primary bg-primary/10"
           : "bg-muted text-muted-foreground hover:bg-accent"
-      }`}
+      )}
     >
       {children}
     </button>
