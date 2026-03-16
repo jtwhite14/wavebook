@@ -198,7 +198,7 @@ export default async function LandingPage() {
         <section className="py-24 md:py-32">
           <div className="max-w-2xl mx-auto px-6 text-center">
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
-              Paddle out with us.
+              Private by default. Smart by design.
             </h2>
             <div className="mt-8">
               <WaitlistForm />
