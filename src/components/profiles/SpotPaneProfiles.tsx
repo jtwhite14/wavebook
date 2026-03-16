@@ -29,6 +29,7 @@ export function SpotPaneProfiles({ spotId, onBack, onDirectionEditStart, onDirec
   const [view, setView] = useState<View>("list");
   const [editingProfile, setEditingProfile] = useState<ConditionProfileResponse | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [autoOpenedWizard, setAutoOpenedWizard] = useState(false);
 
   const fetchProfiles = useCallback(async () => {
     try {
@@ -37,7 +38,7 @@ export function SpotPaneProfiles({ spotId, onBack, onDirectionEditStart, onDirec
       const data = await res.json();
       const loaded = data.profiles || [];
       setProfiles(loaded);
-      if (loaded.length === 0) setView("create");
+      if (loaded.length === 0 && !autoOpenedWizard) setView("create");
     } catch {
       toast.error("Failed to load profiles");
     } finally {
@@ -76,6 +77,7 @@ export function SpotPaneProfiles({ spotId, onBack, onDirectionEditStart, onDirec
     if (view === "create" && onWizardOpen) {
       onWizardOpen(undefined, `Profile ${profiles.length + 1}`);
       setView("list");
+      setAutoOpenedWizard(true);
     } else if (view === "edit" && editingProfile && onWizardOpen) {
       onWizardOpen(editingProfile, editingProfile.name);
       setView("list");
