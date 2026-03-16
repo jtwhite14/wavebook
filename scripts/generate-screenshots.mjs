@@ -56,16 +56,19 @@ const SHARED_STYLES = `
 
 // Mapbox Static API image for the map background
 // Center: -119.55, 34.38 | Zoom: 10.5 | Size: 1380x900 @2x
-// Real Santa Barbara surf spots
+// Real surf spots: Santa Barbara → Ventura (coords nudged ~0.004° north to sit on shore)
 const SPOTS = [
-  { name: "Rincon Point",  lat: 34.3725, lng: -119.478,  color: "#dab94e", selected: true },
-  { name: "Hammonds",      lat: 34.4173, lng: -119.6298, color: "#dab94e", alert: true },
-  { name: "Leadbetter",    lat: 34.4001, lng: -119.6996, color: "#dab94e" },
-  { name: "Campus Point",  lat: 34.4033, lng: -119.8462, color: "#dab94e" },
-  { name: "El Capitan",    lat: 34.4572, lng: -120.0228, color: "#3b82f6" }, // shared spot
+  { name: "El Capitan",    lat: 34.460, lng: -120.023, color: "#dab94e" },
+  { name: "Campus Point",  lat: 34.407, lng: -119.846, color: "#dab94e" },
+  { name: "Leadbetter",    lat: 34.408, lng: -119.700, color: "#dab94e" },
+  { name: "Hammonds",      lat: 34.424, lng: -119.630, color: "#dab94e", alert: true },
+  { name: "Rincon Point",  lat: 34.380, lng: -119.478, color: "#dab94e", selected: true },
+  { name: "Pitas Point",   lat: 34.328, lng: -119.390, color: "#dab94e" },
+  { name: "Solimar",       lat: 34.318, lng: -119.360, color: "#3b82f6" }, // shared spot
+  { name: "Ventura Point", lat: 34.283, lng: -119.305, color: "#dab94e" },
 ];
-// Center map to fit all spots: avg lng ≈ -119.775, avg lat ≈ 34.41, zoom 10
-const STATIC_MAP_URL = `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/-119.78,34.41,10,0/1280x900@2x?access_token=${MAPBOX_TOKEN}`;
+// Center map to fit SB→Ventura: center (-119.66, 34.37), zoom 9.5
+const STATIC_MAP_URL = `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/-119.66,34.37,9.5,0/1280x900@2x?access_token=${MAPBOX_TOKEN}`;
 // Will be populated at runtime with base64 data URI
 let MAP_DATA_URI = "";
 
@@ -251,26 +254,38 @@ ${SHARED_STYLES}
     <div class="map-area">
       <img class="map-img" src="__MAP_DATA_URI__" alt="map" />
 
-      <!-- Spot markers at real surf spot coordinates -->
-      <!-- Rincon Point (34.3725, -119.478) — selected -->
-      <div class="marker selected" style="top: 53.7%; left: 67.2%;">
+      <!-- Spot markers at real surf spots: Santa Barbara → Ventura -->
+      <!-- El Capitan -->
+      <div class="marker" style="top: 43.8%; left: 35.4%;">
         <div class="marker-pin"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg></div>
       </div>
-      <!-- Hammonds (34.4173, -119.6298) — alert -->
-      <div class="marker" style="top: 49.3%; left: 58.5%;">
+      <!-- Campus Point -->
+      <div class="marker" style="top: 47.4%; left: 42.5%;">
+        <div class="marker-pin"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg></div>
+      </div>
+      <!-- Leadbetter -->
+      <div class="marker" style="top: 47.4%; left: 48.4%;">
+        <div class="marker-pin"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg></div>
+      </div>
+      <!-- Hammonds — alert -->
+      <div class="marker" style="top: 46.3%; left: 51.2%;">
         <div class="marker-pin"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg></div>
         <div class="marker-alert"></div>
       </div>
-      <!-- Leadbetter (34.4001, -119.6996) -->
-      <div class="marker" style="top: 51.0%; left: 54.6%;">
+      <!-- Rincon Point — selected -->
+      <div class="marker selected" style="top: 49.3%; left: 57.3%;">
         <div class="marker-pin"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg></div>
       </div>
-      <!-- Campus Point (34.4033, -119.8462) -->
-      <div class="marker" style="top: 50.7%; left: 46.2%;">
+      <!-- Pitas Point -->
+      <div class="marker" style="top: 52.9%; left: 60.9%;">
         <div class="marker-pin"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg></div>
       </div>
-      <!-- El Capitan (34.4572, -120.0228) — shared (blue) -->
-      <div class="marker marker-shared" style="top: 45.4%; left: 36.2%;">
+      <!-- Solimar — shared (blue) -->
+      <div class="marker marker-shared" style="top: 53.6%; left: 62.1%;">
+        <div class="marker-pin"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg></div>
+      </div>
+      <!-- Ventura Point -->
+      <div class="marker" style="top: 56.0%; left: 64.3%;">
         <div class="marker-pin"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg></div>
       </div>
 
