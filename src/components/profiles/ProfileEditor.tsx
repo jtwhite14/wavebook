@@ -65,6 +65,14 @@ function levelToWeight(level: number): number {
   return 0; // Any/idk
 }
 
+const IMPORTANCE_LEVELS = [
+  { label: "Low", style: "bg-muted text-muted-foreground" },
+  { label: "Med", style: "bg-primary/70 text-primary-foreground" },
+  { label: "High", style: "bg-primary text-primary-foreground" },
+  { label: "Critical", style: "bg-orange-500 text-white" },
+  { label: "Any", style: "bg-muted text-muted-foreground ring-1 ring-border" },
+] as const;
+
 export function ProfileEditor({ spotId, profile, onSave, onCancel }: ProfileEditorProps) {
   const [name, setName] = useState(profile?.name ?? "");
   const [saving, setSaving] = useState(false);
@@ -222,6 +230,8 @@ export function ProfileEditor({ spotId, profile, onSave, onCancel }: ProfileEdit
     }
   }
 
+  function clearPreset() { setActivePreset(null); }
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-2 px-4 pt-4 pb-3 border-b">
@@ -233,8 +243,8 @@ export function ProfileEditor({ spotId, profile, onSave, onCancel }: ProfileEdit
         </h2>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
-        {/* Name */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+        {/* Name + Preset row */}
         <div className="space-y-1.5">
           <Label htmlFor="profile-name">Profile name</Label>
           <Input
@@ -246,157 +256,96 @@ export function ProfileEditor({ spotId, profile, onSave, onCancel }: ProfileEdit
           />
         </div>
 
-        {/* Spot type presets */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-muted-foreground">Spot type preset</label>
-          <div className="flex flex-wrap gap-1.5">
-            {Object.entries(WEIGHT_PRESETS).map(([key, preset]) => (
-              <button
-                key={key}
-                onClick={() => applyPreset(key)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                  activePreset === key
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground hover:bg-accent"
-                }`}
-              >
-                {preset.label}
-              </button>
-            ))}
-          </div>
+        <div className="flex flex-wrap gap-1.5">
+          {Object.entries(WEIGHT_PRESETS).map(([key, preset]) => (
+            <button
+              key={key}
+              onClick={() => applyPreset(key)}
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                activePreset === key
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-accent"
+              }`}
+            >
+              {preset.label}
+            </button>
+          ))}
         </div>
 
         {!showAdvanced && (
           <>
-            {/* Wave Size */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <label className="text-sm font-medium text-muted-foreground">Wave size</label>
-                <ImportanceDots value={weightToLevel(wSwellHeight)} onChange={(level) => { setWSwellHeight(levelToWeight(level)); setActivePreset(null); }} />
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {WAVE_SIZE_OPTIONS.map(opt => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setWaveSize(togglePill(waveSize, opt.value))}
-                    className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                      waveSize.includes(opt.value)
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground hover:bg-accent"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+            {/* ── Swell ── */}
+            <fieldset className="space-y-3 rounded-lg border border-border/50 px-3 py-3">
+              <legend className="px-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Swell</legend>
 
-            {/* Swell Period */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <label className="text-sm font-medium text-muted-foreground">Swell period</label>
-                <ImportanceDots value={weightToLevel(wSwellPeriod)} onChange={(level) => { setWSwellPeriod(levelToWeight(level)); setActivePreset(null); }} />
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {PERIOD_OPTIONS.map(opt => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setSwellPeriod(togglePill(swellPeriod, opt.value))}
-                    className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                      swellPeriod.includes(opt.value)
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground hover:bg-accent"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+              {/* Wave Size */}
+              <ConditionRow label="Size" level={weightToLevel(wSwellHeight)} onLevelChange={(l) => { setWSwellHeight(levelToWeight(l)); clearPreset(); }}>
+                <div className="flex flex-wrap gap-1.5">
+                  {WAVE_SIZE_OPTIONS.map(opt => (
+                    <Pill key={opt.value} active={waveSize.includes(opt.value)} onClick={() => setWaveSize(togglePill(waveSize, opt.value))}>{opt.label}</Pill>
+                  ))}
+                </div>
+              </ConditionRow>
 
-            {/* Swell Direction */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <label className="text-sm font-medium text-muted-foreground">Swell direction</label>
-                <ImportanceDots value={weightToLevel(wSwellDir)} onChange={(level) => { setWSwellDir(levelToWeight(level)); setActivePreset(null); }} />
-              </div>
-              <SwellExposurePicker
-                value={swellDirection}
-                onChange={setSwellDirection}
-              />
-            </div>
+              {/* Swell Period */}
+              <ConditionRow label="Period" level={weightToLevel(wSwellPeriod)} onLevelChange={(l) => { setWSwellPeriod(levelToWeight(l)); clearPreset(); }}>
+                <div className="flex flex-wrap gap-1.5">
+                  {PERIOD_OPTIONS.map(opt => (
+                    <Pill key={opt.value} active={swellPeriod.includes(opt.value)} onClick={() => setSwellPeriod(togglePill(swellPeriod, opt.value))}>{opt.label}</Pill>
+                  ))}
+                </div>
+              </ConditionRow>
 
-            {/* Wind */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <label className="text-sm font-medium text-muted-foreground">Wind</label>
-                <ImportanceDots value={weightToLevel(wWindSpeed)} onChange={(level) => { setWWindSpeed(levelToWeight(level)); setActivePreset(null); }} />
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {WIND_OPTIONS.map(opt => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setWindCondition(togglePill(windCondition, opt.value))}
-                    className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                      windCondition.includes(opt.value)
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground hover:bg-accent"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+              {/* Swell Direction */}
+              <ConditionRow label="Direction" level={weightToLevel(wSwellDir)} onLevelChange={(l) => { setWSwellDir(levelToWeight(l)); clearPreset(); }}>
+                <SwellExposurePicker value={swellDirection} onChange={setSwellDirection} />
+              </ConditionRow>
+            </fieldset>
 
-            {/* Wind Direction */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <label className="text-sm font-medium text-muted-foreground">Wind direction</label>
-                <ImportanceDots value={weightToLevel(wWindDir)} onChange={(level) => { setWWindDir(levelToWeight(level)); setActivePreset(null); }} />
-              </div>
-              <SwellExposurePicker
-                value={windDirection}
-                onChange={setWindDirection}
-              />
-            </div>
+            {/* ── Wind ── */}
+            <fieldset className="space-y-3 rounded-lg border border-border/50 px-3 py-3">
+              <legend className="px-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Wind</legend>
 
-            {/* Tide */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <label className="text-sm font-medium text-muted-foreground">Tide</label>
-                <ImportanceDots value={weightToLevel(wTideHeight)} onChange={(level) => { setWTideHeight(levelToWeight(level)); setActivePreset(null); }} />
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {TIDE_OPTIONS.map(opt => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setTideLevel(togglePill(tideLevel, opt.value))}
-                    className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                      tideLevel.includes(opt.value)
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground hover:bg-accent"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+              {/* Wind Speed */}
+              <ConditionRow label="Speed" level={weightToLevel(wWindSpeed)} onLevelChange={(l) => { setWWindSpeed(levelToWeight(l)); clearPreset(); }}>
+                <div className="flex flex-wrap gap-1.5">
+                  {WIND_OPTIONS.map(opt => (
+                    <Pill key={opt.value} active={windCondition.includes(opt.value)} onClick={() => setWindCondition(togglePill(windCondition, opt.value))}>{opt.label}</Pill>
+                  ))}
+                </div>
+              </ConditionRow>
+
+              {/* Wind Direction */}
+              <ConditionRow label="Direction" level={weightToLevel(wWindDir)} onLevelChange={(l) => { setWWindDir(levelToWeight(l)); clearPreset(); }}>
+                <SwellExposurePicker value={windDirection} onChange={setWindDirection} />
+              </ConditionRow>
+            </fieldset>
+
+            {/* ── Tide ── */}
+            <fieldset className="space-y-3 rounded-lg border border-border/50 px-3 py-3">
+              <legend className="px-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tide</legend>
+              <ConditionRow label="Level" level={weightToLevel(wTideHeight)} onLevelChange={(l) => { setWTideHeight(levelToWeight(l)); clearPreset(); }}>
+                <div className="flex flex-wrap gap-1.5">
+                  {TIDE_OPTIONS.map(opt => (
+                    <Pill key={opt.value} active={tideLevel.includes(opt.value)} onClick={() => setTideLevel(togglePill(tideLevel, opt.value))}>{opt.label}</Pill>
+                  ))}
+                </div>
+              </ConditionRow>
+            </fieldset>
           </>
         )}
 
         {/* Active Months */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-muted-foreground">
-            Active months <span className="text-xs text-muted-foreground/60">(all if none selected)</span>
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-muted-foreground">
+            Active months <span className="text-muted-foreground/50">(all if none)</span>
           </label>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1">
             {MONTHS.map(m => (
               <button
                 key={m.value}
                 onClick={() => toggleMonth(m.value)}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                className={`px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${
                   activeMonths.includes(m.value)
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted text-muted-foreground hover:bg-accent"
@@ -408,57 +357,33 @@ export function ProfileEditor({ spotId, profile, onSave, onCancel }: ProfileEdit
           </div>
         </div>
 
-        {/* Consistency */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-muted-foreground">
-            Consistency <span className="text-xs text-muted-foreground/60">(how often conditions align)</span>
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {([
-              { value: "low", label: "Rare" },
-              { value: "medium", label: "Sometimes" },
-              { value: "high", label: "Often" },
-            ] as const).map(opt => (
-              <button
-                key={opt.value}
-                onClick={() => setConsistency(opt.value)}
-                className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                  consistency === opt.value
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground hover:bg-accent"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
+        {/* Consistency + Quality — inline row */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Consistency</label>
+            <div className="flex gap-1">
+              {([
+                { value: "low", label: "Rare" },
+                { value: "medium", label: "Sometimes" },
+                { value: "high", label: "Often" },
+              ] as const).map(opt => (
+                <Pill key={opt.value} active={consistency === opt.value} onClick={() => setConsistency(opt.value)}>{opt.label}</Pill>
+              ))}
+            </div>
           </div>
-        </div>
-
-        {/* Quality Ceiling */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-muted-foreground">
-            Quality ceiling <span className="text-xs text-muted-foreground/60">(how good when it works)</span>
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {([
-              { value: 1, label: "Poor" },
-              { value: 2, label: "Fair" },
-              { value: 3, label: "Good" },
-              { value: 4, label: "Great" },
-              { value: 5, label: "Epic" },
-            ] as const).map(opt => (
-              <button
-                key={opt.value}
-                onClick={() => setQualityCeiling(opt.value)}
-                className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                  qualityCeiling === opt.value
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground hover:bg-accent"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Quality ceiling</label>
+            <div className="flex gap-1">
+              {([
+                { value: 1, label: "Poor" },
+                { value: 2, label: "Fair" },
+                { value: 3, label: "Good" },
+                { value: 4, label: "Great" },
+                { value: 5, label: "Epic" },
+              ] as const).map(opt => (
+                <Pill key={opt.value} active={qualityCeiling === opt.value} onClick={() => setQualityCeiling(opt.value)}>{opt.label}</Pill>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -516,40 +441,59 @@ export function ProfileEditor({ spotId, profile, onSave, onCancel }: ProfileEdit
   );
 }
 
-function ImportanceDots({
-  value,
-  onChange,
-}: {
-  value: number; // 0 = low, 1 = medium, 2 = high, 3 = critical, 4 = any/idk
-  onChange: (level: number) => void;
-}) {
-  const labels = ["Low", "Med", "High", "Critical", "Any"];
+/* ── Compact row: label + cycling importance badge on left, controls below ── */
 
+function ConditionRow({
+  label,
+  level,
+  onLevelChange,
+  children,
+}: {
+  label: string;
+  level: number;
+  onLevelChange: (level: number) => void;
+  children: React.ReactNode;
+}) {
+  const info = IMPORTANCE_LEVELS[level];
   return (
-    <div className="flex items-center gap-1">
-      {[0, 1, 2, 3, 4].map(level => {
-        const isActive = value === level;
-        const levelLabel = labels[level];
-        return (
-          <button
-            key={level}
-            onClick={() => onChange(level)}
-            className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-              isActive
-                ? level === 3
-                  ? "bg-orange-500 text-white"
-                  : level === 4
-                    ? "bg-muted text-muted-foreground ring-1 ring-border"
-                    : "bg-primary text-primary-foreground"
-                : "bg-muted/50 text-muted-foreground/60 hover:bg-muted hover:text-muted-foreground"
-            }`}
-            title={`Priority: ${levelLabel}`}
-          >
-            {levelLabel}
-          </button>
-        );
-      })}
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-medium text-muted-foreground">{label}</span>
+        <button
+          onClick={() => onLevelChange((level + 1) % 5)}
+          className={`px-1.5 py-0.5 rounded text-[10px] font-semibold leading-none transition-colors ${info.style}`}
+          title="Click to cycle importance"
+        >
+          {info.label}
+        </button>
+      </div>
+      {children}
     </div>
+  );
+}
+
+/* ── Reusable pill button ── */
+
+function Pill({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+        active
+          ? "bg-primary text-primary-foreground"
+          : "bg-muted text-muted-foreground hover:bg-accent"
+      }`}
+    >
+      {children}
+    </button>
   );
 }
 
