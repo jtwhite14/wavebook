@@ -4,6 +4,10 @@ import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { WaitlistForm } from "@/components/WaitlistForm";
 import {
+  HeroScreenshot,
+  FeatureScreenshots,
+} from "@/components/ScreenshotShowcase";
+import {
   MapPin,
   BookOpen,
   Waves,
@@ -91,6 +95,9 @@ export default async function LandingPage() {
           </div>
         </section>
 
+        {/* Hero Screenshot */}
+        <HeroScreenshot />
+
         {/* Philosophy */}
         <section className="py-24 md:py-32">
           <div className="max-w-2xl mx-auto px-6">
@@ -135,6 +142,9 @@ export default async function LandingPage() {
             </div>
           </div>
         </section>
+
+        {/* App Screenshots */}
+        <FeatureScreenshots />
 
         {/* Privacy Commitment */}
         <section className="py-24 md:py-32">
