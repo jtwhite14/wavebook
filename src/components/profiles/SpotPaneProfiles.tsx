@@ -1,19 +1,15 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ArrowLeft, Plus, Loader2, Trash2, Sparkles } from "lucide-react";
+import { ArrowLeft, Plus, Loader2, Trash2, Pencil, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import type { DirectionEditRequest } from "./ProfileEditor";
 import type { CardinalDirection, ConditionProfileResponse } from "@/types";
 import {
-  WAVE_SIZE_MIDPOINTS,
-  SWELL_PERIOD_MIDPOINTS,
-  WIND_SPEED_MIDPOINTS,
-  TIDE_HEIGHT_MIDPOINTS,
   MONTHS,
-  closestMidpointKey,
 } from "@/lib/matching/profile-utils";
+import { cn } from "@/lib/utils";
 
 interface SpotPaneProfilesProps {
   spotId: string;
@@ -32,7 +28,7 @@ export function SpotPaneProfiles({ spotId, onBack, onDirectionEditStart, onDirec
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<View>("list");
   const [editingProfile, setEditingProfile] = useState<ConditionProfileResponse | null>(null);
-  const [generating, setGenerating] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const fetchProfiles = useCallback(async () => {
     try {
@@ -50,21 +46,6 @@ export function SpotPaneProfiles({ spotId, onBack, onDirectionEditStart, onDirec
   }, [spotId]);
 
   useEffect(() => { fetchProfiles(); }, [fetchProfiles]);
-
-  const handleToggleActive = async (profile: ConditionProfileResponse) => {
-    try {
-      const res = await fetch(`/api/spots/${spotId}/profiles/${profile.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isActive: !profile.isActive }),
-      });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      setProfiles(prev => prev.map(p => p.id === data.profile.id ? data.profile : p));
-    } catch {
-      toast.error("Failed to update profile");
-    }
-  };
 
   const handleDelete = async (profile: ConditionProfileResponse) => {
     if (!confirm(`Delete "${profile.name}"?`)) return;
@@ -90,106 +71,6 @@ export function SpotPaneProfiles({ spotId, onBack, onDirectionEditStart, onDirec
     setEditingProfile(null);
   };
 
-  const handleGenerateFromSessions = async () => {
-    setGenerating(true);
-    try {
-      // Fetch sessions with high ratings
-      const res = await fetch(`/api/sessions?spotId=${spotId}&limit=50`);
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        throw new Error(data?.error || "Failed to fetch sessions");
-      }
-      const data = await res.json();
-      const sessions = (data.sessions || []).filter(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (s: any) => s.rating >= 3 && !s.ignored && s.conditions
-      );
-
-      if (sessions.length === 0) {
-        toast.error("No sessions rated 3+ stars with conditions to generate from");
-        return;
-      }
-
-      // Compute averages (fall back to waveHeight/wavePeriod if primary swell is null)
-      const sums = { swellHeight: 0, swellPeriod: 0, windSpeed: 0, tideHeight: 0, swellDirSin: 0, swellDirCos: 0 };
-      const counts = { swellHeight: 0, swellPeriod: 0, windSpeed: 0, tideHeight: 0, swellDir: 0 };
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      for (const s of sessions) {
-        const c = s.conditions;
-        const height = parseFloat(c?.primarySwellHeight) || parseFloat(c?.waveHeight) || NaN;
-        if (!isNaN(height)) { sums.swellHeight += height; counts.swellHeight++; }
-        const period = parseFloat(c?.primarySwellPeriod) || parseFloat(c?.wavePeriod) || NaN;
-        if (!isNaN(period)) { sums.swellPeriod += period; counts.swellPeriod++; }
-        const wind = parseFloat(c?.windSpeed);
-        if (!isNaN(wind)) { sums.windSpeed += wind; counts.windSpeed++; }
-        const tide = parseFloat(c?.tideHeight);
-        if (!isNaN(tide)) { sums.tideHeight += tide; counts.tideHeight++; }
-        const dir = parseFloat(c?.primarySwellDirection) || parseFloat(c?.waveDirection) || NaN;
-        if (!isNaN(dir)) {
-          const rad = dir * Math.PI / 180;
-          sums.swellDirSin += Math.sin(rad);
-          sums.swellDirCos += Math.cos(rad);
-          counts.swellDir++;
-        }
-      }
-
-      const avgHeight = counts.swellHeight > 0 ? sums.swellHeight / counts.swellHeight : null;
-      const avgPeriod = counts.swellPeriod > 0 ? sums.swellPeriod / counts.swellPeriod : null;
-      const avgWind = counts.windSpeed > 0 ? sums.windSpeed / counts.windSpeed : null;
-      const avgTide = counts.tideHeight > 0 ? sums.tideHeight / counts.tideHeight : null;
-      const avgDir = counts.swellDir > 0
-        ? ((Math.atan2(sums.swellDirSin / counts.swellDir, sums.swellDirCos / counts.swellDir) * 180 / Math.PI) + 360) % 360
-        : null;
-
-      const targets: Record<string, number | null> = {
-        targetSwellHeight: avgHeight,
-        targetSwellPeriod: avgPeriod,
-        targetSwellDirection: avgDir,
-        targetWindSpeed: avgWind,
-        targetWindDirection: null,
-        targetTideHeight: avgTide,
-      };
-
-      const specifiedCount = Object.values(targets).filter(v => v != null).length;
-      if (specifiedCount < 2) {
-        toast.error(`Only ${specifiedCount} condition available from ${sessions.length} sessions — need at least 2`);
-        return;
-      }
-
-      // Build name from conditions
-      const heightLabel = avgHeight != null ? closestMidpointKey(avgHeight, WAVE_SIZE_MIDPOINTS) : null;
-      const periodLabel = avgPeriod != null ? closestMidpointKey(avgPeriod, SWELL_PERIOD_MIDPOINTS) : null;
-      const nameParts: string[] = [];
-      if (heightLabel) nameParts.push(capitalize(heightLabel));
-      if (periodLabel) nameParts.push(`${periodLabel} period`);
-      const autoName = nameParts.length > 0 ? nameParts.join(", ") : `From ${sessions.length} sessions`;
-
-      const createRes = await fetch(`/api/spots/${spotId}/profiles`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: autoName,
-          ...targets,
-          source: "auto_generated",
-        }),
-      });
-
-      if (!createRes.ok) {
-        const errData = await createRes.json().catch(() => null);
-        throw new Error(errData?.error || "Failed to create profile");
-      }
-
-      const created = await createRes.json();
-      setProfiles(prev => [...prev, created.profile]);
-      toast.success(`Profile generated from ${sessions.length} best sessions`);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to generate profile");
-    } finally {
-      setGenerating(false);
-    }
-  };
-
   // When view switches to create/edit, open the wizard overlay instead
   useEffect(() => {
     if (view === "create" && onWizardOpen) {
@@ -201,6 +82,10 @@ export function SpotPaneProfiles({ spotId, onBack, onDirectionEditStart, onDirec
       setEditingProfile(null);
     }
   }, [view, editingProfile, onWizardOpen, profiles.length]);
+
+  function toggleExpand(id: string) {
+    setExpandedId(prev => prev === id ? null : id);
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -232,98 +117,171 @@ export function SpotPaneProfiles({ spotId, onBack, onDirectionEditStart, onDirec
             <p className="text-sm text-muted-foreground">
               No profiles yet. Create one to define your ideal conditions.
             </p>
-            <div className="flex flex-col items-center gap-2">
-              <Button size="sm" onClick={() => setView("create")}>
-                <Plus className="size-3.5 mr-1" />
-                Create Profile
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleGenerateFromSessions}
-                disabled={generating}
-              >
-                {generating ? (
-                  <Loader2 className="size-3.5 mr-1 animate-spin" />
-                ) : (
-                  <Sparkles className="size-3.5 mr-1" />
-                )}
-                Generate from best sessions
-              </Button>
-            </div>
+            <Button size="sm" onClick={() => setView("create")}>
+              <Plus className="size-3.5 mr-1" />
+              Create Profile
+            </Button>
           </div>
         ) : (
           <>
-            {profiles.map(profile => (
-              <div
-                key={profile.id}
-                className={`rounded-lg border px-3 py-2.5 transition-colors ${
-                  profile.isActive ? "bg-background" : "bg-muted/30 opacity-60"
-                }`}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <button
-                    onClick={() => { setEditingProfile(profile); setView("edit"); }}
-                    className="text-left flex-1 min-w-0"
-                  >
-                    <p className="text-sm font-medium truncate">{profile.name}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {buildTargetSummary(profile)}
-                    </p>
-                    {profile.reinforcementCount > 0 && (
-                      <p className="text-[10px] text-muted-foreground mt-1">
-                        Reinforced {profile.reinforcementCount}x
-                      </p>
-                    )}
-                  </button>
-                  <div className="flex items-center gap-1 shrink-0">
+            {profiles.map(profile => {
+              const isExpanded = expandedId === profile.id;
+              return (
+                <div
+                  key={profile.id}
+                  className="rounded-lg border px-3 py-2.5 transition-colors bg-background"
+                >
+                  {/* Header row */}
+                  <div className="flex items-start justify-between gap-2">
                     <button
-                      onClick={() => handleToggleActive(profile)}
-                      className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                        profile.isActive
-                          ? "bg-primary/15 text-primary"
-                          : "bg-muted text-muted-foreground"
-                      }`}
+                      onClick={() => toggleExpand(profile.id)}
+                      className="text-left flex-1 min-w-0 flex items-start gap-2"
                     >
-                      {profile.isActive ? "Active" : "Off"}
+                      <ChevronDown className={cn(
+                        "size-4 text-muted-foreground shrink-0 mt-0.5 transition-transform duration-200",
+                        isExpanded ? "" : "-rotate-90"
+                      )} />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{profile.name}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {buildTargetSummary(profile)}
+                        </p>
+                      </div>
                     </button>
-                    <button
-                      onClick={() => handleDelete(profile)}
-                      className="rounded-md p-1 hover:bg-accent transition-colors text-muted-foreground hover:text-destructive"
-                    >
-                      <Trash2 className="size-3.5" />
-                    </button>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        onClick={() => { setEditingProfile(profile); setView("edit"); }}
+                        className="rounded-md p-1 hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+                        title="Edit profile"
+                      >
+                        <Pencil className="size-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(profile)}
+                        className="rounded-md p-1 hover:bg-accent transition-colors text-muted-foreground hover:text-destructive"
+                        title="Delete profile"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </div>
                   </div>
+
+                  {/* Expanded details */}
+                  {isExpanded && (
+                    <div className="mt-3 pt-3 border-t space-y-2.5 text-xs">
+                      {/* Swell */}
+                      {(profile.targetSwellHeight != null || profile.targetSwellPeriod != null || profile.targetSwellDirection != null) && (
+                        <div>
+                          <span className="font-medium text-muted-foreground uppercase tracking-wider text-[10px]">Swell</span>
+                          <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1 text-foreground">
+                            {profile.targetSwellHeight != null && (
+                              <span>Size: {(profile.targetSwellHeight * 3.28084).toFixed(0)}ft</span>
+                            )}
+                            {profile.targetSwellPeriod != null && (
+                              <span>Period: {profile.targetSwellPeriod.toFixed(0)}s</span>
+                            )}
+                            {profile.targetSwellDirection != null && (
+                              <span>Direction: {profile.targetSwellDirection.toFixed(0)}°</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Wind */}
+                      {(profile.targetWindSpeed != null || profile.targetWindDirection != null) && (
+                        <div>
+                          <span className="font-medium text-muted-foreground uppercase tracking-wider text-[10px]">Wind</span>
+                          <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1 text-foreground">
+                            {profile.targetWindSpeed != null && (
+                              <span>Speed: {profile.targetWindSpeed < 10 ? "light" : `${profile.targetWindSpeed.toFixed(0)} km/h`}</span>
+                            )}
+                            {profile.targetWindDirection != null && (
+                              <span>Direction: {profile.targetWindDirection.toFixed(0)}°</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Tide */}
+                      {profile.targetTideHeight != null && (
+                        <div>
+                          <span className="font-medium text-muted-foreground uppercase tracking-wider text-[10px]">Tide</span>
+                          <div className="mt-1 text-foreground">
+                            {profile.targetTideHeight > 0.3 ? "High" : profile.targetTideHeight < -0.3 ? "Low" : "Mid"}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Exclusions */}
+                      {profile.exclusions && Object.keys(profile.exclusions).length > 0 && (
+                        <div>
+                          <span className="font-medium text-destructive/70 uppercase tracking-wider text-[10px]">Doesn&apos;t work</span>
+                          <div className="flex flex-wrap gap-1.5 mt-1">
+                            {profile.exclusions.swellDirection?.map(d => (
+                              <span key={`sd-${d}`} className="px-1.5 py-0.5 rounded bg-destructive/10 text-destructive text-[10px]">Swell {d}</span>
+                            ))}
+                            {profile.exclusions.windDirection?.map(d => (
+                              <span key={`wd-${d}`} className="px-1.5 py-0.5 rounded bg-destructive/10 text-destructive text-[10px]">Wind {d}</span>
+                            ))}
+                            {profile.exclusions.swellHeight?.map(v => (
+                              <span key={`sh-${v}`} className="px-1.5 py-0.5 rounded bg-destructive/10 text-destructive text-[10px]">{v} waves</span>
+                            ))}
+                            {profile.exclusions.swellPeriod?.map(v => (
+                              <span key={`sp-${v}`} className="px-1.5 py-0.5 rounded bg-destructive/10 text-destructive text-[10px]">{v} period</span>
+                            ))}
+                            {profile.exclusions.windSpeed?.map(v => (
+                              <span key={`ws-${v}`} className="px-1.5 py-0.5 rounded bg-destructive/10 text-destructive text-[10px]">{v} wind</span>
+                            ))}
+                            {profile.exclusions.tideHeight?.map(v => (
+                              <span key={`th-${v}`} className="px-1.5 py-0.5 rounded bg-destructive/10 text-destructive text-[10px]">{v} tide</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Weights */}
+                      <div>
+                        <span className="font-medium text-muted-foreground uppercase tracking-wider text-[10px]">Importance</span>
+                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-foreground">
+                          <span>Swell height: {weightLabel(profile.weightSwellHeight)}</span>
+                          <span>Period: {weightLabel(profile.weightSwellPeriod)}</span>
+                          <span>Swell dir: {weightLabel(profile.weightSwellDirection)}</span>
+                          <span>Wind: {weightLabel(profile.weightWindSpeed)}</span>
+                          <span>Wind dir: {weightLabel(profile.weightWindDirection)}</span>
+                          <span>Tide: {weightLabel(profile.weightTideHeight)}</span>
+                        </div>
+                      </div>
+
+                      {/* Season */}
+                      {profile.activeMonths && profile.activeMonths.length > 0 && (
+                        <div>
+                          <span className="font-medium text-muted-foreground uppercase tracking-wider text-[10px]">Active months</span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {profile.activeMonths.sort((a, b) => a - b).map(m => (
+                              <span key={m} className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground text-[10px]">
+                                {MONTHS.find(mo => mo.value === m)?.label}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Quality + Consistency */}
+                      <div className="flex gap-4">
+                        <span>Consistency: {profile.consistency}</span>
+                        <span>Quality ceiling: {profile.qualityCeiling}/5</span>
+                      </div>
+
+                      {profile.reinforcementCount > 0 && (
+                        <p className="text-[10px] text-muted-foreground">
+                          Reinforced {profile.reinforcementCount}x
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
-
-                {profile.activeMonths && profile.activeMonths.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-1.5">
-                    {profile.activeMonths.sort((a, b) => a - b).map(m => (
-                      <span key={m} className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                        {MONTHS.find(mo => mo.value === m)?.label}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-
-            {profiles.length < 10 && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full"
-                onClick={handleGenerateFromSessions}
-                disabled={generating}
-              >
-                {generating ? (
-                  <Loader2 className="size-3.5 mr-1 animate-spin" />
-                ) : (
-                  <Sparkles className="size-3.5 mr-1" />
-                )}
-                Generate from best sessions
-              </Button>
-            )}
+              );
+            })}
           </>
         )}
       </div>
@@ -352,6 +310,10 @@ function buildTargetSummary(p: ConditionProfileResponse): string {
   return parts.length > 0 ? parts.join(" · ") : "No targets set";
 }
 
-function capitalize(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1);
+function weightLabel(w: number): string {
+  if (w === 0) return "any";
+  if (w <= 0.45) return "low";
+  if (w <= 0.8) return "med";
+  if (w <= 1.2) return "high";
+  return "critical";
 }

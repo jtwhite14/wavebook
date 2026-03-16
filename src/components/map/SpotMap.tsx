@@ -239,7 +239,9 @@ export default function SpotMap({
               latitude={latitude}
               anchor="center"
             >
-              <div className="w-3 h-3 rounded-full bg-white border-2 border-white/60 shadow-lg" />
+              <svg width="8" height="8" viewBox="0 0 8 8">
+                <circle cx="4" cy="4" r="4" fill="white" fillOpacity={0.6} />
+              </svg>
             </Marker>
           );
         }
