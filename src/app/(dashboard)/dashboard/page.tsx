@@ -44,7 +44,7 @@ import { IncomingInvites } from "@/components/sharing/IncomingInvites";
 import { SharedSpotsList } from "@/components/sharing/SharedSpotsList";
 import { SharedSpotPane } from "@/components/sharing/SharedSpotPane";
 import type { SurfSpot } from "@/lib/db/schema";
-import type { SurfSessionWithConditions, SharedSpotView } from "@/types";
+import type { SurfSessionWithConditions, SharedSpotView, CardinalDirection } from "@/types";
 
 const SpotMap = dynamic(() => import("@/components/map/SpotMap"), {
   ssr: false,
@@ -94,6 +94,14 @@ export default function DashboardPage() {
     sharedBy: { id: string; name: string | null; email: string };
   }>>([]);
   const [selectedSharedSpot, setSelectedSharedSpot] = useState<SharedSpotView | null>(null);
+
+  // Map direction editing overlay
+  const [directionEdit, setDirectionEdit] = useState<{
+    spotId: string;
+    field: string;
+    selected: CardinalDirection[];
+    mode: "target" | "exclusion";
+  } | null>(null);
 
   // Missing location prompt
   const [fixLocationSpot, setFixLocationSpot] = useState<SurfSpot | null>(null);
@@ -453,6 +461,12 @@ export default function DashboardPage() {
           if (full) handleSharedSpotClick(full);
         }}
         {...(initialViewState && { initialViewState })}
+        directionEdit={directionEdit && selectedSpot ? {
+          spotId: selectedSpot.id,
+          selected: directionEdit.selected,
+          mode: directionEdit.mode,
+          onChange: (dirs) => setDirectionEdit(prev => prev ? { ...prev, selected: dirs } : null),
+        } : undefined}
       />
 
       {/* Spots needing attention banner */}
@@ -535,6 +549,16 @@ export default function DashboardPage() {
             <SpotPaneProfiles
               spotId={selectedSpot.id}
               onBack={handleBackToSpot}
+              onDirectionEditStart={(req) => {
+                setDirectionEdit({
+                  spotId: selectedSpot.id,
+                  field: req.field,
+                  selected: req.selected,
+                  mode: req.mode,
+                });
+              }}
+              onDirectionEditStop={() => setDirectionEdit(null)}
+              directionEditState={directionEdit}
             />
           ) : paneView === "edit" ? (
             <SpotPaneEditSpot

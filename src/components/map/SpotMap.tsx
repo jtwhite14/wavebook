@@ -5,6 +5,8 @@ import Map, { Marker, MapRef, NavigationControl, GeolocateControl, MapMouseEvent
 import Supercluster from "supercluster";
 import { SurfSpot } from "@/lib/db/schema";
 import SpotMarker from "./SpotMarker";
+import MapDirectionOverlay from "./MapDirectionOverlay";
+import type { CardinalDirection } from "@/types";
 import "mapbox-gl/dist/mapbox-gl.css";
 
 interface SharedSpotMarkerData {
@@ -33,6 +35,13 @@ interface SpotMapProps {
   sharedSpots?: SharedSpotMarkerData[];
   /** Callback when a shared spot marker is clicked */
   onSharedSpotClick?: (sharedSpot: SharedSpotMarkerData) => void;
+  /** Direction editing overlay state */
+  directionEdit?: {
+    spotId: string;
+    selected: CardinalDirection[];
+    mode: "target" | "exclusion";
+    onChange: (dirs: CardinalDirection[]) => void;
+  } | null;
 }
 
 const DEFAULT_VIEW_STATE = {
@@ -56,6 +65,7 @@ export default function SpotMap({
   alertSpotIds,
   sharedSpots,
   onSharedSpotClick,
+  directionEdit,
 }: SpotMapProps) {
   const mapRef = useRef<MapRef>(null);
   const [viewState, setViewState] = useState(initialViewState);
@@ -284,6 +294,21 @@ export default function SpotMap({
           </div>
         </Marker>
       )}
+
+      {/* Direction editing overlay */}
+      {directionEdit && (() => {
+        const spot = spotById[directionEdit.spotId];
+        if (!spot) return null;
+        return (
+          <MapDirectionOverlay
+            longitude={parseFloat(spot.longitude)}
+            latitude={parseFloat(spot.latitude)}
+            selected={directionEdit.selected}
+            onChange={directionEdit.onChange}
+            mode={directionEdit.mode}
+          />
+        );
+      })()}
     </Map>
   );
 }

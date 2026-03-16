@@ -5,6 +5,7 @@ import { CardinalDirection } from "@/types";
 interface SwellExposurePickerProps {
   value: CardinalDirection[];
   onChange: (directions: CardinalDirection[]) => void;
+  variant?: "default" | "destructive";
 }
 
 const DIRECTIONS: { dir: CardinalDirection; row: number; col: number }[] = [
@@ -19,7 +20,7 @@ const DIRECTIONS: { dir: CardinalDirection; row: number; col: number }[] = [
   { dir: "SE", row: 2, col: 2 },
 ];
 
-export function SwellExposurePicker({ value, onChange }: SwellExposurePickerProps) {
+export function SwellExposurePicker({ value, onChange, variant = "default" }: SwellExposurePickerProps) {
   function toggle(dir: CardinalDirection) {
     if (value.includes(dir)) {
       onChange(value.filter(d => d !== dir));
@@ -27,6 +28,10 @@ export function SwellExposurePicker({ value, onChange }: SwellExposurePickerProp
       onChange([...value, dir]);
     }
   }
+
+  const selectedStyle = variant === "destructive"
+    ? "border border-destructive text-destructive bg-destructive/10"
+    : "border border-primary text-primary bg-primary/10";
 
   return (
     <div className="grid grid-cols-3 gap-1.5 w-fit">
@@ -52,7 +57,7 @@ export function SwellExposurePicker({ value, onChange }: SwellExposurePickerProp
               onClick={() => toggle(entry.dir)}
               className={`w-9 h-9 rounded text-xs font-medium transition-colors ${
                 selected
-                  ? "border border-primary text-primary bg-primary/10"
+                  ? selectedStyle
                   : "bg-muted text-muted-foreground hover:bg-accent"
               }`}
             >

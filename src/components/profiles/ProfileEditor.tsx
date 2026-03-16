@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, ChevronRight, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SwellExposurePicker } from "@/components/spots/SwellExposurePicker";
-import type { CardinalDirection, ConditionProfileResponse } from "@/types";
+import type { CardinalDirection, ConditionProfileResponse, ExclusionZones } from "@/types";
 import { WEIGHT_PRESETS } from "@/types";
 import {
   WAVE_SIZE_MIDPOINTS,
@@ -17,11 +17,22 @@ import {
   numericToCategory,
 } from "@/lib/matching/profile-utils";
 
+export interface DirectionEditRequest {
+  field: "swellDirection" | "windDirection" | "excludeSwellDir" | "excludeWindDir";
+  selected: CardinalDirection[];
+  mode: "target" | "exclusion";
+}
+
 interface ProfileEditorProps {
   spotId: string;
   profile?: ConditionProfileResponse;
   onSave: (profile: ConditionProfileResponse) => void;
   onCancel: () => void;
+  /** Request the parent to show direction editing on the map */
+  onDirectionEditStart?: (req: DirectionEditRequest) => void;
+  onDirectionEditStop?: () => void;
+  /** Current direction edit state from the map overlay (for syncing back) */
+  directionEditState?: { field: string; selected: CardinalDirection[]; mode: "target" | "exclusion" } | null;
 }
 
 const WAVE_SIZE_OPTIONS = [
@@ -73,7 +84,7 @@ const IMPORTANCE_LEVELS = [
   { label: "Any", style: "bg-muted text-muted-foreground ring-1 ring-border" },
 ] as const;
 
-export function ProfileEditor({ spotId, profile, onSave, onCancel }: ProfileEditorProps) {
+export function ProfileEditor({ spotId, profile, onSave, onCancel, onDirectionEditStart, onDirectionEditStop, directionEditState }: ProfileEditorProps) {
   const [name, setName] = useState(profile?.name ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -117,6 +128,15 @@ export function ProfileEditor({ spotId, profile, onSave, onCancel }: ProfileEdit
   const [consistency, setConsistency] = useState<string>(profile?.consistency ?? "medium");
   const [qualityCeiling, setQualityCeiling] = useState<number>(profile?.qualityCeiling ?? 3);
 
+  // Exclusion zones
+  const exc = profile?.exclusions;
+  const [excludeSwellDir, setExcludeSwellDir] = useState<CardinalDirection[]>(exc?.swellDirection ?? []);
+  const [excludeWindDir, setExcludeWindDir] = useState<CardinalDirection[]>(exc?.windDirection ?? []);
+  const [excludeWaveSize, setExcludeWaveSize] = useState<string[]>(exc?.swellHeight ?? []);
+  const [excludeSwellPeriod, setExcludeSwellPeriod] = useState<string[]>(exc?.swellPeriod ?? []);
+  const [excludeWindSpeed, setExcludeWindSpeed] = useState<string[]>(exc?.windSpeed ?? []);
+  const [excludeTide, setExcludeTide] = useState<string[]>(exc?.tideHeight ?? []);
+
   // Importance weights
   const [wSwellHeight, setWSwellHeight] = useState(profile?.weightSwellHeight ?? 0.8);
   const [wSwellPeriod, setWSwellPeriod] = useState(profile?.weightSwellPeriod ?? 0.7);
@@ -129,6 +149,10 @@ export function ProfileEditor({ spotId, profile, onSave, onCancel }: ProfileEdit
   // Spot type preset
   const [activePreset, setActivePreset] = useState<string | null>(null);
 
+  const hasAnyExclusion = excludeSwellDir.length > 0 || excludeWindDir.length > 0 ||
+    excludeWaveSize.length > 0 || excludeSwellPeriod.length > 0 ||
+    excludeWindSpeed.length > 0 || excludeTide.length > 0;
+  const [exclusionsOpen, setExclusionsOpen] = useState(hasAnyExclusion);
 
   function togglePill<T extends string>(current: T[], value: T): T[] {
     return current.includes(value) ? current.filter(v => v !== value) : [...current, value];
@@ -165,6 +189,36 @@ export function ProfileEditor({ spotId, profile, onSave, onCancel }: ProfileEdit
     };
   }
 
+  function buildExclusions(): ExclusionZones | null {
+    const zones: ExclusionZones = {};
+    if (excludeSwellDir.length > 0) zones.swellDirection = excludeSwellDir;
+    if (excludeWindDir.length > 0) zones.windDirection = excludeWindDir;
+    if (excludeWaveSize.length > 0) zones.swellHeight = excludeWaveSize;
+    if (excludeSwellPeriod.length > 0) zones.swellPeriod = excludeSwellPeriod;
+    if (excludeWindSpeed.length > 0) zones.windSpeed = excludeWindSpeed;
+    if (excludeTide.length > 0) zones.tideHeight = excludeTide;
+    return Object.keys(zones).length > 0 ? zones : null;
+  }
+
+  // Map direction editing helpers
+  function startMapEdit(field: DirectionEditRequest["field"], selected: CardinalDirection[], mode: "target" | "exclusion") {
+    onDirectionEditStart?.({ field, selected, mode });
+  }
+
+  /** Called from parent when map wedges are toggled */
+  function handleMapDirectionChange(field: DirectionEditRequest["field"], dirs: CardinalDirection[]) {
+    switch (field) {
+      case "swellDirection": setSwellDirection(dirs); break;
+      case "windDirection": setWindDirection(dirs); break;
+      case "excludeSwellDir": setExcludeSwellDir(dirs); break;
+      case "excludeWindDir": setExcludeWindDir(dirs); break;
+    }
+  }
+
+  // Expose for parent to call via ref or callback
+  // We use a stable reference pattern through the onDirectionEditStart callback
+  (ProfileEditor as unknown as Record<string, unknown>)._handleMapDirectionChange = handleMapDirectionChange;
+
   async function handleSave() {
     if (!name.trim()) {
       setError("Name is required");
@@ -180,6 +234,7 @@ export function ProfileEditor({ spotId, profile, onSave, onCancel }: ProfileEdit
 
     setSaving(true);
     setError(null);
+    onDirectionEditStop?.();
 
     try {
       const url = profile
@@ -200,6 +255,7 @@ export function ProfileEditor({ spotId, profile, onSave, onCancel }: ProfileEdit
             windDirection,
             tideLevel,
           },
+          exclusions: buildExclusions(),
           activeMonths: activeMonths.length > 0 ? activeMonths : null,
           consistency,
           qualityCeiling,
@@ -229,10 +285,15 @@ export function ProfileEditor({ spotId, profile, onSave, onCancel }: ProfileEdit
 
   function clearPreset() { setActivePreset(null); }
 
+  function handleCancel() {
+    onDirectionEditStop?.();
+    onCancel();
+  }
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-2 px-4 pt-4 pb-3 border-b">
-        <button onClick={onCancel} className="rounded-md p-1 hover:bg-accent transition-colors">
+        <button onClick={handleCancel} className="rounded-md p-1 hover:bg-accent transition-colors">
           <ArrowLeft className="size-4" />
         </button>
         <h2 className="text-lg font-semibold">
@@ -294,7 +355,17 @@ export function ProfileEditor({ spotId, profile, onSave, onCancel }: ProfileEdit
 
               {/* Swell Direction */}
               <ConditionRow label="Direction" level={weightToLevel(wSwellDir)} onLevelChange={(l) => { setWSwellDir(levelToWeight(l)); clearPreset(); }}>
-                <SwellExposurePicker value={swellDirection} onChange={setSwellDirection} />
+                <div className="flex items-start gap-3">
+                  <SwellExposurePicker value={swellDirection} onChange={setSwellDirection} />
+                  {onDirectionEditStart && (
+                    <button
+                      onClick={() => startMapEdit("swellDirection", swellDirection, "target")}
+                      className="text-[10px] text-primary hover:underline mt-1 whitespace-nowrap"
+                    >
+                      Edit on map
+                    </button>
+                  )}
+                </div>
               </ConditionRow>
             </fieldset>
 
@@ -313,7 +384,17 @@ export function ProfileEditor({ spotId, profile, onSave, onCancel }: ProfileEdit
 
               {/* Wind Direction */}
               <ConditionRow label="Direction" level={weightToLevel(wWindDir)} onLevelChange={(l) => { setWWindDir(levelToWeight(l)); clearPreset(); }}>
-                <SwellExposurePicker value={windDirection} onChange={setWindDirection} />
+                <div className="flex items-start gap-3">
+                  <SwellExposurePicker value={windDirection} onChange={setWindDirection} />
+                  {onDirectionEditStart && (
+                    <button
+                      onClick={() => startMapEdit("windDirection", windDirection, "target")}
+                      className="text-[10px] text-primary hover:underline mt-1 whitespace-nowrap"
+                    >
+                      Edit on map
+                    </button>
+                  )}
+                </div>
               </ConditionRow>
             </fieldset>
 
@@ -328,6 +409,107 @@ export function ProfileEditor({ spotId, profile, onSave, onCancel }: ProfileEdit
                 </div>
               </ConditionRow>
             </fieldset>
+
+        {/* ── Doesn't work (exclusion zones) ── */}
+        <div className="rounded-lg border border-destructive/30 overflow-hidden">
+          <button
+            className="w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-destructive/5 transition-colors"
+            onClick={() => setExclusionsOpen(!exclusionsOpen)}
+          >
+            <ChevronRight className={`size-3.5 text-destructive/70 shrink-0 transition-transform duration-200 ${exclusionsOpen ? 'rotate-90' : ''}`} />
+            <span className="text-sm font-medium text-destructive/80 flex-1">Doesn&apos;t work</span>
+            {!exclusionsOpen && hasAnyExclusion && (
+              <span className="text-xs text-destructive/60">{exclusionSummary()}</span>
+            )}
+          </button>
+          {exclusionsOpen && (
+            <div className="px-3 pb-3 pt-1 space-y-3 border-t border-destructive/20">
+              <p className="text-[11px] text-muted-foreground">
+                Conditions that make this spot unrideable. Alerts will never fire when these are forecast.
+              </p>
+
+              {/* Excluded swell direction */}
+              <div className="space-y-1.5">
+                <span className="text-xs font-medium text-muted-foreground">Swell direction</span>
+                <div className="flex items-start gap-3">
+                  <SwellExposurePicker
+                    value={excludeSwellDir}
+                    onChange={setExcludeSwellDir}
+                    variant="destructive"
+                  />
+                  {onDirectionEditStart && (
+                    <button
+                      onClick={() => startMapEdit("excludeSwellDir", excludeSwellDir, "exclusion")}
+                      className="text-[10px] text-destructive hover:underline mt-1 whitespace-nowrap"
+                    >
+                      Edit on map
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Excluded wind direction */}
+              <div className="space-y-1.5">
+                <span className="text-xs font-medium text-muted-foreground">Wind direction</span>
+                <div className="flex items-start gap-3">
+                  <SwellExposurePicker
+                    value={excludeWindDir}
+                    onChange={setExcludeWindDir}
+                    variant="destructive"
+                  />
+                  {onDirectionEditStart && (
+                    <button
+                      onClick={() => startMapEdit("excludeWindDir", excludeWindDir, "exclusion")}
+                      className="text-[10px] text-destructive hover:underline mt-1 whitespace-nowrap"
+                    >
+                      Edit on map
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Excluded wave size */}
+              <div className="space-y-1.5">
+                <span className="text-xs font-medium text-muted-foreground">Wave size</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {WAVE_SIZE_OPTIONS.map(opt => (
+                    <ExclusionPill key={opt.value} active={excludeWaveSize.includes(opt.value)} onClick={() => setExcludeWaveSize(togglePill(excludeWaveSize, opt.value))}>{opt.label}</ExclusionPill>
+                  ))}
+                </div>
+              </div>
+
+              {/* Excluded period */}
+              <div className="space-y-1.5">
+                <span className="text-xs font-medium text-muted-foreground">Period</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {PERIOD_OPTIONS.map(opt => (
+                    <ExclusionPill key={opt.value} active={excludeSwellPeriod.includes(opt.value)} onClick={() => setExcludeSwellPeriod(togglePill(excludeSwellPeriod, opt.value))}>{opt.label}</ExclusionPill>
+                  ))}
+                </div>
+              </div>
+
+              {/* Excluded wind speed */}
+              <div className="space-y-1.5">
+                <span className="text-xs font-medium text-muted-foreground">Wind</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {[...WIND_OPTIONS, { value: "onshore", label: "Onshore" }].map(opt => (
+                    <ExclusionPill key={opt.value} active={excludeWindSpeed.includes(opt.value)} onClick={() => setExcludeWindSpeed(togglePill(excludeWindSpeed, opt.value))}>{opt.label}</ExclusionPill>
+                  ))}
+                </div>
+              </div>
+
+              {/* Excluded tide */}
+              <div className="space-y-1.5">
+                <span className="text-xs font-medium text-muted-foreground">Tide</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {TIDE_OPTIONS.map(opt => (
+                    <ExclusionPill key={opt.value} active={excludeTide.includes(opt.value)} onClick={() => setExcludeTide(togglePill(excludeTide, opt.value))}>{opt.label}</ExclusionPill>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Active Months */}
         <div className="space-y-1.5">
@@ -388,13 +570,22 @@ export function ProfileEditor({ spotId, profile, onSave, onCancel }: ProfileEdit
       </div>
 
       <div className="px-4 py-3 border-t flex gap-2">
-        <Button variant="outline" className="flex-1" onClick={onCancel}>Cancel</Button>
+        <Button variant="outline" className="flex-1" onClick={handleCancel}>Cancel</Button>
         <Button className="flex-1" onClick={handleSave} disabled={saving}>
           {saving ? <Loader2 className="size-4 animate-spin" /> : profile ? "Save" : "Create"}
         </Button>
       </div>
     </div>
   );
+
+  function exclusionSummary(): string {
+    const parts: string[] = [];
+    if (excludeWindDir.length > 0) parts.push(`Wind ${excludeWindDir.join(",")}`);
+    if (excludeSwellDir.length > 0) parts.push(`Swell ${excludeSwellDir.join(",")}`);
+    const scalarCount = excludeWaveSize.length + excludeSwellPeriod.length + excludeWindSpeed.length + excludeTide.length;
+    if (scalarCount > 0) parts.push(`+${scalarCount} more`);
+    return parts.join(" · ");
+  }
 }
 
 /* ── Compact row: label + cycling importance badge on left, controls below ── */
@@ -446,6 +637,32 @@ function Pill({
         "px-2.5 py-1 rounded-full text-xs font-medium transition-colors",
         active
           ? "border border-primary text-primary bg-primary/10"
+          : "bg-muted text-muted-foreground hover:bg-accent"
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+/* ── Red exclusion pill ── */
+
+function ExclusionPill({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "px-2.5 py-1 rounded-full text-xs font-medium transition-colors",
+        active
+          ? "border border-destructive text-destructive bg-destructive/10"
           : "bg-muted text-muted-foreground hover:bg-accent"
       )}
     >

@@ -759,6 +759,9 @@ export function generateProfileAlerts(
     let bestForThisHour: ComputedProfileAlert | null = null;
 
     for (const profile of profiles) {
+      // Exclusion zone hard veto — skip if forecast hits a dealbreaker
+      if (checkExclusionVeto(fh.conditions, profile.exclusions)) continue;
+
       const { score, details, coverage } = computeSimilarity(
         fh.conditions,
         profile.conditions,
