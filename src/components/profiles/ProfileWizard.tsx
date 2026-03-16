@@ -255,7 +255,7 @@ export function ProfileWizard({
   const isCompassStep = currentStep === "swellDirection" || currentStep === "windDirection"
     || currentStep === "exc_swellDirection" || currentStep === "exc_windDirection";
   const isExclusionStep = EXCLUSION_STEPS.has(currentStep);
-  const isSkippable = isExclusionStep || currentStep === "preset";
+  const isSkippable = !isLast;
 
   // Toggle helpers
   function togglePill<T extends string>(current: T[], value: T): T[] {
@@ -319,10 +319,6 @@ export function ProfileWizard({
   function goNext() {
     if (isLast) return;
     setError(null);
-    if (currentStep === "name" && !name.trim()) {
-      setError("Name is required");
-      return;
-    }
     setStepIndex(prev => prev + 1);
   }
 
@@ -344,10 +340,7 @@ export function ProfileWizard({
   }
 
   async function handleSave() {
-    if (!name.trim()) {
-      setError("Name is required");
-      return;
-    }
+    const saveName = name.trim() || defaultName || "Profile";
 
     const targets = {
       targetSwellHeight: waveSize.length > 0 ? avgMidpoints(waveSize, WAVE_SIZE_MIDPOINTS) : null,
@@ -357,12 +350,6 @@ export function ProfileWizard({
       targetWindDirection: windDirection.length > 0 ? avgCardinalDeg(windDirection) : null,
       targetTideHeight: tideLevel.length > 0 ? avgMidpoints(tideLevel, TIDE_HEIGHT_MIDPOINTS) : null,
     };
-
-    const specifiedCount = Object.values(targets).filter(v => v != null).length;
-    if (specifiedCount < 2) {
-      setError("Set at least 2 conditions");
-      return;
-    }
 
     setSaving(true);
     setError(null);
@@ -377,7 +364,7 @@ export function ProfileWizard({
         method: profile ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: name.trim(),
+          name: saveName,
           ...targets,
           selections: {
             waveSize,
