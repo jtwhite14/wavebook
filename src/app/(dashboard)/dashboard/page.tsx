@@ -83,6 +83,7 @@ export default function DashboardPage() {
   const [alertSpotIds, setAlertSpotIds] = useState<Set<string>>(new Set());
   const [alertSummaries, setAlertSummaries] = useState<Array<{ spotId: string; spotName: string; effectiveScore: number; forecastHour: string; timeWindow: string; conditions: string }>>([]);
   const [panelTab, setPanelTab] = useState<"sessions" | "alerts">("alerts");
+  const [spotProfileCounts, setSpotProfileCounts] = useState<Record<string, number>>({});
 
   // Sharing state
   const [sharedSpots, setSharedSpots] = useState<SharedSpotView[]>([]);
@@ -247,10 +248,19 @@ export default function DashboardPage() {
     setPaneView("session");
   };
 
-  const handleBackToSpot = () => {
+  const handleBackToSpot = useCallback(() => {
     setPaneView("spot");
     setViewingSession(null);
-  };
+    // Refresh profile count for the selected spot
+    if (selectedSpot) {
+      fetch(`/api/spots/${selectedSpot.id}/profiles`)
+        .then(r => r.ok ? r.json() : { profiles: [] })
+        .then(data => {
+          setSpotProfileCounts(prev => ({ ...prev, [selectedSpot.id]: (data.profiles || []).length }));
+        })
+        .catch(() => {});
+    }
+  }, [selectedSpot]);
 
   const handleSpotSaved = (updatedSpot: SurfSpot) => {
     setSpots((prev) => prev.map((s) => (s.id === updatedSpot.id ? updatedSpot : s)));
@@ -316,9 +326,25 @@ export default function DashboardPage() {
           setHomeLocation({ latitude: locationData.latitude, longitude: locationData.longitude });
         }
 
-        // Fetch alert status for each spot (fire-and-forget, non-blocking)
+        // Fetch alert status and profile counts for each spot (fire-and-forget, non-blocking)
         const spotsList = spotsData.spots || [];
         if (spotsList.length > 0) {
+          // Fetch profile counts
+          Promise.all(
+            spotsList.map((s: SurfSpot) =>
+              fetch(`/api/spots/${s.id}/profiles`)
+                .then(r => r.ok ? r.json() : { profiles: [] })
+                .then(data => ({ spotId: s.id, count: (data.profiles || []).length }))
+                .catch(() => ({ spotId: s.id, count: 0 }))
+            )
+          ).then(results => {
+            const counts: Record<string, number> = {};
+            for (const { spotId, count } of results) {
+              counts[spotId] = count;
+            }
+            setSpotProfileCounts(counts);
+          });
+
           Promise.all(
             spotsList.map((s: SurfSpot) =>
               fetch(`/api/spots/${s.id}/alerts`)
@@ -654,15 +680,30 @@ export default function DashboardPage() {
                     )}
 
                     {/* Condition Profiles */}
-                    <button
-                      onClick={() => setPaneView("profiles")}
-                      className="w-full rounded-lg border border-dashed border-muted-foreground/30 px-3 py-2.5 text-left hover:border-muted-foreground/50 transition-colors"
-                    >
-                      <p className="text-xs text-muted-foreground">
-                        Define your ideal conditions to get alerts without needing past sessions.{" "}
-                        <span className="text-primary font-medium">Condition Profiles</span>
-                      </p>
-                    </button>
+                    {spotProfileCounts[selectedSpot.id] === 0 ? (
+                      <button
+                        onClick={() => setPaneView("profiles")}
+                        className="w-full rounded-lg border border-yellow-500/50 bg-yellow-500/10 px-3 py-2.5 text-left hover:bg-yellow-500/15 transition-colors"
+                      >
+                        <div className="flex items-start gap-2">
+                          <AlertTriangle className="size-3.5 text-yellow-600 dark:text-yellow-400 shrink-0 mt-0.5" />
+                          <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                            No condition profiles set. Without profiles, alerts can only match against past sessions.{" "}
+                            <span className="text-yellow-800 dark:text-yellow-200 font-medium">Add a profile</span>
+                          </p>
+                        </div>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setPaneView("profiles")}
+                        className="w-full rounded-lg border border-dashed border-muted-foreground/30 px-3 py-2.5 text-left hover:border-muted-foreground/50 transition-colors"
+                      >
+                        <p className="text-xs text-muted-foreground">
+                          Define your ideal conditions to get alerts without needing past sessions.{" "}
+                          <span className="text-primary font-medium">Condition Profiles</span>
+                        </p>
+                      </button>
+                    )}
 
 
                     {/* 5-day forecast score breakdown */}
