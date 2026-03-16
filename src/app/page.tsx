@@ -23,13 +23,13 @@ const features = [
     icon: MapPin,
     title: "Spot Tracking",
     description:
-      "Pin your spots on a private map. Nobody sees them but you. Not your buddies, not the algorithm, not some kook with a blog.",
+      "Pin your spots on a private map. Share them with a few trusted friends or keep them to yourself — either way, they never hit a public feed.",
   },
   {
     icon: BookOpen,
     title: "Session Logging",
     description:
-      "Log every damn session — conditions, board, rating, notes. Build a record of your wave life that actually means something.",
+      "Log every session — conditions, board, rating, notes. The more you log, the smarter your forecasts get.",
   },
   {
     icon: Waves,
@@ -41,13 +41,13 @@ const features = [
     icon: Brain,
     title: "AI Forecast Scoring",
     description:
-      "Wavebook learns what gets you stoked. It scores every forecast against your session history so you stop guessing and start going.",
+      "Life's busy. Wavebook scores every forecast window against your session history so you spend less time analyzing and more time in the water.",
   },
   {
     icon: MessageSquare,
     title: "Smart SMS Alerts",
     description:
-      "Wake up to a text that says \"get your ass to Rincon.\" AI matches conditions to your best sessions. No fiddling with thresholds.",
+      "Get a text when conditions match your best sessions. No manual thresholds — Wavebook figures out what fires for you.",
   },
   {
     icon: Calendar,
@@ -65,7 +65,7 @@ const features = [
     icon: Users,
     title: "Spot Sharing",
     description:
-      "Share a spot with up to 5 people. That's it. No groups, no communities, no bull.",
+      "Share individual spots with up to 5 people you trust. That's it.",
   },
 ];
 
@@ -125,17 +125,17 @@ export default async function LandingPage() {
             </h2>
             <div className="mt-6 space-y-4 text-muted-foreground leading-relaxed">
               <p>
-                Every surf app out there wants you to share, post, check in, and
-                rat out your lineup. Screw that. We built Wavebook for surfers
-                who want to get better without putting their spots on blast.
+                Most surf apps want you to share everything — spots, sessions,
+                check-ins. We just wanted something that helps you surf more
+                without giving away the goods.
               </p>
               <p>
                 Wavebook learns what makes a great session{" "}
-                <span className="text-foreground">for you</span> — not some
-                average across a million kooks. It cross-references swell, wind,
-                tide, and weather against your logged sessions, scores every
-                forecast window, and texts you when it&apos;s time to paddle
-                out. Your data trains your model. Nobody else&apos;s.
+                <span className="text-foreground">for you</span>. It
+                cross-references swell, wind, tide, and weather against your
+                logged sessions, scores every forecast window, and texts you
+                when conditions line up. Your data, your model — nobody
+                else&apos;s.
               </p>
             </div>
           </div>
@@ -178,18 +178,17 @@ export default async function LandingPage() {
             <ul className="mt-8 space-y-4 text-muted-foreground leading-relaxed">
               <li className="flex gap-3">
                 <span className="text-primary mt-1 shrink-0">—</span>
-                Your spots never show up on public maps or feeds. Ever. We&apos;d
-                rather shut down than sell you out.
+                Your spots never appear on public maps or feeds. Period.
               </li>
               <li className="flex gap-3">
                 <span className="text-primary mt-1 shrink-0">—</span>
-                No followers, no likes, no clout metrics. This isn&apos;t a
-                social network — it&apos;s a tool for people who actually surf.
+                No social features, no follower counts, no exposure metrics.
+                Wavebook is a tool, not a platform.
               </li>
               <li className="flex gap-3">
                 <span className="text-primary mt-1 shrink-0">—</span>
-                Share a spot with up to 5 people you&apos;d actually trust in
-                heavy surf. Everyone else can kick rocks.
+                Share a spot with up to 5 people you trust — or keep it all to
+                yourself.
               </li>
             </ul>
           </div>
@@ -199,7 +198,7 @@ export default async function LandingPage() {
         <section className="py-24 md:py-32">
           <div className="max-w-2xl mx-auto px-6 text-center">
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
-              Stop checking Surfline. Start surfing.
+              Paddle out with us.
             </h2>
             <div className="mt-8">
               <WaitlistForm />
