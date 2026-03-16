@@ -101,15 +101,16 @@ export default function DashboardPage() {
   const [dismissedLocationBanner, setDismissedLocationBanner] = useState(false);
 
   const spotsNeedingAttention = useMemo(() => {
-    const items: { spot: SurfSpot; missingLocation: boolean }[] = [];
+    const items: { spot: SurfSpot; missingLocation: boolean; missingProfile: boolean }[] = [];
     for (const s of spots) {
       const missingLocation = parseFloat(s.latitude) === 0 && parseFloat(s.longitude) === 0;
-      if (missingLocation) {
-        items.push({ spot: s, missingLocation });
+      const missingProfile = spotProfileCounts[s.id] === 0;
+      if (missingLocation || missingProfile) {
+        items.push({ spot: s, missingLocation, missingProfile });
       }
     }
     return items;
-  }, [spots]);
+  }, [spots, spotProfileCounts]);
 
   const handleFixLocation = (spot: SurfSpot) => {
     setSelectedSpot(null);
@@ -470,7 +471,7 @@ export default function DashboardPage() {
                   Complete your spots to get accurate alerts and conditions.
                 </p>
                 <div className="mt-3 space-y-2">
-                  {spotsNeedingAttention.map(({ spot, missingLocation }) => (
+                  {spotsNeedingAttention.map(({ spot, missingLocation, missingProfile }) => (
                     <div key={spot.id} className="rounded-md border border-dashed px-3 py-2 space-y-1.5">
                       <p className="text-sm font-medium truncate">{spot.name}</p>
                       <div className="flex flex-wrap gap-1.5">
@@ -481,6 +482,15 @@ export default function DashboardPage() {
                           >
                             <MapPin className="size-3" />
                             <span>Set location</span>
+                          </button>
+                        )}
+                        {missingProfile && (
+                          <button
+                            onClick={() => { handleSpotClick(spot); setPaneView("profiles"); }}
+                            className="inline-flex items-center gap-1.5 rounded-full bg-accent/50 px-2.5 py-1 text-xs hover:bg-accent transition-colors"
+                          >
+                            <Target className="size-3" />
+                            <span>Add condition profile</span>
                           </button>
                         )}
                       </div>
@@ -680,7 +690,7 @@ export default function DashboardPage() {
                     )}
 
                     {/* Condition Profiles */}
-                    {spotProfileCounts[selectedSpot.id] === 0 ? (
+                    {spotProfileCounts[selectedSpot.id] === 0 && (
                       <button
                         onClick={() => setPaneView("profiles")}
                         className="w-full rounded-lg border border-yellow-500/50 bg-yellow-500/10 px-3 py-2.5 text-left hover:bg-yellow-500/15 transition-colors"
@@ -692,16 +702,6 @@ export default function DashboardPage() {
                             <span className="text-yellow-800 dark:text-yellow-200 font-medium">Add a profile</span>
                           </p>
                         </div>
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => setPaneView("profiles")}
-                        className="w-full rounded-lg border border-dashed border-muted-foreground/30 px-3 py-2.5 text-left hover:border-muted-foreground/50 transition-colors"
-                      >
-                        <p className="text-xs text-muted-foreground">
-                          Define your ideal conditions to get alerts without needing past sessions.{" "}
-                          <span className="text-primary font-medium">Condition Profiles</span>
-                        </p>
                       </button>
                     )}
 
