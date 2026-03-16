@@ -8,9 +8,9 @@ import { z } from "zod";
 const phoneSchema = z.object({
   phoneNumber: z
     .string()
-    .regex(/^\+?[\d\s\-()]{7,20}$/, "Invalid phone number")
-    .transform((v) => v.replace(/[\s\-()]/g, ""))
+    .regex(/^\+\d{10,15}$/, "Phone number must be in E.164 format (e.g. +15551234567)")
     .or(z.literal("")),
+  smsEnabled: z.boolean().optional(),
 });
 
 export async function GET() {
@@ -22,10 +22,13 @@ export async function GET() {
 
     const user = await db.query.users.findFirst({
       where: eq(users.id, session.user.id),
-      columns: { phoneNumber: true },
+      columns: { phoneNumber: true, smsEnabled: true },
     });
 
-    return NextResponse.json({ phoneNumber: user?.phoneNumber ?? "" });
+    return NextResponse.json({
+      phoneNumber: user?.phoneNumber ?? "",
+      smsEnabled: user?.smsEnabled ?? false,
+    });
   } catch (error) {
     console.error("Error fetching phone number:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -42,13 +45,20 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const parsed = phoneSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid phone number" }, { status: 400 });
+      return NextResponse.json(
+        { error: parsed.error.issues[0]?.message || "Invalid phone number" },
+        { status: 400 }
+      );
     }
+
+    const phoneNumber = parsed.data.phoneNumber || null;
+    const smsEnabled = phoneNumber ? (parsed.data.smsEnabled ?? false) : false;
 
     await db
       .update(users)
       .set({
-        phoneNumber: parsed.data.phoneNumber || null,
+        phoneNumber,
+        smsEnabled,
         updatedAt: new Date(),
       })
       .where(eq(users.id, session.user.id));

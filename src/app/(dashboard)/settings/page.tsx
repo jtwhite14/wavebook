@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { AvailabilityWindow, CalendarEvent } from "@/types";
 import { addDays } from "date-fns";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { MapPin, Phone, Search } from "lucide-react";
 
 
@@ -31,6 +32,7 @@ export default function SettingsPage() {
   const [addressResults, setAddressResults] = useState<Array<{ place_name: string; center: [number, number] }>>([]);
   const [addressSearching, setAddressSearching] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [smsEnabled, setSmsEnabled] = useState(false);
   const [phoneLoading, setPhoneLoading] = useState(true);
   const [phoneSaving, setPhoneSaving] = useState(false);
 
@@ -117,6 +119,7 @@ export default function SettingsPage() {
       if (res.ok) {
         const data = await res.json();
         setPhoneNumber(data.phoneNumber || "");
+        setSmsEnabled(data.smsEnabled ?? false);
       }
     } catch (error) {
       console.error("Error fetching phone number:", error);
@@ -131,7 +134,7 @@ export default function SettingsPage() {
       const res = await fetch("/api/user/phone", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phoneNumber }),
+        body: JSON.stringify({ phoneNumber, smsEnabled }),
       });
       if (res.ok) {
         toast.success("Phone number saved");
@@ -255,18 +258,41 @@ export default function SettingsPage() {
             {phoneLoading ? (
               <div className="h-10 bg-muted rounded animate-pulse" />
             ) : (
-              <div className="flex gap-2">
-                <Input
-                  type="tel"
-                  placeholder="+1 (555) 123-4567"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  className="max-w-xs"
-                />
-                <Button onClick={handleSavePhone} disabled={phoneSaving}>
-                  {phoneSaving ? "Saving..." : "Save"}
-                </Button>
-              </div>
+              <>
+                <div className="flex gap-2">
+                  <Input
+                    type="tel"
+                    placeholder="+15551234567"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    className="max-w-xs"
+                  />
+                  <Button onClick={handleSavePhone} disabled={phoneSaving}>
+                    {phoneSaving ? "Saving..." : "Save"}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  E.164 format: + followed by country code and number (e.g. +15551234567)
+                </p>
+                <div className="flex items-center justify-between pt-1">
+                  <div>
+                    <label htmlFor="sms-toggle" className="text-sm font-medium">
+                      Text me when alerts fire
+                    </label>
+                    <p className="text-xs text-muted-foreground">
+                      {smsEnabled && phoneNumber ? "SMS alerts enabled" : "SMS alerts off"}
+                    </p>
+                  </div>
+                  <Switch
+                    id="sms-toggle"
+                    checked={smsEnabled}
+                    onCheckedChange={(checked) => {
+                      setSmsEnabled(checked);
+                    }}
+                    disabled={!phoneNumber}
+                  />
+                </div>
+              </>
             )}
           </div>
         </CardContent>
