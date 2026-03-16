@@ -22,47 +22,50 @@ const features = [
   {
     icon: MapPin,
     title: "Spot Tracking",
-    description: "Pin your spots on a private map. Your lineup, your data.",
+    description:
+      "Pin your spots on a private map. Nobody sees them but you. Not your buddies, not the algorithm, not some kook with a blog.",
   },
   {
     icon: BookOpen,
     title: "Session Logging",
-    description: "Log every session — conditions, board, rating, notes.",
+    description:
+      "Log every damn session — conditions, board, rating, notes. Build a record of your wave life that actually means something.",
   },
   {
     icon: Waves,
     title: "Live Conditions",
-    description: "Real-time swell, wind, and tide for every saved spot.",
+    description:
+      "Real-time swell, wind, and tide for every saved spot. Stop refreshing three different apps like a psycho.",
   },
   {
     icon: Brain,
     title: "AI Forecast Scoring",
     description:
-      "Wavebook learns from your sessions to score upcoming forecasts — so you know which days match your kind of surf.",
+      "Wavebook learns what gets you stoked. It scores every forecast against your session history so you stop guessing and start going.",
   },
   {
     icon: MessageSquare,
     title: "Smart SMS Alerts",
     description:
-      "Get a text when AI detects conditions aligning with your best sessions. No manual thresholds needed.",
+      "Wake up to a text that says \"get your ass to Rincon.\" AI matches conditions to your best sessions. No fiddling with thresholds.",
   },
   {
     icon: Calendar,
     title: "Weekly Forecast",
     description:
-      "7-day forecast scored by AI against your session history, so you can plan your week around the days that matter.",
+      "7-day forecast scored against your personal data. Know exactly which days are worth calling in sick for.",
   },
   {
     icon: Sparkles,
     title: "Condition Profiles",
     description:
-      "Define your ideal conditions and Wavebook matches them against real-time forecasts to surface the sessions worth waking up for.",
+      "Tell Wavebook what your dream session looks like. It'll watch the forecasts and ping you when the ocean delivers.",
   },
   {
     icon: Users,
     title: "Spot Sharing",
     description:
-      "Share individual spots with up to 5 trusted friends. That's it.",
+      "Share a spot with up to 5 people. That's it. No groups, no communities, no bull.",
   },
 ];
 
@@ -77,7 +80,8 @@ export default async function LandingPage() {
       {/* Nav */}
       <nav className="sticky top-0 z-50 border-b border-white/[0.06] bg-background/80 backdrop-blur-sm">
         <div className="max-w-5xl mx-auto px-6 flex items-center justify-between h-14">
-          <span className="text-base font-semibold tracking-tight">
+          <span className="flex items-center gap-2 text-base font-semibold tracking-tight">
+            <BookOpen className="h-5 w-5 text-primary" />
             Wavebook
           </span>
           <Link
@@ -96,12 +100,12 @@ export default async function LandingPage() {
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight">
               Your waves. Your data.
               <br />
-              Nobody else&apos;s.
+              Keep it that way.
             </h1>
             <p className="mt-6 text-lg text-muted-foreground leading-relaxed max-w-xl mx-auto">
-              Wavebook is a private, AI-powered surf tracker. Log sessions,
-              track conditions, and let machine learning score every forecast
-              against your personal wave history — all without exposing your
+              An AI-powered surf tracker that actually gives a damn about
+              privacy. Log sessions, score forecasts against your wave history,
+              and get alerts when it&apos;s going off — without blowing up your
               spots.
             </p>
             <div className="mt-10">
@@ -117,22 +121,21 @@ export default async function LandingPage() {
         <section className="py-24 md:py-32">
           <div className="max-w-2xl mx-auto px-6">
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
-              Why private?
+              Because the best spots stay secret.
             </h2>
             <div className="mt-6 space-y-4 text-muted-foreground leading-relaxed">
               <p>
-                We built Wavebook because the best sessions don&apos;t need an
-                audience. Every surfer knows the tension — you want to track your
-                waves, dial in conditions, get better. But you don&apos;t want
-                to broadcast your spots to the world.
+                Every surf app out there wants you to share, post, check in, and
+                rat out your lineup. Screw that. We built Wavebook for surfers
+                who want to get better without putting their spots on blast.
               </p>
               <p>
                 Wavebook learns what makes a great session{" "}
-                <span className="text-foreground">for you</span>. It
-                cross-references swell, wind, tide, and weather against your
-                logged sessions to score every forecast window — then alerts you
-                when conditions align. All of it stays private. No social feeds,
-                no public profiles, no check-in maps for the masses.
+                <span className="text-foreground">for you</span> — not some
+                average across a million kooks. It cross-references swell, wind,
+                tide, and weather against your logged sessions, scores every
+                forecast window, and texts you when it&apos;s time to paddle
+                out. Your data trains your model. Nobody else&apos;s.
               </p>
             </div>
           </div>
@@ -142,7 +145,7 @@ export default async function LandingPage() {
         <section className="py-24 md:py-32">
           <div className="max-w-5xl mx-auto px-6">
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-center">
-              Everything you need. Nothing you don&apos;t.
+              Built for surfers, not influencers.
             </h2>
             <div className="mt-14 grid grid-cols-1 md:grid-cols-2 gap-6">
               {features.map((feature) => (
@@ -170,22 +173,23 @@ export default async function LandingPage() {
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
               No leaderboards. No check-ins.
               <br />
-              No crowds.
+              No damn crowds.
             </h2>
             <ul className="mt-8 space-y-4 text-muted-foreground leading-relaxed">
               <li className="flex gap-3">
                 <span className="text-primary mt-1 shrink-0">—</span>
-                Your spots never appear on public maps or feeds. Period.
+                Your spots never show up on public maps or feeds. Ever. We&apos;d
+                rather shut down than sell you out.
               </li>
               <li className="flex gap-3">
                 <span className="text-primary mt-1 shrink-0">—</span>
-                No social features, no follower counts, no exposure metrics.
-                Wavebook is a tool, not a platform.
+                No followers, no likes, no clout metrics. This isn&apos;t a
+                social network — it&apos;s a tool for people who actually surf.
               </li>
               <li className="flex gap-3">
                 <span className="text-primary mt-1 shrink-0">—</span>
-                Share a spot with up to 5 people you trust — or keep it all to
-                yourself. Your call.
+                Share a spot with up to 5 people you&apos;d actually trust in
+                heavy surf. Everyone else can kick rocks.
               </li>
             </ul>
           </div>
@@ -195,7 +199,7 @@ export default async function LandingPage() {
         <section className="py-24 md:py-32">
           <div className="max-w-2xl mx-auto px-6 text-center">
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
-              Paddle out with us.
+              Stop checking Surfline. Start surfing.
             </h2>
             <div className="mt-8">
               <WaitlistForm />
