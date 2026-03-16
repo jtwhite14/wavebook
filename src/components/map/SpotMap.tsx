@@ -145,17 +145,17 @@ export default function SpotMap({
       center: [parseFloat(spot.longitude), parseFloat(spot.latitude)],
       zoom: 14,
       duration: 1000,
-      padding: flyToPadding,
+      padding: flyToPadding ?? { top: 0, bottom: 0, left: 0, right: 0 },
     });
   }, [flyToPadding]);
 
-  // Fly to the selected spot whenever it changes (e.g. from banner clicks, not just marker clicks)
+  // Fly to the selected spot whenever it changes, or when wizard mode toggles (to re-center without padding)
   useEffect(() => {
     if (selectedSpotId && mapLoaded) {
       const spot = spotById[selectedSpotId];
       if (spot) flyToSpot(spot);
     }
-  }, [selectedSpotId, mapLoaded, spotById, flyToSpot]);
+  }, [selectedSpotId, mapLoaded, spotById, flyToSpot, wizardSpotId]);
 
   const handleClusterClick = useCallback(
     (clusterId: number, longitude: number, latitude: number) => {
