@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 
 const navigation = [
-  { name: "Home", href: "/", icon: LayoutDashboard },
+  { name: "Home", href: "/dashboard", icon: LayoutDashboard },
   { name: "Sessions", href: "/sessions", icon: Waves },
   { name: "Equipment", href: "/equipment", icon: Sailboat },
 ];
@@ -51,7 +51,7 @@ export default function DashboardLayout({
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.push("/login");
+      router.push("/");
     }
   }, [status, router]);
 
@@ -95,7 +95,7 @@ export default function DashboardLayout({
   }
 
   const isActive = (href: string) => {
-    if (href === "/") return pathname === "/";
+    if (href === "/dashboard") return pathname === "/dashboard";
     return pathname.startsWith(href);
   };
 
@@ -153,14 +153,14 @@ export default function DashboardLayout({
             >
               <Menu className="size-5" />
             </button>
-            <Link href="/" className="flex items-center gap-2 ml-3">
+            <Link href="/dashboard" className="flex items-center gap-2 ml-3">
               <BookOpen className="size-5 text-primary" />
               <span className="font-bold text-sm">Wavebook</span>
             </Link>
           </header>
 
-          <main className={`flex-1 ${pathname === "/" ? "overflow-hidden" : "overflow-y-auto"}`}>
-            {pathname === "/" ? children : <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">{children}</div>}
+          <main className={`flex-1 ${pathname === "/dashboard" ? "overflow-hidden" : "overflow-y-auto"}`}>
+            {pathname === "/dashboard" ? children : <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">{children}</div>}
           </main>
         </div>
       </div>
@@ -185,7 +185,7 @@ function SidebarContent({
     <>
       {/* Brand */}
       <div className={`flex flex-col gap-3 p-3 border-b border-sidebar-border ${collapsed ? "items-center" : ""}`}>
-        <Link href="/" className={`flex items-center gap-2.5 ${collapsed ? "justify-center" : "px-1.5"} py-1`}>
+        <Link href="/dashboard" className={`flex items-center gap-2.5 ${collapsed ? "justify-center" : "px-1.5"} py-1`}>
           <BookOpen className="size-5 text-primary shrink-0" />
           {!collapsed && <span className="font-bold text-sidebar-foreground">Wavebook</span>}
         </Link>

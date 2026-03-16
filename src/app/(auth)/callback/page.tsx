@@ -10,7 +10,7 @@ export default function CallbackPage() {
     // This page handles OAuth callback redirects
     // NextAuth handles the actual callback, this just shows a loading state
     const timer = setTimeout(() => {
-      router.push("/");
+      router.push("/dashboard");
     }, 2000);
 
     return () => clearTimeout(timer);
