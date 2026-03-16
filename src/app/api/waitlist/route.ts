@@ -3,7 +3,9 @@ import { db, waitlist } from "@/lib/db";
 import { z } from "zod";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY);
+}
 
 const waitlistSchema = z.object({
   email: z.string().email(),
@@ -24,7 +26,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Send notification email (fire and forget — don't block response on this)
-    await resend.emails.send({
+    await getResend().emails.send({
       from: "onboarding@resend.dev",
       to: "jtwhite14@gmail.com",
       subject: "New Wavebook waitlist signup",
