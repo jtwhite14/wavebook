@@ -145,6 +145,13 @@ export async function PUT(
       .where(eq(conditionProfiles.id, profileId))
       .returning();
 
+    // Fire-and-forget: recompute alerts for this spot with the updated profile
+    const origin = request.nextUrl.origin;
+    fetch(`${origin}/api/spots/${id}/compute-alerts`, {
+      method: "POST",
+      headers: { cookie: request.headers.get("cookie") ?? "" },
+    }).catch(err => console.error("Background alert recompute failed:", err));
+
     return NextResponse.json({ profile: formatProfile(updated) });
   } catch (error) {
     console.error("Error updating profile:", error);
@@ -180,6 +187,13 @@ export async function DELETE(
     }
 
     await db.delete(conditionProfiles).where(eq(conditionProfiles.id, profileId));
+
+    // Fire-and-forget: recompute alerts to clear stale alerts from deleted profile
+    const origin = request.nextUrl.origin;
+    fetch(`${origin}/api/spots/${id}/compute-alerts`, {
+      method: "POST",
+      headers: { cookie: request.headers.get("cookie") ?? "" },
+    }).catch(err => console.error("Background alert recompute failed:", err));
 
     return NextResponse.json({ success: true });
   } catch (error) {
