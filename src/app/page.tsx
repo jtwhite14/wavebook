@@ -9,6 +9,7 @@ import {
   HeroScreenshot,
   FeatureScreenshots,
 } from "@/components/ScreenshotShowcase";
+import { SessionPhotoGallery } from "@/components/SessionPhotoGallery";
 import {
   MapPin,
   BookOpen,
@@ -76,10 +77,9 @@ async function getTopSessionPhotos() {
     const topSessions = await db.query.surfSessions.findMany({
       where: gte(surfSessions.rating, 4),
       orderBy: [desc(surfSessions.rating), desc(surfSessions.date)],
-      limit: 6,
+      limit: 12,
       with: {
         spot: true,
-        conditions: true,
         photos: {
           limit: 1,
           orderBy: (photos, { asc }) => [asc(photos.sortOrder)],
@@ -94,12 +94,6 @@ async function getTopSessionPhotos() {
         spotName: s.spot?.name ?? null,
         rating: s.rating,
         date: s.date.toISOString(),
-        startTime: s.startTime.toISOString(),
-        endTime: s.endTime?.toISOString() ?? null,
-        notes: s.notes,
-        waveHeight: s.conditions?.waveHeight ?? null,
-        swellPeriod: s.conditions?.primarySwellPeriod ?? null,
-        windSpeed: s.conditions?.windSpeed ?? null,
       }));
   } catch {
     return [];
@@ -204,7 +198,12 @@ export default async function LandingPage() {
         </section>
 
         {/* App Screenshots */}
-        <FeatureScreenshots photos={sessionPhotos} />
+        <FeatureScreenshots />
+
+        {/* Session Photos from Top Sessions */}
+        {sessionPhotos.length > 0 && (
+          <SessionPhotoGallery photos={sessionPhotos} />
+        )}
 
         {/* Privacy Commitment */}
         <section className="py-24 md:py-32">
