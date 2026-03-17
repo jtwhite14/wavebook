@@ -265,10 +265,10 @@ export function SpotPaneSessionDetail({
               </div>
             )}
 
-            {/* Lightbox */}
+            {/* Full-screen lightbox */}
             {lightboxOpen && (
               <div
-                className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+                className="fixed inset-0 z-[100] bg-black flex items-center justify-center"
                 onClick={() => setLightboxOpen(false)}
               >
                 <button
@@ -282,14 +282,14 @@ export function SpotPaneSessionDetail({
                 <img
                   src={allPhotos[activePhotoIndex]?.photoUrl}
                   alt="Session photo"
-                  className="max-h-[90vh] max-w-[90vw] w-auto h-auto object-contain rounded-lg"
+                  className="h-full w-full object-contain"
                   onClick={(e) => e.stopPropagation()}
                 />
                 {allPhotos.length > 1 && (
                   <>
                     <button
                       onClick={(e) => { e.stopPropagation(); setActivePhotoIndex((prev) => (prev - 1 + allPhotos.length) % allPhotos.length); }}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors"
+                      className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors"
                     >
                       <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -297,7 +297,7 @@ export function SpotPaneSessionDetail({
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); setActivePhotoIndex((prev) => (prev + 1) % allPhotos.length); }}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors"
                     >
                       <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
