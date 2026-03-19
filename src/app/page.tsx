@@ -1,74 +1,8 @@
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { db, surfSessions } from "@/lib/db";
-import { desc, gte } from "drizzle-orm";
 import { WaitlistForm } from "@/components/WaitlistForm";
-import {
-  HeroScreenshot,
-  FeatureScreenshots,
-} from "@/components/ScreenshotShowcase";
-import {
-  MapPin,
-  BookOpen,
-  Waves,
-  MessageSquare,
-  Calendar,
-  Users,
-  Brain,
-  Sparkles,
-} from "lucide-react";
-
-const features = [
-  {
-    icon: MapPin,
-    title: "Spot Tracking",
-    description:
-      "Pin your spots on a private map. Share them with a few trusted friends or keep them to yourself — either way, they never hit a public feed.",
-  },
-  {
-    icon: BookOpen,
-    title: "Session Logging",
-    description:
-      "Log every session — conditions, board, rating, notes. The more you log, the smarter your forecasts get.",
-  },
-  {
-    icon: Waves,
-    title: "Live Conditions",
-    description:
-      "Real-time swell, wind, and tide for every saved spot. Stop refreshing three different apps like a psycho.",
-  },
-  {
-    icon: Brain,
-    title: "AI Forecast Scoring",
-    description:
-      "Life's busy. Wavebook scores every forecast window against your session history so you spend less time analyzing and more time in the water.",
-  },
-  {
-    icon: MessageSquare,
-    title: "Smart SMS Alerts",
-    description:
-      "Get a text when conditions match your best sessions. No manual thresholds — Wavebook figures out what fires for you.",
-  },
-  {
-    icon: Calendar,
-    title: "Weekly Forecast",
-    description:
-      "7-day forecast scored against your personal data. Know exactly which days are worth calling in sick for.",
-  },
-  {
-    icon: Sparkles,
-    title: "Condition Profiles",
-    description:
-      "Tell Wavebook what your dream session looks like. It'll watch the forecasts and ping you when the ocean delivers.",
-  },
-  {
-    icon: Users,
-    title: "Spot Sharing",
-    description:
-      "Share individual spots with up to 5 people you trust. That's it.",
-  },
-];
+import { BookOpen } from "lucide-react";
 
 export default async function LandingPage() {
   const { userId } = await auth();
@@ -102,7 +36,7 @@ export default async function LandingPage() {
         </div>
       </nav>
 
-      <main className="flex-1">
+      <main className="flex-1 flex items-center justify-center">
         {/* Hero */}
         <section className="py-28 md:py-36">
           <div className="max-w-2xl mx-auto px-6 text-center">
@@ -118,98 +52,6 @@ export default async function LandingPage() {
               spots.
             </p>
             <div className="mt-10">
-              <WaitlistForm />
-            </div>
-          </div>
-        </section>
-
-        {/* Hero Screenshot */}
-        <HeroScreenshot />
-
-        {/* Philosophy */}
-        <section className="py-24 md:py-32">
-          <div className="max-w-2xl mx-auto px-6">
-            <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
-              Because the best spots stay secret.
-            </h2>
-            <div className="mt-6 space-y-4 text-muted-foreground leading-relaxed">
-              <p>
-                Most surf apps want you to share everything — spots, sessions,
-                check-ins. We just wanted something that helps you surf more
-                without giving away the goods.
-              </p>
-              <p>
-                Wavebook learns what makes a great session{" "}
-                <span className="text-foreground">for you</span>. It
-                cross-references swell, wind, tide, and weather against your
-                logged sessions, scores every forecast window, and texts you
-                when conditions line up. Your data, your model — nobody
-                else&apos;s.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* Features Grid */}
-        <section className="py-24 md:py-32">
-          <div className="max-w-5xl mx-auto px-6">
-            <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-center">
-              Built for surfers, not influencers.
-            </h2>
-            <div className="mt-14 grid grid-cols-1 md:grid-cols-2 gap-6">
-              {features.map((feature) => (
-                <div
-                  key={feature.title}
-                  className="rounded-lg border border-white/[0.06] bg-white/[0.03] backdrop-blur-sm p-6"
-                >
-                  <feature.icon className="h-5 w-5 text-primary mb-3" />
-                  <h3 className="font-semibold text-sm">{feature.title}</h3>
-                  <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">
-                    {feature.description}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* App Screenshots */}
-        <FeatureScreenshots />
-
-        {/* Privacy Commitment */}
-        <section className="py-24 md:py-32">
-          <div className="max-w-2xl mx-auto px-6">
-            <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
-              No leaderboards. No check-ins.
-              <br />
-              No damn crowds.
-            </h2>
-            <ul className="mt-8 space-y-4 text-muted-foreground leading-relaxed">
-              <li className="flex gap-3">
-                <span className="text-primary mt-1 shrink-0">—</span>
-                Your spots never appear on public maps or feeds. Period.
-              </li>
-              <li className="flex gap-3">
-                <span className="text-primary mt-1 shrink-0">—</span>
-                No social features, no follower counts, no exposure metrics.
-                Wavebook is a tool, not a platform.
-              </li>
-              <li className="flex gap-3">
-                <span className="text-primary mt-1 shrink-0">—</span>
-                Share a spot with up to 5 people you trust — or keep it all to
-                yourself.
-              </li>
-            </ul>
-          </div>
-        </section>
-
-        {/* Bottom CTA */}
-        <section className="py-24 md:py-32">
-          <div className="max-w-2xl mx-auto px-6 text-center">
-            <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
-              Private by default. Smart by design.
-            </h2>
-            <div className="mt-8">
               <WaitlistForm />
             </div>
           </div>
