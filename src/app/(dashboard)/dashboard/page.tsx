@@ -44,6 +44,7 @@ import { SpotSharePanel } from "@/components/sharing/SpotSharePanel";
 import { IncomingInvites } from "@/components/sharing/IncomingInvites";
 import { SharedSpotsList } from "@/components/sharing/SharedSpotsList";
 import { SharedSpotPane } from "@/components/sharing/SharedSpotPane";
+import { haversineDistance, getDistancePenalty } from "@/lib/utils/geo";
 import type { SurfSpot } from "@/lib/db/schema";
 import type { SurfSessionWithConditions, SharedSpotView, CardinalDirection, ConditionProfileResponse } from "@/types";
 
@@ -83,7 +84,7 @@ export default function DashboardPage() {
   const [paneView, setPaneView] = useState<"spot" | "session" | "edit" | "profiles" | "shares">("spot");
   const [viewingSession, setViewingSession] = useState<SurfSessionWithConditions | null>(null);
   const [alertSpotIds, setAlertSpotIds] = useState<Set<string>>(new Set());
-  const [alertSummaries, setAlertSummaries] = useState<Array<{ spotId: string; spotName: string; effectiveScore: number; forecastHour: string; timeWindow: string; conditions: string }>>([]);
+  const [alertSummaries, setAlertSummaries] = useState<Array<{ spotId: string; spotName: string; effectiveScore: number; travelScore: number; distanceKm: number | null; forecastHour: string; timeWindow: string; conditions: string }>>([]);
   const [spotProfileCounts, setSpotProfileCounts] = useState<Record<string, number>>({});
 
   // Sharing state
@@ -372,9 +373,15 @@ export default function DashboardPage() {
           ).then(results => {
             const ids = new Set<string>();
             const summaries: typeof alertSummaries = [];
+            const homeLat = locationData.latitude;
+            const homeLng = locationData.longitude;
             for (const { spot, alerts } of results) {
               if (alerts.length > 0) {
                 ids.add(spot.id);
+                // Compute distance from home (if set)
+                const distanceKm = (homeLat && homeLng)
+                  ? haversineDistance(homeLat, homeLng, parseFloat(spot.latitude), parseFloat(spot.longitude))
+                  : null;
                 // Best alert per day per spot
                 const bestByDay = new Map<string, typeof alerts[0]>();
                 for (const alert of alerts) {
@@ -392,10 +399,14 @@ export default function DashboardPage() {
                   const period = snapshot?.primarySwellPeriod != null
                     ? `@ ${snapshot.primarySwellPeriod.toFixed(0)}s`
                     : '';
+                  const score = Math.round(best.effectiveScore);
+                  const penalty = distanceKm != null ? getDistancePenalty(distanceKm) : 1;
                   summaries.push({
                     spotId: spot.id,
                     spotName: spot.name,
-                    effectiveScore: Math.round(best.effectiveScore),
+                    effectiveScore: score,
+                    travelScore: Math.round(score * penalty),
+                    distanceKm,
                     forecastHour: best.forecastHour,
                     timeWindow: best.timeWindow,
                     conditions: [waveHeight, period].filter(Boolean).join(' '),
@@ -404,7 +415,8 @@ export default function DashboardPage() {
               }
             }
             setAlertSpotIds(ids);
-            setAlertSummaries(summaries.sort((a, b) => b.effectiveScore - a.effectiveScore));
+            // Sort by distance-adjusted score so nearby good conditions rank above faraway OK ones
+            setAlertSummaries(summaries.sort((a, b) => b.travelScore - a.travelScore));
           });
         }
       })
@@ -943,7 +955,12 @@ export default function DashboardPage() {
                             >
                               <div className="min-w-0 flex-1">
                                 <p className="text-sm font-medium truncate">{summary.spotName}</p>
-                                <p className="text-xs text-muted-foreground">{summary.timeWindow} · {summary.conditions}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {summary.timeWindow} · {summary.conditions}
+                                  {summary.distanceKm != null && summary.distanceKm > 5 && (
+                                    <> · {summary.distanceKm < 1.6 ? `${(summary.distanceKm * 1000).toFixed(0)}m` : `${(summary.distanceKm * 0.621371).toFixed(0)}mi`}</>
+                                  )}
+                                </p>
                               </div>
                               <span className="text-xs font-medium text-primary shrink-0">
                                 {summary.effectiveScore}%

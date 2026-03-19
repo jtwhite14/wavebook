@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, surfSpots, surfSessions, sessionConditions, spotForecasts, spotAlerts, users, conditionProfiles } from "@/lib/db";
 import { eq, gte, and, inArray, isNull, sql } from "drizzle-orm";
 import { sendAlertSMS } from "@/lib/sms/send-alert-sms";
+import { haversineDistance, getDistancePenalty } from "@/lib/utils/geo";
 import { fetchMarineForecast } from "@/lib/api/open-meteo";
 import { fetchTideTimeline, warmStationCache } from "@/lib/api/noaa-tides";
 import {
@@ -393,12 +394,14 @@ async function getOrFetchForecast(
 async function sendPendingSMSAlerts(): Promise<number> {
   const now = new Date();
 
-  // Get unsent, active, future alerts with spot names
+  // Get unsent, active, future alerts with spot names and locations
   const pendingAlerts = await db
     .select({
       alertId: spotAlerts.id,
       userId: spotAlerts.userId,
       spotName: surfSpots.name,
+      spotLatitude: surfSpots.latitude,
+      spotLongitude: surfSpots.longitude,
       timeWindow: spotAlerts.timeWindow,
       forecastHour: spotAlerts.forecastHour,
       effectiveScore: spotAlerts.effectiveScore,
@@ -426,18 +429,28 @@ async function sendPendingSMSAlerts(): Promise<number> {
   let totalSent = 0;
 
   for (const [userId, userAlerts] of byUser) {
-    // Fetch user's phone + smsEnabled
+    // Fetch user's phone, smsEnabled, and home location
     const user = await db.query.users.findFirst({
       where: eq(users.id, userId),
-      columns: { phoneNumber: true, smsEnabled: true },
+      columns: { phoneNumber: true, smsEnabled: true, homeLatitude: true, homeLongitude: true },
     });
 
     if (!user?.smsEnabled || !user.phoneNumber) continue;
 
-    // Sort by effectiveScore descending
-    const sorted = userAlerts.sort(
-      (a, b) => parseFloat(b.effectiveScore) - parseFloat(a.effectiveScore)
-    );
+    const homeLat = user.homeLatitude ? parseFloat(user.homeLatitude) : null;
+    const homeLng = user.homeLongitude ? parseFloat(user.homeLongitude) : null;
+
+    // Sort by distance-adjusted score so nearby good spots rank above faraway OK ones
+    const sorted = userAlerts.sort((a, b) => {
+      const scoreA = parseFloat(a.effectiveScore);
+      const scoreB = parseFloat(b.effectiveScore);
+      if (homeLat != null && homeLng != null) {
+        const distA = haversineDistance(homeLat, homeLng, parseFloat(a.spotLatitude), parseFloat(a.spotLongitude));
+        const distB = haversineDistance(homeLat, homeLng, parseFloat(b.spotLatitude), parseFloat(b.spotLongitude));
+        return (scoreB * getDistancePenalty(distB)) - (scoreA * getDistancePenalty(distA));
+      }
+      return scoreB - scoreA;
+    });
 
     const success = await sendAlertSMS(
       user.phoneNumber,

@@ -50,6 +50,17 @@ export function findNearestSpot(
   return { spot: nearest, distance: minDistance };
 }
 
+/**
+ * Distance-based penalty for ranking alerts across spots.
+ * No penalty within 20km; gentle decay beyond that with a floor at 0.5.
+ * A far-away spot needs significantly higher match quality to outrank a nearby one,
+ * but exceptional conditions can still overcome the penalty.
+ */
+export function getDistancePenalty(distanceKm: number): number {
+  const excess = Math.max(0, distanceKm - 20);
+  return 0.5 + 0.5 / (1 + excess / 80);
+}
+
 export function findNearbySpots(
   lat: number,
   lng: number,
