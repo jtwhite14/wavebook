@@ -168,6 +168,7 @@ export interface ConditionProfileResponse {
 
 export interface ProfileSelections {
   waveSize?: string[];
+  waveSizeRange?: { min: number; max: number | null }; // feet, max=null means "no upper limit"
   swellPeriod?: string[];
   swellDirection?: string[];
   windCondition?: string[];

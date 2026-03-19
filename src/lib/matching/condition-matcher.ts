@@ -402,8 +402,20 @@ export function computeSimilarity(
   // Swell height (relative sigma) + wave size preference
   if (forecast.swellHeight != null && session.swellHeight != null) {
     let sim: number;
+    const hasRange = selections?.waveSizeRange != null;
     const hasSelections = selections?.waveSize && selections.waveSize.length > 0;
-    if (hasSelections) {
+    if (hasRange) {
+      // Range-based matching: convert feet to meters, score 1.0 inside range, Gaussian decay outside
+      const minM = selections!.waveSizeRange!.min * 0.3048;
+      const maxM = selections!.waveSizeRange!.max != null ? selections!.waveSizeRange!.max * 0.3048 : Infinity;
+      const sigma = SIGMAS.swellHeight(session.swellHeight);
+      if (forecast.swellHeight >= minM && forecast.swellHeight <= maxM) {
+        sim = 1.0;
+      } else {
+        const dist = forecast.swellHeight < minM ? minM - forecast.swellHeight : forecast.swellHeight - maxM;
+        sim = Math.exp(-(dist * dist) / (2 * sigma * sigma));
+      }
+    } else if (hasSelections) {
       const sigma = SIGMAS.swellHeight(session.swellHeight);
       sim = rangeSimilarity(forecast.swellHeight, selections!.waveSize!, CATEGORY_RANGES.swellHeight, sigma);
     } else {

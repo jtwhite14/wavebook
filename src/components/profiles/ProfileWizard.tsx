@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChevronLeft, Loader2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Slider } from "@/components/ui/slider";
 import type { CardinalDirection, ConditionProfileResponse, ExclusionZones } from "@/types";
 import { WEIGHT_PRESETS } from "@/types";
 import {
@@ -39,6 +40,24 @@ const WAVE_SIZE_OPTIONS = [
   { value: "large", label: "Large (6-10ft)" },
   { value: "xl", label: "XL (10ft+)" },
 ];
+
+// Wave height slider: 0-20ft, with 20 meaning "20ft+"
+const WAVE_HEIGHT_MIN = 0;
+const WAVE_HEIGHT_MAX = 20;
+const WAVE_HEIGHT_STEP = 1;
+
+function feetToMeters(ft: number): number {
+  return ft * 0.3048;
+}
+
+function metersToFeet(m: number): number {
+  return m / 0.3048;
+}
+
+function formatWaveHeight(ft: number, isMax: boolean): string {
+  if (isMax && ft >= WAVE_HEIGHT_MAX) return "Any";
+  return `${ft}ft`;
+}
 
 const PERIOD_OPTIONS = [
   { value: "short", label: "Short (<8s)" },
@@ -200,6 +219,26 @@ export function ProfileWizard({
     const cat = profile ? numericToCategory(profile.targetSwellHeight, WAVE_SIZE_MIDPOINTS) : null;
     return cat ? [cat] : [];
   });
+  const [waveSizeRange, setWaveSizeRange] = useState<[number, number]>(() => {
+    if (sel?.waveSizeRange) {
+      return [sel.waveSizeRange.min, sel.waveSizeRange.max ?? WAVE_HEIGHT_MAX];
+    }
+    // Derive from existing categorical selections or target value
+    if (sel?.waveSize?.length) {
+      const ranges: Record<string, [number, number]> = { small: [0, 3], medium: [3, 6], large: [6, 10], xl: [10, 20] };
+      let min = 20, max = 0;
+      for (const s of sel.waveSize) {
+        const r = ranges[s];
+        if (r) { min = Math.min(min, r[0]); max = Math.max(max, r[1]); }
+      }
+      return [min, max];
+    }
+    if (profile?.targetSwellHeight != null) {
+      const ft = Math.round(metersToFeet(profile.targetSwellHeight));
+      return [Math.max(0, ft - 2), Math.min(WAVE_HEIGHT_MAX, ft + 2)];
+    }
+    return [2, 8]; // sensible default
+  });
   const [swellPeriod, setSwellPeriod] = useState<string[]>(() => {
     if (sel?.swellPeriod?.length) return sel.swellPeriod;
     const cat = profile ? numericToCategory(profile.targetSwellPeriod, SWELL_PERIOD_MIDPOINTS) : null;
@@ -342,8 +381,12 @@ export function ProfileWizard({
   async function handleSave() {
     const saveName = name.trim() || defaultName || "Profile";
 
+    // Compute target swell height from range slider (midpoint in meters)
+    const rangeMax = waveSizeRange[1] >= WAVE_HEIGHT_MAX ? waveSizeRange[1] + 5 : waveSizeRange[1]; // treat 20 as ~25ft for midpoint
+    const rangeMidFt = (waveSizeRange[0] + rangeMax) / 2;
+
     const targets = {
-      targetSwellHeight: waveSize.length > 0 ? avgMidpoints(waveSize, WAVE_SIZE_MIDPOINTS) : null,
+      targetSwellHeight: feetToMeters(rangeMidFt),
       targetSwellPeriod: swellPeriod.length > 0 ? avgMidpoints(swellPeriod, SWELL_PERIOD_MIDPOINTS) : null,
       targetSwellDirection: swellDirection.length > 0 ? avgCardinalDeg(swellDirection) : null,
       targetWindSpeed: windCondition.length > 0 ? avgMidpoints(windCondition, WIND_SPEED_MIDPOINTS) : null,
@@ -368,6 +411,10 @@ export function ProfileWizard({
           ...targets,
           selections: {
             waveSize,
+            waveSizeRange: {
+              min: waveSizeRange[0],
+              max: waveSizeRange[1] >= WAVE_HEIGHT_MAX ? null : waveSizeRange[1],
+            },
             swellPeriod,
             swellDirection,
             windCondition,
@@ -445,12 +492,26 @@ export function ProfileWizard({
             level={weightToLevel(wSwellHeight)}
             onLevelChange={(l) => setWSwellHeight(levelToWeight(l))}
           >
-            <div className="flex flex-wrap gap-2">
-              {WAVE_SIZE_OPTIONS.map(opt => (
-                <WizardPill key={opt.value} active={waveSize.includes(opt.value)} onClick={() => setWaveSize(togglePill(waveSize, opt.value))}>
-                  {opt.label}
-                </WizardPill>
-              ))}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between text-sm font-medium">
+                <span className="text-primary">{formatWaveHeight(waveSizeRange[0], false)}</span>
+                <span className="text-muted-foreground">to</span>
+                <span className="text-primary">{formatWaveHeight(waveSizeRange[1], true)}</span>
+              </div>
+              <Slider
+                min={WAVE_HEIGHT_MIN}
+                max={WAVE_HEIGHT_MAX}
+                step={WAVE_HEIGHT_STEP}
+                value={waveSizeRange}
+                onValueChange={(v) => setWaveSizeRange(v as [number, number])}
+              />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>0ft</span>
+                <span>5ft</span>
+                <span>10ft</span>
+                <span>15ft</span>
+                <span>20ft+</span>
+              </div>
             </div>
           </StepWithImportance>
         );
