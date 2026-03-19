@@ -170,6 +170,7 @@ export interface ProfileSelections {
   waveSize?: string[];
   waveSizeRange?: { min: number; max: number | null }; // feet, max=null means "no upper limit"
   swellPeriod?: string[];
+  swellPeriodRange?: { min: number; max: number | null }; // seconds, max=null means "no upper limit"
   swellDirection?: string[];
   windCondition?: string[];
   windDirection?: string[];
@@ -183,7 +184,9 @@ export interface ExclusionZones {
   swellDirection?: CardinalDirection[];
   // Categorical: category keys that are dealbreakers (resolved to numeric ranges at match time)
   swellHeight?: string[];    // e.g. ['small', 'xl']
+  swellHeightRange?: { min: number; max: number | null }; // feet, veto if height falls in this range
   swellPeriod?: string[];    // e.g. ['short']
+  swellPeriodRange?: { min: number; max: number | null }; // seconds, veto if period falls in this range
   windSpeed?: string[];      // e.g. ['onshore']
   tideHeight?: string[];     // e.g. ['high']
 }

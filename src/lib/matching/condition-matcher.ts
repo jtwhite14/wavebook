@@ -96,9 +96,25 @@ export function checkExclusionVeto(
       return 'swellHeight';
     }
   }
+  // Range-based exclusion for swell height (feet → meters)
+  if (exclusions.swellHeightRange && forecast.swellHeight != null) {
+    const minM = exclusions.swellHeightRange.min * 0.3048;
+    const maxM = exclusions.swellHeightRange.max != null ? exclusions.swellHeightRange.max * 0.3048 : Infinity;
+    if (forecast.swellHeight >= minM && forecast.swellHeight <= maxM) {
+      return 'swellHeightRange';
+    }
+  }
   if (exclusions.swellPeriod?.length && forecast.swellPeriod != null) {
     if (valueInCategories(forecast.swellPeriod, exclusions.swellPeriod, CATEGORY_RANGES.swellPeriod)) {
       return 'swellPeriod';
+    }
+  }
+  // Range-based exclusion for swell period (seconds)
+  if (exclusions.swellPeriodRange && forecast.swellPeriod != null) {
+    const minS = exclusions.swellPeriodRange.min;
+    const maxS = exclusions.swellPeriodRange.max != null ? exclusions.swellPeriodRange.max : Infinity;
+    if (forecast.swellPeriod >= minS && forecast.swellPeriod <= maxS) {
+      return 'swellPeriodRange';
     }
   }
   if (exclusions.windSpeed?.length && forecast.windSpeed != null) {
@@ -436,10 +452,23 @@ export function computeSimilarity(
 
   // Swell period + period preference
   if (forecast.swellPeriod != null && session.swellPeriod != null) {
+    const hasPeriodRange = selections?.swellPeriodRange != null;
     const hasPeriodSelections = selections?.swellPeriod && selections.swellPeriod.length > 0;
-    let sim = hasPeriodSelections
-      ? rangeSimilarity(forecast.swellPeriod, selections!.swellPeriod!, CATEGORY_RANGES.swellPeriod, SIGMAS.swellPeriod)
-      : gaussianSimilarity(forecast.swellPeriod, session.swellPeriod, SIGMAS.swellPeriod);
+    let sim: number;
+    if (hasPeriodRange) {
+      const minS = selections!.swellPeriodRange!.min;
+      const maxS = selections!.swellPeriodRange!.max != null ? selections!.swellPeriodRange!.max : Infinity;
+      if (forecast.swellPeriod >= minS && forecast.swellPeriod <= maxS) {
+        sim = 1.0;
+      } else {
+        const dist = forecast.swellPeriod < minS ? minS - forecast.swellPeriod : forecast.swellPeriod - maxS;
+        sim = Math.exp(-(dist * dist) / (2 * SIGMAS.swellPeriod * SIGMAS.swellPeriod));
+      }
+    } else if (hasPeriodSelections) {
+      sim = rangeSimilarity(forecast.swellPeriod, selections!.swellPeriod!, CATEGORY_RANGES.swellPeriod, SIGMAS.swellPeriod);
+    } else {
+      sim = gaussianSimilarity(forecast.swellPeriod, session.swellPeriod, SIGMAS.swellPeriod);
+    }
     if (!isProfileMatch || !profileSpecifiedVars!.has("swellPeriod")) {
       sim *= getPreferenceMultiplier(forecast.swellPeriod, weights.preferredSwellPeriod, SWELL_PERIOD_RANGES);
     }

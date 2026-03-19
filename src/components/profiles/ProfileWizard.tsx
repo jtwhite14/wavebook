@@ -59,6 +59,16 @@ function formatWaveHeight(ft: number, isMax: boolean): string {
   return `${ft}ft`;
 }
 
+// Swell period slider: 0-25s, with 25 meaning "25s+"
+const PERIOD_MIN = 0;
+const PERIOD_MAX = 25;
+const PERIOD_STEP = 1;
+
+function formatPeriod(s: number, isMax: boolean): string {
+  if (isMax && s >= PERIOD_MAX) return "Any";
+  return `${s}s`;
+}
+
 const PERIOD_OPTIONS = [
   { value: "short", label: "Short (<8s)" },
   { value: "medium", label: "Medium (8-12s)" },
@@ -244,6 +254,25 @@ export function ProfileWizard({
     const cat = profile ? numericToCategory(profile.targetSwellPeriod, SWELL_PERIOD_MIDPOINTS) : null;
     return cat ? [cat] : [];
   });
+  const [swellPeriodRange, setSwellPeriodRange] = useState<[number, number]>(() => {
+    if (sel?.swellPeriodRange) {
+      return [sel.swellPeriodRange.min, sel.swellPeriodRange.max ?? PERIOD_MAX];
+    }
+    if (sel?.swellPeriod?.length) {
+      const ranges: Record<string, [number, number]> = { short: [0, 8], medium: [8, 12], long: [12, 25] };
+      let min = 25, max = 0;
+      for (const s of sel.swellPeriod) {
+        const r = ranges[s];
+        if (r) { min = Math.min(min, r[0]); max = Math.max(max, r[1]); }
+      }
+      return [min, max];
+    }
+    if (profile?.targetSwellPeriod != null) {
+      const s = Math.round(profile.targetSwellPeriod);
+      return [Math.max(0, s - 3), Math.min(PERIOD_MAX, s + 3)];
+    }
+    return [8, 16]; // sensible default
+  });
   const [windCondition, setWindCondition] = useState<string[]>(() => {
     if (sel?.windCondition?.length) return sel.windCondition;
     const cat = profile ? numericToCategory(profile.targetWindSpeed, WIND_SPEED_MIDPOINTS) : null;
@@ -271,7 +300,15 @@ export function ProfileWizard({
   const [excludeSwellDir, setExcludeSwellDir] = useState<CardinalDirection[]>(exc?.swellDirection ?? []);
   const [excludeWindDir, setExcludeWindDir] = useState<CardinalDirection[]>(exc?.windDirection ?? []);
   const [excludeWaveSize, setExcludeWaveSize] = useState<string[]>(exc?.swellHeight ?? []);
+  const [excludeWaveSizeRange, setExcludeWaveSizeRange] = useState<[number, number] | null>(() => {
+    if (exc?.swellHeightRange) return [exc.swellHeightRange.min, exc.swellHeightRange.max ?? WAVE_HEIGHT_MAX];
+    return null;
+  });
   const [excludeSwellPeriod, setExcludeSwellPeriod] = useState<string[]>(exc?.swellPeriod ?? []);
+  const [excludePeriodRange, setExcludePeriodRange] = useState<[number, number] | null>(() => {
+    if (exc?.swellPeriodRange) return [exc.swellPeriodRange.min, exc.swellPeriodRange.max ?? PERIOD_MAX];
+    return null;
+  });
   const [excludeWindSpeed, setExcludeWindSpeed] = useState<string[]>(exc?.windSpeed ?? []);
   const [excludeTide, setExcludeTide] = useState<string[]>(exc?.tideHeight ?? []);
   const [excludeMonths, setExcludeMonths] = useState<number[]>([]);
@@ -372,7 +409,19 @@ export function ProfileWizard({
     if (excludeSwellDir.length > 0) zones.swellDirection = excludeSwellDir;
     if (excludeWindDir.length > 0) zones.windDirection = excludeWindDir;
     if (excludeWaveSize.length > 0) zones.swellHeight = excludeWaveSize;
+    if (excludeWaveSizeRange) {
+      zones.swellHeightRange = {
+        min: excludeWaveSizeRange[0],
+        max: excludeWaveSizeRange[1] >= WAVE_HEIGHT_MAX ? null : excludeWaveSizeRange[1],
+      };
+    }
     if (excludeSwellPeriod.length > 0) zones.swellPeriod = excludeSwellPeriod;
+    if (excludePeriodRange) {
+      zones.swellPeriodRange = {
+        min: excludePeriodRange[0],
+        max: excludePeriodRange[1] >= PERIOD_MAX ? null : excludePeriodRange[1],
+      };
+    }
     if (excludeWindSpeed.length > 0) zones.windSpeed = excludeWindSpeed;
     if (excludeTide.length > 0) zones.tideHeight = excludeTide;
     return Object.keys(zones).length > 0 ? zones : null;
@@ -385,9 +434,13 @@ export function ProfileWizard({
     const rangeMax = waveSizeRange[1] >= WAVE_HEIGHT_MAX ? waveSizeRange[1] + 5 : waveSizeRange[1]; // treat 20 as ~25ft for midpoint
     const rangeMidFt = (waveSizeRange[0] + rangeMax) / 2;
 
+    // Compute target swell period from range slider (midpoint in seconds)
+    const periodMax = swellPeriodRange[1] >= PERIOD_MAX ? swellPeriodRange[1] + 5 : swellPeriodRange[1];
+    const periodMid = (swellPeriodRange[0] + periodMax) / 2;
+
     const targets = {
       targetSwellHeight: feetToMeters(rangeMidFt),
-      targetSwellPeriod: swellPeriod.length > 0 ? avgMidpoints(swellPeriod, SWELL_PERIOD_MIDPOINTS) : null,
+      targetSwellPeriod: periodMid,
       targetSwellDirection: swellDirection.length > 0 ? avgCardinalDeg(swellDirection) : null,
       targetWindSpeed: windCondition.length > 0 ? avgMidpoints(windCondition, WIND_SPEED_MIDPOINTS) : null,
       targetWindDirection: windDirection.length > 0 ? avgCardinalDeg(windDirection) : null,
@@ -416,6 +469,10 @@ export function ProfileWizard({
               max: waveSizeRange[1] >= WAVE_HEIGHT_MAX ? null : waveSizeRange[1],
             },
             swellPeriod,
+            swellPeriodRange: {
+              min: swellPeriodRange[0],
+              max: swellPeriodRange[1] >= PERIOD_MAX ? null : swellPeriodRange[1],
+            },
             swellDirection,
             windCondition,
             windDirection,
@@ -522,12 +579,27 @@ export function ProfileWizard({
             level={weightToLevel(wSwellPeriod)}
             onLevelChange={(l) => setWSwellPeriod(levelToWeight(l))}
           >
-            <div className="flex flex-wrap gap-2">
-              {PERIOD_OPTIONS.map(opt => (
-                <WizardPill key={opt.value} active={swellPeriod.includes(opt.value)} onClick={() => setSwellPeriod(togglePill(swellPeriod, opt.value))}>
-                  {opt.label}
-                </WizardPill>
-              ))}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between text-sm font-medium">
+                <span className="text-primary">{formatPeriod(swellPeriodRange[0], false)}</span>
+                <span className="text-muted-foreground">to</span>
+                <span className="text-primary">{formatPeriod(swellPeriodRange[1], true)}</span>
+              </div>
+              <Slider
+                min={PERIOD_MIN}
+                max={PERIOD_MAX}
+                step={PERIOD_STEP}
+                value={swellPeriodRange}
+                onValueChange={(v) => setSwellPeriodRange(v as [number, number])}
+              />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>0s</span>
+                <span>5s</span>
+                <span>10s</span>
+                <span>15s</span>
+                <span>20s</span>
+                <span>25s+</span>
+              </div>
             </div>
           </StepWithImportance>
         );
@@ -609,23 +681,86 @@ export function ProfileWizard({
       // ── Exclusion steps ──
       case "exc_waveSize":
         return (
-          <div className="flex flex-wrap gap-2">
-            {WAVE_SIZE_OPTIONS.map(opt => (
-              <ExclusionPill key={opt.value} active={excludeWaveSize.includes(opt.value)} onClick={() => setExcludeWaveSize(togglePill(excludeWaveSize, opt.value))}>
-                {opt.label}
-              </ExclusionPill>
-            ))}
+          <div className="space-y-4">
+            {excludeWaveSizeRange ? (
+              <>
+                <div className="flex items-center justify-between text-sm font-medium">
+                  <span className="text-destructive">{formatWaveHeight(excludeWaveSizeRange[0], false)}</span>
+                  <span className="text-muted-foreground">to</span>
+                  <span className="text-destructive">{formatWaveHeight(excludeWaveSizeRange[1], true)}</span>
+                </div>
+                <Slider
+                  min={WAVE_HEIGHT_MIN}
+                  max={WAVE_HEIGHT_MAX}
+                  step={WAVE_HEIGHT_STEP}
+                  value={excludeWaveSizeRange}
+                  onValueChange={(v) => setExcludeWaveSizeRange(v as [number, number])}
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>0ft</span>
+                  <span>5ft</span>
+                  <span>10ft</span>
+                  <span>15ft</span>
+                  <span>20ft+</span>
+                </div>
+                <button
+                  onClick={() => setExcludeWaveSizeRange(null)}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Clear exclusion
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setExcludeWaveSizeRange([0, 2])}
+                className="px-3 py-1.5 rounded-full text-sm font-medium border border-transparent bg-muted text-muted-foreground hover:bg-accent transition-colors"
+              >
+                Set excluded wave height range
+              </button>
+            )}
           </div>
         );
 
       case "exc_swellPeriod":
         return (
-          <div className="flex flex-wrap gap-2">
-            {PERIOD_OPTIONS.map(opt => (
-              <ExclusionPill key={opt.value} active={excludeSwellPeriod.includes(opt.value)} onClick={() => setExcludeSwellPeriod(togglePill(excludeSwellPeriod, opt.value))}>
-                {opt.label}
-              </ExclusionPill>
-            ))}
+          <div className="space-y-4">
+            {excludePeriodRange ? (
+              <>
+                <div className="flex items-center justify-between text-sm font-medium">
+                  <span className="text-destructive">{formatPeriod(excludePeriodRange[0], false)}</span>
+                  <span className="text-muted-foreground">to</span>
+                  <span className="text-destructive">{formatPeriod(excludePeriodRange[1], true)}</span>
+                </div>
+                <Slider
+                  min={PERIOD_MIN}
+                  max={PERIOD_MAX}
+                  step={PERIOD_STEP}
+                  value={excludePeriodRange}
+                  onValueChange={(v) => setExcludePeriodRange(v as [number, number])}
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>0s</span>
+                  <span>5s</span>
+                  <span>10s</span>
+                  <span>15s</span>
+                  <span>20s</span>
+                  <span>25s+</span>
+                </div>
+                <button
+                  onClick={() => setExcludePeriodRange(null)}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Clear exclusion
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setExcludePeriodRange([0, 6])}
+                className="px-3 py-1.5 rounded-full text-sm font-medium border border-transparent bg-muted text-muted-foreground hover:bg-accent transition-colors"
+              >
+                Set excluded period range
+              </button>
+            )}
           </div>
         );
 
