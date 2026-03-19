@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { ChevronLeft, Loader2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
+import { TideCurveSelector } from "@/components/profiles/TideCurveSelector";
 import type { CardinalDirection, ConditionProfileResponse, ExclusionZones } from "@/types";
 import { WEIGHT_PRESETS } from "@/types";
 import {
@@ -67,6 +68,19 @@ const PERIOD_STEP = 1;
 function formatPeriod(s: number, isMax: boolean): string {
   if (isMax && s >= PERIOD_MAX) return "Any";
   return `${s}s`;
+}
+
+// Map tide curve segments to an average tide height for the legacy targetTideHeight field.
+// Segments 0,11 = low (-0.5), 5,6 = high (0.5), linear interpolation between.
+const SEGMENT_HEIGHTS = [
+  -0.5, -0.33, -0.17, 0, 0.17, 0.33, 0.5, 0.33, 0.17, 0, -0.17, -0.33,
+];
+function tideCurveToHeight(segments: boolean[]): number {
+  let sum = 0, count = 0;
+  for (let i = 0; i < segments.length; i++) {
+    if (segments[i]) { sum += SEGMENT_HEIGHTS[i]; count++; }
+  }
+  return count > 0 ? sum / count : 0;
 }
 
 const PERIOD_OPTIONS = [
@@ -291,6 +305,20 @@ export function ProfileWizard({
     if (sel?.windDirection?.length) return sel.windDirection as CardinalDirection[];
     return profile?.targetWindDirection != null ? [degToCardinal(profile.targetWindDirection)] : [];
   });
+  const [tideCurveSegments, setTideCurveSegments] = useState<boolean[]>(() => {
+    if (sel?.tideCurve?.segments) return sel.tideCurve.segments;
+    // Migrate from old tideLevel pills
+    if (sel?.tideLevel?.length) {
+      const segs = Array(12).fill(false);
+      for (const level of sel.tideLevel) {
+        if (level === "low") { segs[0] = segs[1] = segs[10] = segs[11] = true; }
+        if (level === "mid") { segs[2] = segs[3] = segs[4] = segs[7] = segs[8] = segs[9] = true; }
+        if (level === "high") { segs[5] = segs[6] = true; }
+      }
+      return segs;
+    }
+    return Array(12).fill(false);
+  });
   const [activeMonths, setActiveMonths] = useState<number[]>(profile?.activeMonths ?? []);
   const [consistency, setConsistency] = useState<string>(profile?.consistency ?? "medium");
   const [qualityCeiling, setQualityCeiling] = useState<number>(profile?.qualityCeiling ?? 3);
@@ -311,6 +339,10 @@ export function ProfileWizard({
   });
   const [excludeWindSpeed, setExcludeWindSpeed] = useState<string[]>(exc?.windSpeed ?? []);
   const [excludeTide, setExcludeTide] = useState<string[]>(exc?.tideHeight ?? []);
+  const [excludeTideCurveSegments, setExcludeTideCurveSegments] = useState<boolean[]>(() => {
+    if (exc?.tideCurve?.segments) return exc.tideCurve.segments;
+    return Array(12).fill(false);
+  });
   const [excludeMonths, setExcludeMonths] = useState<number[]>([]);
 
   // Importance weights
@@ -424,6 +456,7 @@ export function ProfileWizard({
     }
     if (excludeWindSpeed.length > 0) zones.windSpeed = excludeWindSpeed;
     if (excludeTide.length > 0) zones.tideHeight = excludeTide;
+    if (excludeTideCurveSegments.some(Boolean)) zones.tideCurve = { segments: excludeTideCurveSegments };
     return Object.keys(zones).length > 0 ? zones : null;
   }
 
@@ -444,7 +477,9 @@ export function ProfileWizard({
       targetSwellDirection: swellDirection.length > 0 ? avgCardinalDeg(swellDirection) : null,
       targetWindSpeed: windCondition.length > 0 ? avgMidpoints(windCondition, WIND_SPEED_MIDPOINTS) : null,
       targetWindDirection: windDirection.length > 0 ? avgCardinalDeg(windDirection) : null,
-      targetTideHeight: tideLevel.length > 0 ? avgMidpoints(tideLevel, TIDE_HEIGHT_MIDPOINTS) : null,
+      targetTideHeight: tideCurveSegments.some(Boolean)
+        ? tideCurveToHeight(tideCurveSegments)
+        : tideLevel.length > 0 ? avgMidpoints(tideLevel, TIDE_HEIGHT_MIDPOINTS) : null,
     };
 
     setSaving(true);
@@ -477,6 +512,9 @@ export function ProfileWizard({
             windCondition,
             windDirection,
             tideLevel,
+            tideCurve: tideCurveSegments.some(Boolean)
+              ? { segments: tideCurveSegments }
+              : undefined,
           },
           exclusions: buildExclusions(),
           activeMonths: activeMonths.length > 0 ? activeMonths : null,
@@ -668,13 +706,11 @@ export function ProfileWizard({
             level={weightToLevel(wTideHeight)}
             onLevelChange={(l) => setWTideHeight(levelToWeight(l))}
           >
-            <div className="flex flex-wrap gap-2">
-              {TIDE_OPTIONS.map(opt => (
-                <WizardPill key={opt.value} active={tideLevel.includes(opt.value)} onClick={() => setTideLevel(togglePill(tideLevel, opt.value))}>
-                  {opt.label}
-                </WizardPill>
-              ))}
-            </div>
+            <TideCurveSelector
+              segments={tideCurveSegments}
+              onChange={setTideCurveSegments}
+              mode="target"
+            />
           </StepWithImportance>
         );
 
@@ -813,13 +849,11 @@ export function ProfileWizard({
 
       case "exc_tide":
         return (
-          <div className="flex flex-wrap gap-2">
-            {TIDE_OPTIONS.map(opt => (
-              <ExclusionPill key={opt.value} active={excludeTide.includes(opt.value)} onClick={() => setExcludeTide(togglePill(excludeTide, opt.value))}>
-                {opt.label}
-              </ExclusionPill>
-            ))}
-          </div>
+          <TideCurveSelector
+            segments={excludeTideCurveSegments}
+            onChange={setExcludeTideCurveSegments}
+            mode="exclusion"
+          />
         );
 
       case "season":

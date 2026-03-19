@@ -1,6 +1,7 @@
 import { MarineConditions, ConditionWeights, DEFAULT_CONDITION_WEIGHTS, MatchDetails, TimeWindow, CardinalDirection, PreferredWaveSize, PreferredSwellPeriod, PreferredWind, ProfileForMatching, ProfileSelections, ExclusionZones } from "@/types";
 import { calculateDirectionAttenuation, calculateWaveEnergy } from "@/lib/wave-energy";
 import { getReinforcementConfidence, isProfileActiveForMonth, WAVE_SIZE_MIDPOINTS, SWELL_PERIOD_MIDPOINTS, WIND_SPEED_MIDPOINTS, TIDE_HEIGHT_MIDPOINTS } from "@/lib/matching/profile-utils";
+import { nearestSelectedSegmentDistance, computeTidePhases } from "@/lib/matching/tide-phase";
 
 // ── Gaussian similarity ──
 
@@ -125,6 +126,12 @@ export function checkExclusionVeto(
   if (exclusions.tideHeight?.length && forecast.tideHeight != null) {
     if (valueInCategories(forecast.tideHeight, exclusions.tideHeight, CATEGORY_RANGES.tideHeight)) {
       return 'tideHeight';
+    }
+  }
+  // Tide curve exclusion: veto if forecast's tide phase falls in an excluded segment
+  if (exclusions.tideCurve?.segments && forecast.tidePhaseSegment != null) {
+    if (exclusions.tideCurve.segments[forecast.tidePhaseSegment]) {
+      return 'tideCurve';
     }
   }
 
@@ -273,6 +280,7 @@ export interface ParsedConditions {
   windDirection: number | null;
   tideHeight: number | null;
   waveEnergy: number | null;
+  tidePhaseSegment?: number | null; // 0-11, computed from consecutive tide heights
 }
 
 export function parseSessionConditions(conditions: {
@@ -523,12 +531,25 @@ export function computeSimilarity(
     if (weights.windDirection >= CRITICAL_WEIGHT_THRESHOLD && sim < CRITICAL_SIM_FLOOR) criticalVeto = true;
   }
 
-  // Tide height + tide preference
+  // Tide height + tide preference (tide curve takes priority)
   if (forecast.tideHeight != null && session.tideHeight != null) {
+    let sim: number;
+    const hasTideCurve = selections?.tideCurve?.segments && selections.tideCurve.segments.some(Boolean);
     const hasTideSelections = selections?.tideLevel && selections.tideLevel.length > 0;
-    let sim = hasTideSelections
-      ? rangeSimilarity(forecast.tideHeight, selections!.tideLevel!, CATEGORY_RANGES.tideHeight, SIGMAS.tideHeight)
-      : gaussianSimilarity(forecast.tideHeight, session.tideHeight, SIGMAS.tideHeight);
+
+    if (hasTideCurve && forecast.tidePhaseSegment != null) {
+      // Tide curve matching: 1.0 if phase is in a selected segment, Gaussian decay otherwise
+      if (selections!.tideCurve!.segments[forecast.tidePhaseSegment]) {
+        sim = 1.0;
+      } else {
+        const dist = nearestSelectedSegmentDistance(forecast.tidePhaseSegment, selections!.tideCurve!.segments);
+        sim = Math.exp(-(dist * dist) / (2 * 1.5 * 1.5));
+      }
+    } else if (hasTideSelections) {
+      sim = rangeSimilarity(forecast.tideHeight, selections!.tideLevel!, CATEGORY_RANGES.tideHeight, SIGMAS.tideHeight);
+    } else {
+      sim = gaussianSimilarity(forecast.tideHeight, session.tideHeight, SIGMAS.tideHeight);
+    }
     if (!isProfileMatch || !profileSpecifiedVars!.has("tideHeight")) {
       sim *= getTidePreferenceMultiplier(forecast.tideHeight, weights.preferredTide);
     }
@@ -648,6 +669,12 @@ export function generateAlerts(
   swellExposure?: CardinalDirection[]
 ): ComputedAlert[] {
   if (sessions.length === 0) return [];
+
+  // Pre-compute tide phase segments from consecutive hourly tide heights
+  const tidePhases = computeTidePhases(forecastHours.map(fh => ({ tideHeight: fh.conditions.tideHeight })));
+  for (let i = 0; i < forecastHours.length; i++) {
+    forecastHours[i].conditions.tidePhaseSegment = tidePhases[i];
+  }
 
   // Forecast timestamps are local times parsed as UTC on the server
   // (e.g. "2026-03-15T07:00" → 07:00 UTC, but it really means 07:00 local).
@@ -778,6 +805,12 @@ export function generateProfileAlerts(
   swellExposure?: CardinalDirection[]
 ): ComputedProfileAlert[] {
   if (profiles.length === 0) return [];
+
+  // Pre-compute tide phase segments from consecutive hourly tide heights
+  const tidePhases = computeTidePhases(forecastHours.map(fh => ({ tideHeight: fh.conditions.tideHeight })));
+  for (let i = 0; i < forecastHours.length; i++) {
+    forecastHours[i].conditions.tidePhaseSegment = tidePhases[i];
+  }
 
   const nowLocalMs = now.getTime() + utcOffsetSeconds * 1000;
 

@@ -175,6 +175,7 @@ export interface ProfileSelections {
   windCondition?: string[];
   windDirection?: string[];
   tideLevel?: string[];
+  tideCurve?: { segments: boolean[] }; // 12 segments of the tide cycle
 }
 
 // Exclusion zones: conditions that are absolute dealbreakers
@@ -189,6 +190,7 @@ export interface ExclusionZones {
   swellPeriodRange?: { min: number; max: number | null }; // seconds, veto if period falls in this range
   windSpeed?: string[];      // e.g. ['onshore']
   tideHeight?: string[];     // e.g. ['high']
+  tideCurve?: { segments: boolean[] }; // 12 segments of the tide cycle that are dealbreakers
 }
 
 export interface ProfileForMatching {
