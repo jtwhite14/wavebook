@@ -328,14 +328,14 @@ export function ProfileWizard({
   const [excludeSwellDir, setExcludeSwellDir] = useState<CardinalDirection[]>(exc?.swellDirection ?? []);
   const [excludeWindDir, setExcludeWindDir] = useState<CardinalDirection[]>(exc?.windDirection ?? []);
   const [excludeWaveSize, setExcludeWaveSize] = useState<string[]>(exc?.swellHeight ?? []);
-  const [excludeWaveSizeRange, setExcludeWaveSizeRange] = useState<[number, number] | null>(() => {
+  const [excludeWaveSizeRange, setExcludeWaveSizeRange] = useState<[number, number]>(() => {
     if (exc?.swellHeightRange) return [exc.swellHeightRange.min, exc.swellHeightRange.max ?? WAVE_HEIGHT_MAX];
-    return null;
+    return [0, 2];
   });
   const [excludeSwellPeriod, setExcludeSwellPeriod] = useState<string[]>(exc?.swellPeriod ?? []);
-  const [excludePeriodRange, setExcludePeriodRange] = useState<[number, number] | null>(() => {
+  const [excludePeriodRange, setExcludePeriodRange] = useState<[number, number]>(() => {
     if (exc?.swellPeriodRange) return [exc.swellPeriodRange.min, exc.swellPeriodRange.max ?? PERIOD_MAX];
-    return null;
+    return [0, 6];
   });
   const [excludeWindSpeed, setExcludeWindSpeed] = useState<string[]>(exc?.windSpeed ?? []);
   const [excludeTide, setExcludeTide] = useState<string[]>(exc?.tideHeight ?? []);
@@ -718,85 +718,51 @@ export function ProfileWizard({
       case "exc_waveSize":
         return (
           <div className="space-y-4">
-            {excludeWaveSizeRange ? (
-              <>
-                <div className="flex items-center justify-between text-sm font-medium">
-                  <span className="text-destructive">{formatWaveHeight(excludeWaveSizeRange[0], false)}</span>
-                  <span className="text-muted-foreground">to</span>
-                  <span className="text-destructive">{formatWaveHeight(excludeWaveSizeRange[1], true)}</span>
-                </div>
-                <Slider
-                  min={WAVE_HEIGHT_MIN}
-                  max={WAVE_HEIGHT_MAX}
-                  step={WAVE_HEIGHT_STEP}
-                  value={excludeWaveSizeRange}
-                  onValueChange={(v) => setExcludeWaveSizeRange(v as [number, number])}
-                />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>0ft</span>
-                  <span>5ft</span>
-                  <span>10ft</span>
-                  <span>15ft</span>
-                  <span>20ft+</span>
-                </div>
-                <button
-                  onClick={() => setExcludeWaveSizeRange(null)}
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Clear exclusion
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={() => setExcludeWaveSizeRange([0, 2])}
-                className="px-3 py-1.5 rounded-full text-sm font-medium border border-transparent bg-muted text-muted-foreground hover:bg-accent transition-colors"
-              >
-                Set excluded wave height range
-              </button>
-            )}
+            <div className="flex items-center justify-between text-sm font-medium">
+              <span className="text-destructive">{formatWaveHeight(excludeWaveSizeRange[0], false)}</span>
+              <span className="text-muted-foreground">to</span>
+              <span className="text-destructive">{formatWaveHeight(excludeWaveSizeRange[1], true)}</span>
+            </div>
+            <Slider
+              min={WAVE_HEIGHT_MIN}
+              max={WAVE_HEIGHT_MAX}
+              step={WAVE_HEIGHT_STEP}
+              value={excludeWaveSizeRange}
+              onValueChange={(v) => setExcludeWaveSizeRange(v as [number, number])}
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>0ft</span>
+              <span>5ft</span>
+              <span>10ft</span>
+              <span>15ft</span>
+              <span>20ft+</span>
+            </div>
           </div>
         );
 
       case "exc_swellPeriod":
         return (
           <div className="space-y-4">
-            {excludePeriodRange ? (
-              <>
-                <div className="flex items-center justify-between text-sm font-medium">
-                  <span className="text-destructive">{formatPeriod(excludePeriodRange[0], false)}</span>
-                  <span className="text-muted-foreground">to</span>
-                  <span className="text-destructive">{formatPeriod(excludePeriodRange[1], true)}</span>
-                </div>
-                <Slider
-                  min={PERIOD_MIN}
-                  max={PERIOD_MAX}
-                  step={PERIOD_STEP}
-                  value={excludePeriodRange}
-                  onValueChange={(v) => setExcludePeriodRange(v as [number, number])}
-                />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>0s</span>
-                  <span>5s</span>
-                  <span>10s</span>
-                  <span>15s</span>
-                  <span>20s</span>
-                  <span>25s+</span>
-                </div>
-                <button
-                  onClick={() => setExcludePeriodRange(null)}
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Clear exclusion
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={() => setExcludePeriodRange([0, 6])}
-                className="px-3 py-1.5 rounded-full text-sm font-medium border border-transparent bg-muted text-muted-foreground hover:bg-accent transition-colors"
-              >
-                Set excluded period range
-              </button>
-            )}
+            <div className="flex items-center justify-between text-sm font-medium">
+              <span className="text-destructive">{formatPeriod(excludePeriodRange[0], false)}</span>
+              <span className="text-muted-foreground">to</span>
+              <span className="text-destructive">{formatPeriod(excludePeriodRange[1], true)}</span>
+            </div>
+            <Slider
+              min={PERIOD_MIN}
+              max={PERIOD_MAX}
+              step={PERIOD_STEP}
+              value={excludePeriodRange}
+              onValueChange={(v) => setExcludePeriodRange(v as [number, number])}
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>0s</span>
+              <span>5s</span>
+              <span>10s</span>
+              <span>15s</span>
+              <span>20s</span>
+              <span>25s+</span>
+            </div>
           </div>
         );
 
