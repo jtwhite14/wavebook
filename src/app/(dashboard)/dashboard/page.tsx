@@ -516,6 +516,7 @@ export default function DashboardPage() {
         } : undefined}
         wizardSpotId={profileWizard?.spotId}
       />
+      )}
 
       {/* Spots needing attention banner */}
       {spotsNeedingAttention.length > 0 && !dismissedLocationBanner && !selectedSpot && addSpotMode === "idle" && (
