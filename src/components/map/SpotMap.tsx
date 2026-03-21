@@ -104,20 +104,7 @@ export default function SpotMap({
 
   const clusters = useMemo(() => {
     const zoom = Math.floor(viewState.zoom ?? 9);
-    const map = mapRef.current?.getMap();
-    if (!map) {
-      // Before map loads, use world bounds so points are still clustered
-      return supercluster.getClusters([-180, -90, 180, 90], zoom);
-    }
-    const bounds = map.getBounds();
-    if (!bounds) return [];
-    const bbox: [number, number, number, number] = [
-      bounds.getWest(),
-      bounds.getSouth(),
-      bounds.getEast(),
-      bounds.getNorth(),
-    ];
-    return supercluster.getClusters(bbox, zoom);
+    return supercluster.getClusters([-180, -90, 180, 90], zoom);
   }, [supercluster, viewState.zoom, viewState.longitude, viewState.latitude, points, mapLoaded]);
 
   const handleMapClick = useCallback(
