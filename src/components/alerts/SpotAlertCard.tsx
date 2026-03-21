@@ -152,7 +152,7 @@ export function SpotAlertCard({ spotId, sessionCount, alerts: prefetchedAlerts }
         <span className="font-medium">{dayLabel} {timeLabel}</span>
         {hasProfile ? (
           <span>
-            {" "}matches your <span className="text-primary font-medium">{activeAlert.matchedProfile!.name}</span> profile
+            {" "}matches your <span className="text-primary font-medium">profile</span>
           </span>
         ) : isHighRated && isRecent && hasSession ? (
           <span>

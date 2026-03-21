@@ -103,9 +103,9 @@ export async function POST(
       exclusions,
     } = body;
 
-    if (!name || typeof name !== "string" || name.trim().length === 0) {
-      return NextResponse.json({ error: "Name is required" }, { status: 400 });
-    }
+    const profileName = (name && typeof name === "string" && name.trim().length > 0)
+      ? name.trim()
+      : `Profile ${existing.length + 1}`;
 
     // Validate at least 2 target variables are specified
     const specifiedCount = [
@@ -123,7 +123,7 @@ export async function POST(
     const [profile] = await db.insert(conditionProfiles).values({
       spotId: id,
       userId: userId,
-      name: name.trim(),
+      name: profileName,
       sortOrder: existing.length,
       targetSwellHeight: targetSwellHeight?.toString() ?? null,
       targetSwellPeriod: targetSwellPeriod?.toString() ?? null,
