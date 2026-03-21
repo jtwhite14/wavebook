@@ -51,7 +51,6 @@ function SurfboardIcon({ className, ...props }: React.SVGProps<SVGSVGElement> & 
 
 const navigation = [
   { name: "Home", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Sessions", href: "/sessions", icon: Waves },
   { name: "Equipment", href: "/equipment", icon: SurfboardIcon },
 ];
 

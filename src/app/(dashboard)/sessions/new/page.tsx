@@ -58,7 +58,7 @@ function NewSessionContent() {
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="sm" asChild className="-ml-2">
-          <Link href="/sessions">
+          <Link href="/dashboard">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"

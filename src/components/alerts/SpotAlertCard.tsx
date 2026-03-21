@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import Link from "next/link";
-import { X, ChevronRight, TrendingUp } from "lucide-react";
+import { X, TrendingUp } from "lucide-react";
 import { SpotAlertResponse, MarineConditions } from "@/types";
 import { formatWaveHeight, formatWavePeriod, getDirectionText, formatWindSpeed } from "@/lib/api/open-meteo";
 import { formatDate } from "@/lib/utils/date";
@@ -158,13 +157,9 @@ export function SpotAlertCard({ spotId, sessionCount, alerts: prefetchedAlerts }
         ) : isHighRated && isRecent && hasSession ? (
           <span>
             {" "}looks like your{" "}
-            <Link
-              href={`/sessions/${activeAlert.matchedSession!.id}`}
-              className="text-primary hover:underline inline-flex items-center gap-0.5"
-            >
+            <span className="text-primary font-medium">
               {ratingStars(activeAlert.matchedSession!.rating)} session on {formatDate(sessionDate!)}
-              <ChevronRight className="size-3" />
-            </Link>
+            </span>
           </span>
         ) : isHighRated && hasSession ? (
           <span>

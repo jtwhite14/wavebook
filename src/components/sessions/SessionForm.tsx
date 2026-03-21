@@ -464,11 +464,7 @@ export function SessionForm({ spots: initialSpots, defaultSpotId, surfboards: in
 
       if (createdCount > 0) {
         toast.success(`${createdCount} session${createdCount !== 1 ? "s" : ""} logged!`);
-        if (createdCount === 1 && lastSessionId) {
-          router.push(`/sessions/${lastSessionId}`);
-        } else {
-          router.push("/sessions");
-        }
+        router.push("/dashboard");
       } else {
         toast.error("Failed to create sessions");
       }
