@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
@@ -1036,10 +1035,16 @@ export default function DashboardPage() {
                     sessions.map((session) => {
                       const photo = session.photos?.[0]?.photoUrl || session.photoUrl;
                       return (
-                        <Link
+                        <button
                           key={session.id}
-                          href={`/sessions/${session.id}`}
-                          className="flex items-center gap-3 px-4 py-2.5 hover:bg-accent/50 transition-colors"
+                          onClick={async () => {
+                            const spot = spots.find((s) => s.id === session.spotId);
+                            if (spot) {
+                              await handleSpotClick(spot);
+                              handleViewSession(session);
+                            }
+                          }}
+                          className="flex items-center gap-3 px-4 py-2.5 hover:bg-accent/50 transition-colors w-full text-left"
                         >
                           {photo && (
                             <img
@@ -1068,7 +1073,7 @@ export default function DashboardPage() {
                               </svg>
                             ))}
                           </div>
-                        </Link>
+                        </button>
                       );
                     })
                   )}
