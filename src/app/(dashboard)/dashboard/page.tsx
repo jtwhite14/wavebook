@@ -43,6 +43,7 @@ import { SpotSharePanel } from "@/components/sharing/SpotSharePanel";
 import { IncomingInvites } from "@/components/sharing/IncomingInvites";
 import { SharedSpotsList } from "@/components/sharing/SharedSpotsList";
 import { SharedSpotPane } from "@/components/sharing/SharedSpotPane";
+import { GearModal } from "@/components/gear/GearModal";
 import { haversineDistance, getDistancePenalty, getRarityBoost } from "@/lib/utils/geo";
 import type { SurfSpot, Surfboard, Wetsuit } from "@/lib/db/schema";
 import type { SurfSessionWithConditions, SharedSpotView, CardinalDirection, ConditionProfileResponse } from "@/types";
@@ -97,6 +98,9 @@ export default function DashboardPage() {
     sharedBy: { id: string; name: string | null; email: string };
   }>>([]);
   const [selectedSharedSpot, setSelectedSharedSpot] = useState<SharedSpotView | null>(null);
+
+  // Gear modal
+  const [gearModalOpen, setGearModalOpen] = useState(false);
 
   // Map direction editing overlay
   const [directionEdit, setDirectionEdit] = useState<{
@@ -326,6 +330,13 @@ export default function DashboardPage() {
     const handler = () => handleStartAddSpot();
     window.addEventListener("start-add-spot", handler);
     return () => window.removeEventListener("start-add-spot", handler);
+  }, []);
+
+  // Listen for "Open Gear" from sidebar nav
+  useEffect(() => {
+    const handler = () => setGearModalOpen(true);
+    window.addEventListener("open-gear", handler);
+    return () => window.removeEventListener("open-gear", handler);
   }, []);
 
   useEffect(() => {
@@ -1074,14 +1085,14 @@ export default function DashboardPage() {
                       <Plus className="size-4" />
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent side="right" align="start">
+                  <DropdownMenuContent side="right" align="start" collisionPadding={16}>
                     <DropdownMenuItem onClick={() => router.push("/sessions/new")}>
                       New Session
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleStartAddSpot()}>
                       New Spot
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push("/equipment")}>
+                    <DropdownMenuItem onClick={() => setGearModalOpen(true)}>
                       New Gear
                     </DropdownMenuItem>
                   </DropdownMenuContent>
