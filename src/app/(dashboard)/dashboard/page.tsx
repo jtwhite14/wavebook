@@ -44,7 +44,7 @@ import { IncomingInvites } from "@/components/sharing/IncomingInvites";
 import { SharedSpotsList } from "@/components/sharing/SharedSpotsList";
 import { SharedSpotPane } from "@/components/sharing/SharedSpotPane";
 import { haversineDistance, getDistancePenalty, getRarityBoost } from "@/lib/utils/geo";
-import type { SurfSpot } from "@/lib/db/schema";
+import type { SurfSpot, Surfboard, Wetsuit } from "@/lib/db/schema";
 import type { SurfSessionWithConditions, SharedSpotView, CardinalDirection, ConditionProfileResponse } from "@/types";
 
 const SpotMap = dynamic(() => import("@/components/map/SpotMap"), {
@@ -63,7 +63,9 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [alertsPanelOpen, setAlertsPanelOpen] = useState(true);
   const [sessionsPanelOpen, setSessionsPanelOpen] = useState(true);
-  const [sessionsTab, setSessionsTab] = useState<"sessions" | "spots">("sessions");
+  const [sessionsTab, setSessionsTab] = useState<"sessions" | "spots" | "equipment">("sessions");
+  const [surfboards, setSurfboards] = useState<Surfboard[]>([]);
+  const [wetsuits, setWetsuits] = useState<Wetsuit[]>([]);
 
   const [homeLocation, setHomeLocation] = useState<{ latitude: number; longitude: number } | null>(null);
 
@@ -333,10 +335,14 @@ export default function DashboardPage() {
       fetch("/api/sessions?limit=5").then((r) => (r.ok ? r.json() : { sessions: [] })),
       fetch("/api/shares/spots").then((r) => (r.ok ? r.json() : { sharedSpots: [] })),
       fetch("/api/shares/incoming").then((r) => (r.ok ? r.json() : { invites: [] })),
+      fetch("/api/surfboards").then((r) => (r.ok ? r.json() : { surfboards: [] })),
+      fetch("/api/wetsuits").then((r) => (r.ok ? r.json() : { wetsuits: [] })),
     ])
-      .then(([spotsData, locationData, sessionsData, sharedSpotsData, invitesData]) => {
+      .then(([spotsData, locationData, sessionsData, sharedSpotsData, invitesData, surfboardsData, wetsuitsData]) => {
         setSpots(spotsData.spots || []);
         setSessions(sessionsData.sessions || []);
+        setSurfboards(surfboardsData.surfboards || []);
+        setWetsuits(wetsuitsData.wetsuits || []);
         setSharedSpots(sharedSpotsData.sharedSpots || []);
         setIncomingInvites(invitesData.invites || []);
         if (locationData.latitude && locationData.longitude) {
@@ -475,14 +481,6 @@ export default function DashboardPage() {
     },
     [selectedSpot, profileWizard]
   );
-
-  if (loading) {
-    return (
-      <div className="h-full w-full flex items-center justify-center">
-        <Loader2 className="size-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
 
   return (
     <div className={`relative h-full w-full${addSpotMode !== "idle" ? " cursor-crosshair" : ""}`}>
@@ -899,8 +897,47 @@ export default function DashboardPage() {
       )}
 
       {/* Alerts + Sessions/Spots panels — visible when no spot is selected */}
-      {!selectedSpot && !selectedSharedSpot && addSpotMode === "idle" && (sessions.length > 0 || alertSummaries.length > 0 || sharedSpots.length > 0 || spots.length > 0) && (
+      {!selectedSpot && !selectedSharedSpot && addSpotMode === "idle" && (
         <div className="absolute bottom-4 left-4 right-4 sm:bottom-auto sm:right-auto sm:top-4 z-10 sm:w-80 flex flex-col gap-3">
+          {loading ? (
+            /* Skeleton panels while data loads */
+            <>
+              <div className="rounded-lg border bg-background/90 backdrop-blur-sm shadow-lg overflow-hidden">
+                <div className="px-4 py-2.5 border-b">
+                  <div className="h-4 w-16 bg-muted animate-pulse rounded" />
+                </div>
+                <div className="space-y-1 p-2">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-center gap-3 px-2 py-2">
+                      <div className="flex-1 space-y-1.5">
+                        <div className="h-3.5 w-24 bg-muted animate-pulse rounded" />
+                        <div className="h-3 w-32 bg-muted animate-pulse rounded" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="rounded-lg border bg-background/90 backdrop-blur-sm shadow-lg overflow-hidden">
+                <div className="flex items-center border-b gap-2 px-4 py-2.5">
+                  <div className="h-4 w-16 bg-muted animate-pulse rounded" />
+                  <div className="h-4 w-12 bg-muted animate-pulse rounded" />
+                  <div className="h-4 w-10 bg-muted animate-pulse rounded" />
+                </div>
+                <div className="space-y-1 p-2">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="flex items-center gap-3 px-2 py-2">
+                      <div className="w-10 h-10 bg-muted animate-pulse rounded shrink-0" />
+                      <div className="flex-1 space-y-1.5">
+                        <div className="h-3.5 w-24 bg-muted animate-pulse rounded" />
+                        <div className="h-3 w-16 bg-muted animate-pulse rounded" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : (sessions.length > 0 || alertSummaries.length > 0 || sharedSpots.length > 0 || spots.length > 0 || surfboards.length > 0 || wetsuits.length > 0) ? (
+            <>
           {/* Alerts panel */}
           <div className="rounded-lg border bg-background/90 backdrop-blur-sm shadow-lg overflow-hidden">
             <div className="flex items-center border-b">
@@ -998,7 +1035,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Sessions / Spots panel */}
-          {(sessions.length > 0 || spots.length > 0) && (
+          {(sessions.length > 0 || spots.length > 0 || surfboards.length > 0 || wetsuits.length > 0) && (
             <div className="rounded-lg border bg-background/90 backdrop-blur-sm shadow-lg overflow-hidden">
               <div className="flex items-center border-b">
                 <button
@@ -1016,6 +1053,14 @@ export default function DashboardPage() {
                   }`}
                 >
                   Spots
+                </button>
+                <button
+                  onClick={() => { setSessionsTab("equipment"); setSessionsPanelOpen(true); }}
+                  className={`flex-1 px-4 py-2.5 text-sm font-medium transition-colors ${
+                    sessionsTab === "equipment" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Gear
                 </button>
                 <button
                   onClick={() => setSessionsPanelOpen((o) => !o)}
@@ -1080,6 +1125,53 @@ export default function DashboardPage() {
                 </div>
               )}
 
+              {sessionsPanelOpen && sessionsTab === "equipment" && (
+                <div className="max-h-80 overflow-y-auto">
+                  {surfboards.length === 0 && wetsuits.length === 0 ? (
+                    <div className="px-4 py-6 text-center">
+                      <p className="text-sm text-muted-foreground">No gear yet</p>
+                    </div>
+                  ) : (
+                    [...surfboards.map((b) => ({ ...b, _type: "surfboard" as const })), ...wetsuits.map((w) => ({ ...w, _type: "wetsuit" as const }))]
+                      .sort((a, b) => ((b as any).sessionCount || 0) - ((a as any).sessionCount || 0))
+                      .map((item) => {
+                        const subtitle = item._type === "surfboard"
+                          ? [item.brand, item.model, item.boardType].filter(Boolean).join(" · ")
+                          : [item.brand, (item as Wetsuit).thickness ? `${(item as Wetsuit).thickness}mm` : null, (item as Wetsuit).style].filter(Boolean).join(" · ");
+                        return (
+                          <button
+                            key={item.id}
+                            onClick={() => router.push("/equipment")}
+                            className="flex items-center gap-3 px-4 py-2.5 hover:bg-accent/50 transition-colors w-full text-left"
+                          >
+                            {item._type === "surfboard" && (item as Surfboard).photoUrl && (
+                              <img
+                                src={(item as Surfboard).photoUrl!}
+                                alt=""
+                                className="w-10 h-10 rounded object-cover shrink-0"
+                              />
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <p className={`text-sm font-medium truncate ${item.retired ? "opacity-50" : ""}`}>
+                                {item.name}
+                                {item.retired && <span className="ml-1.5 text-xs text-muted-foreground">(retired)</span>}
+                              </p>
+                              {subtitle && (
+                                <p className="text-xs text-muted-foreground truncate">{subtitle}</p>
+                              )}
+                            </div>
+                            <span className="text-xs text-muted-foreground shrink-0">
+                              {(item as any).sessionCount > 0
+                                ? `${(item as any).sessionCount} session${(item as any).sessionCount === 1 ? "" : "s"}`
+                                : item._type === "surfboard" ? "Board" : "Wetsuit"}
+                            </span>
+                          </button>
+                        );
+                      })
+                  )}
+                </div>
+              )}
+
               {sessionsPanelOpen && sessionsTab === "spots" && (
                 <div className="max-h-80 overflow-y-auto">
                   {spots.length === 0 ? (
@@ -1126,6 +1218,8 @@ export default function DashboardPage() {
               )}
             </div>
           )}
+            </>
+          ) : null}
         </div>
       )}
 

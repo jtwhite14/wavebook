@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthUserId } from "@/lib/auth";
-import { db, surfboards } from "@/lib/db";
-import { eq, and } from "drizzle-orm";
+import { db, surfboards, surfSessions } from "@/lib/db";
+import { eq, and, sql } from "drizzle-orm";
 import { z } from "zod";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -29,10 +29,32 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const boards = await db.query.surfboards.findMany({
-      where: eq(surfboards.userId, userId),
-      orderBy: (surfboards, { desc }) => [desc(surfboards.createdAt)],
-    });
+    const boards = await db
+      .select({
+        id: surfboards.id,
+        userId: surfboards.userId,
+        name: surfboards.name,
+        brand: surfboards.brand,
+        model: surfboards.model,
+        boardType: surfboards.boardType,
+        lengthInches: surfboards.lengthInches,
+        width: surfboards.width,
+        thickness: surfboards.thickness,
+        volume: surfboards.volume,
+        finSetup: surfboards.finSetup,
+        tailShape: surfboards.tailShape,
+        photoUrl: surfboards.photoUrl,
+        notes: surfboards.notes,
+        retired: surfboards.retired,
+        createdAt: surfboards.createdAt,
+        updatedAt: surfboards.updatedAt,
+        sessionCount: sql<number>`count(${surfSessions.id})::int`.as("session_count"),
+      })
+      .from(surfboards)
+      .leftJoin(surfSessions, eq(surfSessions.surfboardId, surfboards.id))
+      .where(eq(surfboards.userId, userId))
+      .groupBy(surfboards.id)
+      .orderBy(sql`count(${surfSessions.id}) desc`);
 
     return NextResponse.json({ surfboards: boards });
   } catch (error) {

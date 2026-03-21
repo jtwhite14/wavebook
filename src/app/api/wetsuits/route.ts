@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthUserId } from "@/lib/auth";
-import { db, wetsuits } from "@/lib/db";
-import { eq, and } from "drizzle-orm";
+import { db, wetsuits, surfSessions } from "@/lib/db";
+import { eq, and, sql } from "drizzle-orm";
 import { z } from "zod";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -24,10 +24,27 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const suits = await db.query.wetsuits.findMany({
-      where: eq(wetsuits.userId, userId),
-      orderBy: (wetsuits, { desc }) => [desc(wetsuits.createdAt)],
-    });
+    const suits = await db
+      .select({
+        id: wetsuits.id,
+        userId: wetsuits.userId,
+        name: wetsuits.name,
+        brand: wetsuits.brand,
+        thickness: wetsuits.thickness,
+        style: wetsuits.style,
+        entry: wetsuits.entry,
+        size: wetsuits.size,
+        notes: wetsuits.notes,
+        retired: wetsuits.retired,
+        createdAt: wetsuits.createdAt,
+        updatedAt: wetsuits.updatedAt,
+        sessionCount: sql<number>`count(${surfSessions.id})::int`.as("session_count"),
+      })
+      .from(wetsuits)
+      .leftJoin(surfSessions, eq(surfSessions.wetsuitId, wetsuits.id))
+      .where(eq(wetsuits.userId, userId))
+      .groupBy(wetsuits.id)
+      .orderBy(sql`count(${surfSessions.id}) desc`);
 
     return NextResponse.json({ wetsuits: suits });
   } catch (error) {
