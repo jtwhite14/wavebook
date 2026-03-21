@@ -215,6 +215,7 @@ export default function DashboardPage() {
       setSpots((prev) => [...prev, data.spot]);
       toast.success("Spot added!");
       handleCancelAddSpot();
+      handleSpotClick(data.spot);
     } catch {
       toast.error("Failed to save spot");
     } finally {
