@@ -1089,7 +1089,11 @@ export default function DashboardPage() {
                         const distB = haversineDistance(homeLocation.latitude, homeLocation.longitude, parseFloat(b.latitude), parseFloat(b.longitude));
                         return distA - distB;
                       })
-                      .map((spot) => (
+                      .map((spot) => {
+                        const distMi = homeLocation
+                          ? haversineDistance(homeLocation.latitude, homeLocation.longitude, parseFloat(spot.latitude), parseFloat(spot.longitude)) * 0.621371
+                          : null;
+                        return (
                       <button
                         key={spot.id}
                         onClick={() => handleSpotClick(spot)}
@@ -1101,11 +1105,17 @@ export default function DashboardPage() {
                             <p className="text-xs text-muted-foreground truncate">{spot.description}</p>
                           )}
                         </div>
-                        {alertSpotIds.has(spot.id) && (
-                          <span className="w-2 h-2 rounded-full bg-primary shrink-0" />
-                        )}
+                        <div className="flex items-center gap-2 shrink-0">
+                          {distMi !== null && (
+                            <span className="text-xs text-muted-foreground">{distMi < 1 ? distMi.toFixed(1) : Math.round(distMi)} mi</span>
+                          )}
+                          {alertSpotIds.has(spot.id) && (
+                            <span className="w-2 h-2 rounded-full bg-primary" />
+                          )}
+                        </div>
                       </button>
-                    ))
+                        );
+                      })
                   )}
                 </div>
               )}
