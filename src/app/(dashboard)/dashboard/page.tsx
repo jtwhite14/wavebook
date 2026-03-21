@@ -333,13 +333,6 @@ export default function DashboardPage() {
     return () => window.removeEventListener("start-add-spot", handler);
   }, []);
 
-  // Listen for "Open Gear" from sidebar nav
-  useEffect(() => {
-    const handler = () => setGearModalOpen(true);
-    window.addEventListener("open-gear", handler);
-    return () => window.removeEventListener("open-gear", handler);
-  }, []);
-
   useEffect(() => {
     Promise.all([
       fetch("/api/spots").then((r) => (r.ok ? r.json() : { spots: [] })),

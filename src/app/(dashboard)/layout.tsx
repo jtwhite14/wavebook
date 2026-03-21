@@ -30,28 +30,8 @@ import {
   MapPin,
 } from "lucide-react";
 
-function SurfboardIcon({ className, ...props }: React.SVGProps<SVGSVGElement> & { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      {...props}
-    >
-      <path d="M21 3C14 3 5 8 3 21c5-1 10-3 13-6s5-7 5-12z" />
-      <path d="M9 15l3-3" />
-    </svg>
-  );
-}
-
 const navigation = [
   { name: "Home", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Gear", href: "/dashboard", icon: SurfboardIcon, event: "open-gear" },
 ];
 
 
@@ -222,39 +202,24 @@ function SidebarContent({
       {/* Navigation */}
       <div className={`flex flex-col gap-px p-3 ${collapsed ? "items-center" : ""}`}>
         {navigation.map((item) => {
-          const active = !item.event && isActive(item.href);
-          const className = `flex items-center rounded-md text-sm font-medium transition-colors ${
-            collapsed
-              ? `justify-center size-9 ${
-                  active
-                    ? "bg-accent text-foreground"
-                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                }`
-              : `gap-2.5 px-2.5 py-1.5 w-full ${
-                  active
-                    ? "bg-accent text-foreground"
-                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                }`
-          }`;
-
-          const link = item.event ? (
+          const active = isActive(item.href);
+          const link = (
             <Link
-              key={item.name}
+              key={item.href}
               href={item.href}
-              onClick={(e) => {
-                if (pathname === item.href) e.preventDefault();
-                window.dispatchEvent(new CustomEvent(item.event!));
-              }}
-              className={className}
-            >
-              <item.icon className="size-4 shrink-0" />
-              {!collapsed && item.name}
-            </Link>
-          ) : (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={className}
+              className={`flex items-center rounded-md text-sm font-medium transition-colors ${
+                collapsed
+                  ? `justify-center size-9 ${
+                      active
+                        ? "bg-accent text-foreground"
+                        : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                    }`
+                  : `gap-2.5 px-2.5 py-1.5 w-full ${
+                      active
+                        ? "bg-accent text-foreground"
+                        : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                    }`
+              }`}
             >
               <item.icon className="size-4 shrink-0" />
               {!collapsed && item.name}
@@ -263,7 +228,7 @@ function SidebarContent({
 
           if (collapsed) {
             return (
-              <Tooltip key={item.name}>
+              <Tooltip key={item.href}>
                 <TooltipTrigger asChild>{link}</TooltipTrigger>
                 <TooltipContent side="right">{item.name}</TooltipContent>
               </Tooltip>
