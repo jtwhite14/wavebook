@@ -236,13 +236,8 @@ function SidebarContent({
           }
           return link;
         })}
-      </div>
 
-      {/* Spacer */}
-      <div className="flex-1" />
-
-      {/* Add button */}
-      <div className={`flex flex-col gap-px px-3 pb-2 ${collapsed ? "items-center" : ""}`}>
+        {/* Add button */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             {collapsed ? (
@@ -256,7 +251,7 @@ function SidebarContent({
               </button>
             )}
           </DropdownMenuTrigger>
-          <DropdownMenuContent side={collapsed ? "right" : "top"} align={collapsed ? "start" : "center"}>
+          <DropdownMenuContent side={collapsed ? "right" : "bottom"} align={collapsed ? "start" : "center"}>
             <DropdownMenuItem asChild>
               <Link href="/sessions/new" className="flex items-center gap-2">
                 <Waves className="size-4" />
@@ -273,6 +268,9 @@ function SidebarContent({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {/* Spacer */}
+      <div className="flex-1" />
 
       {/* Profile — bottom */}
       <div className={`border-t border-sidebar-border p-3 flex flex-col gap-1 ${collapsed ? "items-center" : ""}`}>
