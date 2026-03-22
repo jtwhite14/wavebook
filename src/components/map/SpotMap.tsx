@@ -73,7 +73,7 @@ export default function SpotMap({
   const mapRef = useRef<MapRef>(null);
   const [viewState, setViewState] = useState(initialViewState);
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [showBathymetry, setShowBathymetry] = useState(false);
+  const [bathymetryMode, setBathymetryMode] = useState<"off" | "hillshade" | "color">("off");
 
   const spotById = useMemo(() => {
     const lookup: Record<string, SurfSpot> = {};
@@ -172,21 +172,38 @@ export default function SpotMap({
       <NavigationControl position="bottom-right" />
       <GeolocateControl position="bottom-right" trackUserLocation />
 
-      {/* NOAA Bathymetry hillshade overlay */}
-      {showBathymetry && (
+      {/* NOAA CUDEM bathymetry overlay (1/9 arc-second ~3m nearshore) */}
+      {bathymetryMode === "hillshade" && (
         <Source
-          id="noaa-bathymetry"
+          id="cudem-hillshade"
           type="raster"
           tiles={[
-            "https://gis.ngdc.noaa.gov/arcgis/rest/services/DEM_mosaics/DEM_global_mosaic_hillshade/ImageServer/exportImage?bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256,256&format=png&f=image",
+            "https://gis.ngdc.noaa.gov/arcgis/rest/services/DEM_mosaics/DEM_all/ImageServer/exportImage?bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256,256&format=png&f=image&renderingRule=%7B%22rasterFunction%22%3A%22Hillshade%22%7D",
           ]}
           tileSize={256}
-          attribution="NOAA NCEI"
+          attribution="NOAA NCEI CUDEM"
         >
           <Layer
-            id="noaa-bathymetry-layer"
+            id="cudem-hillshade-layer"
             type="raster"
-            paint={{ "raster-opacity": 0.6 }}
+            paint={{ "raster-opacity": 0.5 }}
+          />
+        </Source>
+      )}
+      {bathymetryMode === "color" && (
+        <Source
+          id="cudem-color"
+          type="raster"
+          tiles={[
+            "https://gis.ngdc.noaa.gov/arcgis/rest/services/DEM_mosaics/DEM_all/ImageServer/exportImage?bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256,256&format=png&f=image&renderingRule=%7B%22rasterFunction%22%3A%22ColorHillshade%22%7D",
+          ]}
+          tileSize={256}
+          attribution="NOAA NCEI CUDEM"
+        >
+          <Layer
+            id="cudem-color-layer"
+            type="raster"
+            paint={{ "raster-opacity": 0.7 }}
           />
         </Source>
       )}
@@ -343,20 +360,23 @@ export default function SpotMap({
       <div className="absolute bottom-[140px] right-[10px] z-10">
         <div className="flex flex-col items-stretch rounded-md shadow-lg overflow-hidden">
           <button
-            onClick={(e) => { e.stopPropagation(); setShowBathymetry((v) => !v); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setBathymetryMode((m) => m === "off" ? "hillshade" : m === "hillshade" ? "color" : "off");
+            }}
             className={`flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium transition-colors ${
-              showBathymetry
+              bathymetryMode !== "off"
                 ? "bg-primary text-primary-foreground"
                 : "bg-white text-[#333] hover:bg-gray-100"
             }`}
-            title="Toggle bathymetry layer"
+            title="Cycle bathymetry: off → hillshade → color depth"
           >
             <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 2L2 7l10 5 10-5-10-5z" />
               <path d="M2 17l10 5 10-5" />
               <path d="M2 12l10 5 10-5" />
             </svg>
-            Bathymetry
+            {bathymetryMode === "off" ? "Depth" : bathymetryMode === "hillshade" ? "Hillshade" : "Color"}
           </button>
         </div>
       </div>
