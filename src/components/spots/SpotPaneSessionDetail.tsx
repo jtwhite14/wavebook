@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConditionsDisplay } from "@/components/sessions/ConditionsDisplay";
 import { ConditionsTimeline } from "@/components/sessions/ConditionsTimeline";
+import { ConditionHeatmap } from "@/components/sessions/ConditionHeatmap";
 import { SessionEditDialog } from "@/components/sessions/SessionEditDialog";
 import { toast } from "sonner";
 import { formatFullDate, formatTime } from "@/lib/utils/date";
@@ -339,6 +340,15 @@ export function SpotPaneSessionDetail({
             <p className="text-xs text-muted-foreground mb-2">Historical conditions at time of session</p>
             <ConditionsDisplay conditions={conditions} />
           </div>
+        )}
+
+        {/* Condition Frequency Heatmap */}
+        {conditions && (
+          <ConditionHeatmap
+            spotId={session.spotId}
+            sessionId={session.id}
+            sessionDate={session.date}
+          />
         )}
 
         {/* Conditions Timeline */}
