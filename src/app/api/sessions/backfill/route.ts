@@ -1,15 +1,19 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getAuthUserId } from "@/lib/auth";
 import { db, surfSessions, sessionConditions, surfSpots } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { fetchHistoricalConditions, fetchCurrentConditions } from "@/lib/api/open-meteo";
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
     const userId = await getAuthUserId();
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // ?missingWaves=true  → only re-fetch sessions whose wave_height is NULL
+    const missingWavesOnly =
+      request.nextUrl.searchParams.get("missingWaves") === "true";
 
     // Get all sessions for the user with their conditions and spot
     const sessions = await db.query.surfSessions.findMany({
@@ -21,6 +25,7 @@ export async function POST() {
     });
 
     let updated = 0;
+    let skipped = 0;
     let failed = 0;
     const errors: string[] = [];
 
@@ -29,6 +34,15 @@ export async function POST() {
         errors.push(`Session ${surfSession.id}: no spot found`);
         failed++;
         continue;
+      }
+
+      // When targeting missing waves, skip sessions that already have wave data
+      if (missingWavesOnly) {
+        const cond = surfSession.conditions;
+        if (cond && cond.waveHeight !== null) {
+          skipped++;
+          continue;
+        }
       }
 
       const lat = parseFloat(surfSession.spot.latitude);
@@ -103,6 +117,7 @@ export async function POST() {
     return NextResponse.json({
       total: sessions.length,
       updated,
+      skipped,
       failed,
       errors,
     });

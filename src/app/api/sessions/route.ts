@@ -336,6 +336,79 @@ export async function PUT(request: NextRequest) {
       .set(updates)
       .where(eq(surfSessions.id, sessionId));
 
+    // Re-fetch conditions when date/time or spot changes
+    const timeChanged = validated.date !== undefined || validated.startTime !== undefined;
+    const spotChanged = validated.spotId !== undefined && validated.spotId !== existing.spotId;
+
+    if (timeChanged || spotChanged) {
+      const updatedRow = await db.query.surfSessions.findFirst({
+        where: eq(surfSessions.id, sessionId),
+        with: { spot: true },
+      });
+
+      if (updatedRow?.spot) {
+        const lat = parseFloat(updatedRow.spot.latitude);
+        const lng = parseFloat(updatedRow.spot.longitude);
+        const sessionDate = new Date(updatedRow.startTime);
+        const now = new Date();
+
+        let conditions = null;
+        if (sessionDate < now) {
+          conditions = await fetchHistoricalConditions(lat, lng, sessionDate);
+        }
+        if (!conditions) {
+          conditions = await fetchCurrentConditions(lat, lng);
+        }
+
+        if (conditions) {
+          const condValues = {
+            waveHeight: conditions.waveHeight?.toString() || null,
+            wavePeriod: conditions.wavePeriod?.toString() || null,
+            waveDirection: conditions.waveDirection?.toString() || null,
+            primarySwellHeight: conditions.primarySwellHeight?.toString() || null,
+            primarySwellPeriod: conditions.primarySwellPeriod?.toString() || null,
+            primarySwellDirection: conditions.primarySwellDirection?.toString() || null,
+            secondarySwellHeight: conditions.secondarySwellHeight?.toString() || null,
+            secondarySwellPeriod: conditions.secondarySwellPeriod?.toString() || null,
+            secondarySwellDirection: conditions.secondarySwellDirection?.toString() || null,
+            windWaveHeight: conditions.windWaveHeight?.toString() || null,
+            windWavePeriod: conditions.windWavePeriod?.toString() || null,
+            windWaveDirection: conditions.windWaveDirection?.toString() || null,
+            windSpeed: conditions.windSpeed?.toString() || null,
+            windDirection: conditions.windDirection?.toString() || null,
+            windGust: conditions.windGust?.toString() || null,
+            airTemp: conditions.airTemp?.toString() || null,
+            seaSurfaceTemp: conditions.seaSurfaceTemp?.toString() || null,
+            humidity: conditions.humidity?.toString() || null,
+            precipitation: conditions.precipitation?.toString() || null,
+            pressureMsl: conditions.pressureMsl?.toString() || null,
+            cloudCover: conditions.cloudCover?.toString() || null,
+            visibility: conditions.visibility?.toString() || null,
+            tideHeight: conditions.tideHeight?.toString() || null,
+            waveEnergy: conditions.waveEnergy?.toString() || null,
+            timestamp: conditions.timestamp,
+          };
+
+          // Check if a conditions row already exists
+          const existingCond = await db.query.sessionConditions.findFirst({
+            where: eq(sessionConditions.sessionId, sessionId),
+          });
+
+          if (existingCond) {
+            await db
+              .update(sessionConditions)
+              .set(condValues)
+              .where(eq(sessionConditions.sessionId, sessionId));
+          } else {
+            await db.insert(sessionConditions).values({
+              sessionId,
+              ...condValues,
+            });
+          }
+        }
+      }
+    }
+
     // Fetch the updated session with relations
     const updatedSession = await db.query.surfSessions.findFirst({
       where: eq(surfSessions.id, sessionId),
