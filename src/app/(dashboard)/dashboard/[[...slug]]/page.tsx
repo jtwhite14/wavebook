@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,6 +59,8 @@ const SpotMap = dynamic(() => import("@/components/map/SpotMap"), {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const params = useParams<{ slug?: string[] }>();
+  const initialSlug = useRef(params.slug);
   const [spots, setSpots] = useState<SurfSpot[]>([]);
   const [sessions, setSessions] = useState<SurfSessionWithConditions[]>([]);
   const [loading, setLoading] = useState(true);
@@ -230,6 +232,7 @@ export default function DashboardPage() {
     setPaneView("spot");
     setViewingSession(null);
     setLoadingSpotSessions(true);
+    window.history.pushState(null, "", `/dashboard/spot/${spot.id}`);
     try {
       const res = await fetch(`/api/sessions?spotId=${spot.id}`);
       if (!res.ok) throw new Error();
@@ -249,6 +252,7 @@ export default function DashboardPage() {
     setShowAllSessions(false);
     setPaneView("spot");
     setViewingSession(null);
+    window.history.pushState(null, "", "/dashboard");
   };
 
   const handleSharedSpotClick = (sharedSpot: SharedSpotView) => {
@@ -270,13 +274,17 @@ export default function DashboardPage() {
   const handleViewSession = (session: SurfSessionWithConditions) => {
     setViewingSession(session);
     setPaneView("session");
+    if (selectedSpot) {
+      window.history.pushState(null, "", `/dashboard/spot/${selectedSpot.id}/session/${session.id}`);
+    }
   };
 
   const handleBackToSpot = useCallback(() => {
     setPaneView("spot");
     setViewingSession(null);
-    // Refresh profile count for the selected spot
     if (selectedSpot) {
+      window.history.pushState(null, "", `/dashboard/spot/${selectedSpot.id}`);
+      // Refresh profile count for the selected spot
       fetch(`/api/spots/${selectedSpot.id}/profiles`)
         .then(r => r.ok ? r.json() : { profiles: [] })
         .then(data => {
@@ -332,6 +340,34 @@ export default function DashboardPage() {
     window.addEventListener("start-add-spot", handler);
     return () => window.removeEventListener("start-add-spot", handler);
   }, []);
+
+  // Handle browser back/forward
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname;
+      const parts = path.replace(/^\/dashboard\/?/, "").split("/").filter(Boolean);
+      if (parts[0] === "spot" && parts[1]) {
+        const spot = spots.find((s) => s.id === parts[1]);
+        if (spot) {
+          handleSpotClick(spot).then(() => {
+            if (parts[2] === "session" && parts[3]) {
+              setTimeout(() => {
+                setSpotSessions((prev) => {
+                  const session = prev.find((s) => s.id === parts[3]);
+                  if (session) { setViewingSession(session); setPaneView("session"); }
+                  return prev;
+                });
+              }, 500);
+            }
+          });
+        }
+      } else {
+        handleCloseSpotDetail();
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [spots, handleSpotClick]);
 
   useEffect(() => {
     Promise.all([
@@ -446,6 +482,33 @@ export default function DashboardPage() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
+
+  // Restore spot/session from URL on initial load (e.g. /dashboard/spot/:id/session/:sid)
+  useEffect(() => {
+    const slug = initialSlug.current;
+    if (!slug || slug.length < 2 || slug[0] !== "spot" || loading || spots.length === 0) return;
+    const spotId = slug[1];
+    const spot = spots.find((s) => s.id === spotId);
+    if (!spot) return;
+    const sessionId = slug.length >= 4 && slug[2] === "session" ? slug[3] : null;
+    handleSpotClick(spot).then(() => {
+      if (sessionId) {
+        // Wait briefly for sessions to load, then select the session
+        const trySelect = () => {
+          setSpotSessions((prev) => {
+            const session = prev.find((s) => s.id === sessionId);
+            if (session) {
+              setViewingSession(session);
+              setPaneView("session");
+            }
+            return prev;
+          });
+        };
+        setTimeout(trySelect, 500);
+      }
+    });
+    initialSlug.current = undefined; // Only run once
+  }, [loading, spots, handleSpotClick]);
 
   const initialViewState = useMemo(() => {
     if (homeLocation) {
