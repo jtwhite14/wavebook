@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useCallback, useMemo, useEffect } from "react";
-import Map, { Marker, MapRef, NavigationControl, GeolocateControl, MapMouseEvent } from "react-map-gl/mapbox";
+import Map, { Marker, MapRef, NavigationControl, GeolocateControl, MapMouseEvent, Source, Layer } from "react-map-gl/mapbox";
 import Supercluster from "supercluster";
 import { SurfSpot } from "@/lib/db/schema";
 import SpotMarker from "./SpotMarker";
@@ -73,6 +73,7 @@ export default function SpotMap({
   const mapRef = useRef<MapRef>(null);
   const [viewState, setViewState] = useState(initialViewState);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [showBathymetry, setShowBathymetry] = useState(false);
 
   const spotById = useMemo(() => {
     const lookup: Record<string, SurfSpot> = {};
@@ -170,6 +171,25 @@ export default function SpotMap({
     >
       <NavigationControl position="bottom-right" />
       <GeolocateControl position="bottom-right" trackUserLocation />
+
+      {/* NOAA Bathymetry hillshade overlay */}
+      {showBathymetry && (
+        <Source
+          id="noaa-bathymetry"
+          type="raster"
+          tiles={[
+            "https://gis.ngdc.noaa.gov/arcgis/rest/services/DEM_mosaics/DEM_global_mosaic_hillshade/ImageServer/exportImage?bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256,256&format=png&f=image",
+          ]}
+          tileSize={256}
+          attribution="NOAA NCEI"
+        >
+          <Layer
+            id="noaa-bathymetry-layer"
+            type="raster"
+            paint={{ "raster-opacity": 0.6 }}
+          />
+        </Source>
+      )}
 
       {/* Spots and clusters */}
       {clusters.map((cluster) => {
@@ -318,6 +338,26 @@ export default function SpotMap({
           />
         );
       })()}
+
+      {/* Bathymetry toggle */}
+      <div className="absolute top-3 right-3 z-10">
+        <button
+          onClick={(e) => { e.stopPropagation(); setShowBathymetry((v) => !v); }}
+          className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium shadow-lg backdrop-blur-sm transition-colors ${
+            showBathymetry
+              ? "bg-primary text-primary-foreground"
+              : "bg-background/90 text-foreground hover:bg-background"
+          }`}
+          title="Toggle bathymetry"
+        >
+          <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M2 12c2-3 4.5-5 7-5s5 2 7 5-4.5 5-7 5-5-2-7-5z" />
+            <path d="M2 17c2-2 4.5-4 7-4s5 2 7 4" />
+            <path d="M2 7c2-2 4.5-4 7-4s5 2 7 4" />
+          </svg>
+          Depth
+        </button>
+      </div>
     </Map>
   );
 }
