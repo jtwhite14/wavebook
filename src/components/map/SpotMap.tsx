@@ -74,6 +74,7 @@ export default function SpotMap({
   const [viewState, setViewState] = useState(initialViewState);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapMode, setMapMode] = useState<"satellite" | "depth">("satellite");
+  const [showLayerPicker, setShowLayerPicker] = useState(false);
 
   const spotById = useMemo(() => {
     const lookup: Record<string, SurfSpot> = {};
@@ -169,8 +170,8 @@ export default function SpotMap({
       style={{ width: "100%", height: "100%" }}
       cursor={interactive && onMapClick ? "crosshair" : "grab"}
     >
-      <NavigationControl position="bottom-right" />
       <GeolocateControl position="bottom-right" trackUserLocation />
+      <NavigationControl position="bottom-right" />
 
       {/* NOAA CUDEM color bathymetry (1/9 arc-second ~3m nearshore) */}
       {mapMode === "depth" && (
@@ -339,23 +340,48 @@ export default function SpotMap({
         );
       })()}
 
-      {/* Map mode toggle — matches Mapbox nav control style */}
-      <div className="absolute bottom-[140px] right-[10px] z-10">
+      {/* Layer picker */}
+      <div className="absolute bottom-[180px] right-[10px] z-10">
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setMapMode((m) => m === "satellite" ? "depth" : "satellite");
-          }}
+          onClick={(e) => { e.stopPropagation(); setShowLayerPicker((v) => !v); }}
           className="mapboxgl-ctrl mapboxgl-ctrl-group"
-          title={mapMode === "satellite" ? "Switch to depth view" : "Switch to satellite view"}
+          title="Map layers"
           style={{ margin: 0, display: "flex", alignItems: "center", justifyContent: "center", width: 29, height: 29 }}
         >
-          <svg className="size-[18px]" viewBox="0 0 24 24" fill="none" stroke={mapMode === "depth" ? "#4264fb" : "#333"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg className="size-[18px]" viewBox="0 0 24 24" fill="none" stroke={showLayerPicker ? "#4264fb" : "#333"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 2L2 7l10 5 10-5-10-5z" />
             <path d="M2 17l10 5 10-5" />
             <path d="M2 12l10 5 10-5" />
           </svg>
         </button>
+        {showLayerPicker && (
+          <div
+            className="absolute bottom-0 right-[39px] bg-white rounded-lg shadow-lg p-2 flex gap-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {([
+              { id: "satellite" as const, label: "Satellite", preview: "bg-slate-800" },
+              { id: "depth" as const, label: "Depth", preview: "bg-gradient-to-b from-cyan-400 via-blue-500 to-indigo-900" },
+            ]).map((layer) => (
+              <button
+                key={layer.id}
+                onClick={() => { setMapMode(layer.id); setShowLayerPicker(false); }}
+                className={`flex flex-col items-center gap-1 group ${mapMode === layer.id ? "opacity-100" : "opacity-70 hover:opacity-100"}`}
+              >
+                <div
+                  className={`w-16 h-16 rounded-md ${layer.preview} ${
+                    mapMode === layer.id ? "ring-2 ring-blue-500" : "ring-1 ring-gray-300"
+                  }`}
+                />
+                <span className={`text-[10px] font-medium ${
+                  mapMode === layer.id ? "text-blue-600" : "text-gray-600"
+                }`}>
+                  {layer.label}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </Map>
   );
