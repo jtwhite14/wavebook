@@ -33,7 +33,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { SpotConditions } from "@/components/spots/SpotConditions";
-import { AlertsForecastPane } from "@/components/AlertsForecastPane";
+import { SpotAlertCard } from "@/components/alerts/SpotAlertCard";
+import { WeeklyForecast } from "@/components/forecast/WeeklyForecast";
 import { SpotPaneSessionDetail } from "@/components/spots/SpotPaneSessionDetail";
 import { SpotPaneEditSpot } from "@/components/spots/SpotPaneEditSpot";
 import { SpotPaneProfiles } from "@/components/profiles/SpotPaneProfiles";
@@ -823,7 +824,7 @@ export default function DashboardPage() {
                 ) : (
                   /* Default view: Alerts + Recent Sessions + Conditions */
                   <>
-                    {/* Combined Alerts + Forecast pane */}
+                    {/* Alerts */}
                     {selectedSpot.alertsSilenced ? (
                       <div className="rounded-lg border border-dashed border-muted-foreground/30 px-3 py-2.5 flex items-center gap-2">
                         <BellOff className="size-3.5 text-muted-foreground shrink-0" />
@@ -835,8 +836,15 @@ export default function DashboardPage() {
                         </p>
                       </div>
                     ) : (
-                      <AlertsForecastPane spotId={selectedSpot.id} sessionCount={spotSessions.length} />
+                      <div className="rounded-lg border bg-background/60 overflow-hidden p-3">
+                        <SpotAlertCard spotId={selectedSpot.id} sessionCount={spotSessions.length} embedded />
+                      </div>
                     )}
+
+                    {/* Forecast */}
+                    <div className="rounded-lg border bg-background/60 overflow-hidden">
+                      <WeeklyForecast spotId={selectedSpot.id} embedded />
+                    </div>
 
                     {/* Condition Profiles */}
                     {spotProfileCounts[selectedSpot.id] === 0 && (
