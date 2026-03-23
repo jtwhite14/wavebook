@@ -33,8 +33,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { SpotConditions } from "@/components/spots/SpotConditions";
-import { SpotAlertCard } from "@/components/alerts/SpotAlertCard";
-import { WeeklyForecast } from "@/components/forecast/WeeklyForecast";
+import { AlertsForecastPane } from "@/components/AlertsForecastPane";
 import { SpotPaneSessionDetail } from "@/components/spots/SpotPaneSessionDetail";
 import { SpotPaneEditSpot } from "@/components/spots/SpotPaneEditSpot";
 import { SpotPaneProfiles } from "@/components/profiles/SpotPaneProfiles";
@@ -824,7 +823,7 @@ export default function DashboardPage() {
                 ) : (
                   /* Default view: Alerts + Recent Sessions + Conditions */
                   <>
-                    {/* Session match alerts */}
+                    {/* Combined Alerts + Forecast pane */}
                     {selectedSpot.alertsSilenced ? (
                       <div className="rounded-lg border border-dashed border-muted-foreground/30 px-3 py-2.5 flex items-center gap-2">
                         <BellOff className="size-3.5 text-muted-foreground shrink-0" />
@@ -836,7 +835,7 @@ export default function DashboardPage() {
                         </p>
                       </div>
                     ) : (
-                      <SpotAlertCard spotId={selectedSpot.id} sessionCount={spotSessions.length} />
+                      <AlertsForecastPane spotId={selectedSpot.id} sessionCount={spotSessions.length} />
                     )}
 
                     {/* Condition Profiles */}
@@ -854,10 +853,6 @@ export default function DashboardPage() {
                         </div>
                       </button>
                     )}
-
-
-                    {/* Weekly forecast with integrated scores */}
-                    <WeeklyForecast spotId={selectedSpot.id} />
 
                     {/* Recent Sessions section */}
                     {loadingSpotSessions ? (

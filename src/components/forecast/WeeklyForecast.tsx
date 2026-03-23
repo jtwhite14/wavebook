@@ -64,9 +64,11 @@ interface ScoresData {
 
 interface WeeklyForecastProps {
   spotId: string;
+  /** When true, strips the outer heading and border (for use inside a tabbed container). */
+  embedded?: boolean;
 }
 
-export function WeeklyForecast({ spotId }: WeeklyForecastProps) {
+export function WeeklyForecast({ spotId, embedded }: WeeklyForecastProps) {
   const [hourly, setHourly] = useState<HourlyForecast[] | null>(null);
   const [utcOffset, setUtcOffset] = useState(0);
   const [scores, setScores] = useState<ScoresData | null>(null);
@@ -116,20 +118,31 @@ export function WeeklyForecast({ spotId }: WeeklyForecastProps) {
   const threshold = scores?.threshold ?? 0;
 
   if (loading) return null;
-  if (days.length === 0) return null;
+  if (days.length === 0) {
+    if (embedded) {
+      return (
+        <p className="text-sm text-muted-foreground text-center py-6">
+          No matching conditions in the next 7 days
+        </p>
+      );
+    }
+    return null;
+  }
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-semibold">Weekly Forecast</h3>
-        {scores && scores.seasonalSessionCount > 0 && (
-          <span className="text-[10px] text-muted-foreground">
-            {scores.seasonalSessionCount} session{scores.seasonalSessionCount !== 1 ? "s" : ""} matched
-          </span>
-        )}
-      </div>
+      {!embedded && (
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-semibold">Weekly Forecast</h3>
+          {scores && scores.seasonalSessionCount > 0 && (
+            <span className="text-[10px] text-muted-foreground">
+              {scores.seasonalSessionCount} session{scores.seasonalSessionCount !== 1 ? "s" : ""} matched
+            </span>
+          )}
+        </div>
+      )}
 
-      <div className="rounded-lg border bg-background/60 overflow-hidden">
+      <div className={embedded ? "overflow-hidden" : "rounded-lg border bg-background/60 overflow-hidden"}>
         {days.map((day) => {
           const isExpanded = expanded === day.date;
           const dayScores = scoreMap.get(day.date);
@@ -184,7 +197,7 @@ export function WeeklyForecast({ spotId }: WeeklyForecastProps) {
         })}
       </div>
 
-      {threshold > 0 && (
+      {threshold > 0 && !embedded && (
         <p className="text-[10px] text-muted-foreground mt-1.5">
           Alerts fire at {threshold}+. Tap a day to see details.
         </p>

@@ -11,11 +11,13 @@ interface SpotAlertCardProps {
   sessionCount: number;
   /** Pre-fetched alerts. If provided, skips the fetch. */
   alerts?: SpotAlertResponse[];
+  /** When true, always renders content (shows empty state instead of null). */
+  embedded?: boolean;
 }
 
 interface DismissedEntry { score: number; at: number }
 
-export function SpotAlertCard({ spotId, sessionCount, alerts: prefetchedAlerts }: SpotAlertCardProps) {
+export function SpotAlertCard({ spotId, sessionCount, alerts: prefetchedAlerts, embedded }: SpotAlertCardProps) {
   const [alerts, setAlerts] = useState<SpotAlertResponse[]>(prefetchedAlerts ?? []);
   const [loading, setLoading] = useState(!prefetchedAlerts);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -89,10 +91,20 @@ export function SpotAlertCard({ spotId, sessionCount, alerts: prefetchedAlerts }
   if (loading || visibleAlerts.length === 0) {
     if (!loading && sessionCount > 0 && sessionCount < 3) {
       return (
-        <div className="rounded-lg border border-dashed border-muted-foreground/30 px-3 py-2.5">
-          <p className="text-xs text-muted-foreground">
+        <div className={embedded ? "" : "rounded-lg border border-dashed border-muted-foreground/30 px-3 py-2.5"}>
+          <p className={`text-xs text-muted-foreground ${embedded ? "text-center py-4" : ""}`}>
             Log {3 - sessionCount} more session{3 - sessionCount !== 1 ? 's' : ''} here and alerts will get smarter.
             Currently matching against {sessionCount} session{sessionCount !== 1 ? 's' : ''}.
+          </p>
+        </div>
+      );
+    }
+    if (embedded) {
+      return (
+        <div className="text-center py-6">
+          <p className="text-sm text-muted-foreground">No upcoming alerts</p>
+          <p className="text-xs text-muted-foreground/70 mt-1">
+            Alerts appear when forecast conditions match your best sessions.
           </p>
         </div>
       );
