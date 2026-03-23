@@ -859,9 +859,6 @@ export default function DashboardPage() {
                     {/* Weekly forecast with integrated scores */}
                     <WeeklyForecast spotId={selectedSpot.id} />
 
-                    {/* 5-Star Condition Frequency */}
-                    <FiveStarHeatmap spotId={selectedSpot.id} />
-
                     {/* Recent Sessions section */}
                     {loadingSpotSessions ? (
                       <div className="flex justify-center py-4">
@@ -946,6 +943,9 @@ export default function DashboardPage() {
                         </Button>
                       </div>
                     )}
+
+                    {/* 5-Star Condition Frequency */}
+                    <FiveStarHeatmap spotId={selectedSpot.id} />
 
                     {/* Conditions Timeline */}
                     <SpotConditions spotId={selectedSpot.id} />
