@@ -18,19 +18,19 @@ const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "S
 
 function getScoreColor(score: number): string {
   if (score <= 0) return "var(--heatmap-empty)";
-  if (score < 30) return "var(--heatmap-low)";
-  if (score < 50) return "var(--heatmap-med-low)";
-  if (score < 70) return "var(--heatmap-med)";
-  if (score < 85) return "var(--heatmap-med-high)";
+  if (score < 50) return "var(--heatmap-low)";
+  if (score < 65) return "var(--heatmap-med-low)";
+  if (score < 78) return "var(--heatmap-med)";
+  if (score < 88) return "var(--heatmap-med-high)";
   return "var(--heatmap-high)";
 }
 
 function getScoreLabel(score: number): string {
   if (score <= 0) return "No data";
-  if (score < 30) return "Very different";
-  if (score < 50) return "Somewhat similar";
-  if (score < 70) return "Similar";
-  if (score < 85) return "Very similar";
+  if (score < 50) return "Very different";
+  if (score < 65) return "Somewhat similar";
+  if (score < 78) return "Similar";
+  if (score < 88) return "Very similar";
   return "Near identical";
 }
 
