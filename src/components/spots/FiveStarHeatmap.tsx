@@ -19,10 +19,11 @@ const MONTH_LABELS = [
 
 function getScoreColor(score: number): string {
   if (score < 50) return "var(--heatmap-empty)";
-  if (score < 65) return "var(--heatmap-med-low)";
-  if (score < 78) return "var(--heatmap-med)";
-  if (score < 88) return "var(--heatmap-med-high)";
-  return "var(--heatmap-high)";
+  if (score < 60) return "var(--heatmap-1)";
+  if (score < 70) return "var(--heatmap-2)";
+  if (score < 80) return "var(--heatmap-3)";
+  if (score < 90) return "var(--heatmap-4)";
+  return "var(--heatmap-5)";
 }
 
 function getScoreLabel(score: number): string {
@@ -196,20 +197,20 @@ export function FiveStarHeatmap({ spotId }: FiveStarHeatmapProps) {
         <style>{`
           :root {
             --heatmap-empty: oklch(0.25 0 0);
-            --heatmap-low: oklch(0.35 0.08 145);
-            --heatmap-med-low: oklch(0.42 0.12 145);
-            --heatmap-med: oklch(0.52 0.16 145);
-            --heatmap-med-high: oklch(0.62 0.19 145);
-            --heatmap-high: oklch(0.72 0.22 145);
+            --heatmap-1: oklch(0.35 0.06 145);
+            --heatmap-2: oklch(0.44 0.10 145);
+            --heatmap-3: oklch(0.53 0.14 145);
+            --heatmap-4: oklch(0.62 0.18 145);
+            --heatmap-5: oklch(0.72 0.22 145);
           }
           @media (prefers-color-scheme: light) {
             :root {
               --heatmap-empty: oklch(0.92 0 0);
-              --heatmap-low: oklch(0.85 0.06 145);
-              --heatmap-med-low: oklch(0.75 0.1 145);
-              --heatmap-med: oklch(0.65 0.14 145);
-              --heatmap-med-high: oklch(0.55 0.17 145);
-              --heatmap-high: oklch(0.45 0.2 145);
+              --heatmap-1: oklch(0.85 0.04 145);
+              --heatmap-2: oklch(0.75 0.08 145);
+              --heatmap-3: oklch(0.65 0.12 145);
+              --heatmap-4: oklch(0.55 0.16 145);
+              --heatmap-5: oklch(0.45 0.20 145);
             }
           }
         `}</style>
@@ -316,11 +317,11 @@ export function FiveStarHeatmap({ spotId }: FiveStarHeatmapProps) {
         <span>Less</span>
         {[
           "var(--heatmap-empty)",
-          "var(--heatmap-low)",
-          "var(--heatmap-med-low)",
-          "var(--heatmap-med)",
-          "var(--heatmap-med-high)",
-          "var(--heatmap-high)",
+          "var(--heatmap-1)",
+          "var(--heatmap-2)",
+          "var(--heatmap-3)",
+          "var(--heatmap-4)",
+          "var(--heatmap-5)",
         ].map((color, i) => (
           <span
             key={i}
