@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { getScoreColor, getScoreLabel, HEATMAP_CSS, HEATMAP_LEGEND_COLORS } from "@/lib/utils/heatmap";
 
 interface DayScore {
   date: string;
@@ -15,24 +16,6 @@ interface ConditionHeatmapProps {
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-function getScoreColor(score: number): string {
-  if (score < 30) return "var(--heatmap-empty)";
-  if (score < 50) return "var(--heatmap-low)";
-  if (score < 65) return "var(--heatmap-med-low)";
-  if (score < 78) return "var(--heatmap-med)";
-  if (score < 88) return "var(--heatmap-med-high)";
-  return "var(--heatmap-high)";
-}
-
-function getScoreLabel(score: number): string {
-  if (score <= 0) return "No data";
-  if (score < 50) return "Very different";
-  if (score < 65) return "Somewhat similar";
-  if (score < 78) return "Similar";
-  if (score < 88) return "Very similar";
-  return "Near identical";
-}
 
 export function ConditionHeatmap({ spotId, sessionId, sessionDate }: ConditionHeatmapProps) {
   const [scores, setScores] = useState<DayScore[] | null>(null);
@@ -170,26 +153,7 @@ export function ConditionHeatmap({ spotId, sessionId, sessionDate }: ConditionHe
         How often similar conditions occurred in the last 12 months
       </p>
       <div className="heatmap-container relative overflow-x-auto overflow-y-visible">
-        <style>{`
-          :root {
-            --heatmap-empty: oklch(0.25 0 0);
-            --heatmap-low: oklch(0.35 0.08 145);
-            --heatmap-med-low: oklch(0.42 0.12 145);
-            --heatmap-med: oklch(0.52 0.16 145);
-            --heatmap-med-high: oklch(0.62 0.19 145);
-            --heatmap-high: oklch(0.72 0.22 145);
-          }
-          @media (prefers-color-scheme: light) {
-            :root {
-              --heatmap-empty: oklch(0.92 0 0);
-              --heatmap-low: oklch(0.85 0.06 145);
-              --heatmap-med-low: oklch(0.75 0.1 145);
-              --heatmap-med: oklch(0.65 0.14 145);
-              --heatmap-med-high: oklch(0.55 0.17 145);
-              --heatmap-high: oklch(0.45 0.2 145);
-            }
-          }
-        `}</style>
+        <style>{HEATMAP_CSS}</style>
         <svg width={svgWidth} height={svgHeight} className="block">
           {/* Month labels */}
           {monthPositions.map(({ label, col }, i) => (
@@ -275,14 +239,7 @@ export function ConditionHeatmap({ spotId, sessionId, sessionDate }: ConditionHe
       {/* Legend */}
       <div className="flex items-center gap-1.5 mt-2 text-[10px] text-muted-foreground">
         <span>Less</span>
-        {[
-          "var(--heatmap-empty)",
-          "var(--heatmap-low)",
-          "var(--heatmap-med-low)",
-          "var(--heatmap-med)",
-          "var(--heatmap-med-high)",
-          "var(--heatmap-high)",
-        ].map((color, i) => (
+        {HEATMAP_LEGEND_COLORS.map((color, i) => (
           <span
             key={i}
             className="inline-block w-[10px] h-[10px] rounded-[2px]"
