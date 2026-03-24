@@ -123,8 +123,8 @@ export default function MapDirectionOverlay({
           );
         })}
 
-        {/* Center dot */}
-        <circle cx={CENTER} cy={CENTER} r={4} fill="white" fillOpacity={0.6} />
+        {/* Transparent center — spot marker dot shows through */}
+        <circle cx={CENTER} cy={CENTER} r={INNER_R} fill="black" fillOpacity={0.15} />
       </svg>
     </Marker>
   );

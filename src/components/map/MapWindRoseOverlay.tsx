@@ -184,9 +184,8 @@ export default function MapWindRoseOverlay({
           );
         })}
 
-        {/* White center fill + dot — matches compass overlay */}
-        <circle cx={CENTER} cy={CENTER} r={INNER_R} fill="white" fillOpacity={0.12} className="outline-none" />
-        <circle cx={CENTER} cy={CENTER} r={4} fill="white" fillOpacity={0.6} stroke="none" className="outline-none" />
+        {/* Transparent center — spot marker dot shows through */}
+        <circle cx={CENTER} cy={CENTER} r={INNER_R} fill="black" fillOpacity={0.15} />
       </svg>
     </Marker>
   );

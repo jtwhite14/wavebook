@@ -267,7 +267,6 @@ export default function SpotMap({
         // During wizard mode: hide all other spots, show dot for the active spot
         if (wizardSpotId) {
           if (spot.id !== wizardSpotId) return null; // hide other spots
-          if (directionEdit) return null; // compass overlay provides the dot
           return (
             <Marker
               key={spot.id}
