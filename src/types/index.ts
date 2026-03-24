@@ -176,6 +176,7 @@ export interface ConditionProfileResponse {
 }
 
 export interface ProfileSelections {
+  preset?: string; // break type preset key (e.g. "reefBreak", "beachBreak")
   waveSize?: string[];
   waveSizeRange?: { min: number; max: number | null }; // feet, max=null means "no upper limit"
   swellPeriod?: string[];

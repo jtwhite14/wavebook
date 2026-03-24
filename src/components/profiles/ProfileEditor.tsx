@@ -149,7 +149,7 @@ export function ProfileEditor({ spotId, profile, defaultName, onSave, onCancel, 
   const [wWaveEnergy, setWWaveEnergy] = useState(profile?.weightWaveEnergy ?? 0.8);
 
   // Spot type preset
-  const [activePreset, setActivePreset] = useState<string | null>(null);
+  const [activePreset, setActivePreset] = useState<string | null>(sel?.preset ?? null);
 
   const hasSwellExclusion = excludeSwellDir.length > 0 || excludeWaveSize.length > 0 || excludeSwellPeriod.length > 0;
   const hasWindExclusion = excludeWindDir.length > 0 || excludeWindSpeed.length > 0;
@@ -257,6 +257,7 @@ export function ProfileEditor({ spotId, profile, defaultName, onSave, onCancel, 
           name: name.trim(),
           ...targets,
           selections: {
+            preset: activePreset ?? undefined,
             waveSize,
             swellPeriod,
             swellDirection,

@@ -357,7 +357,7 @@ export function ProfileWizard({
   const [wTideHeight, setWTideHeight] = useState(profile?.weightTideHeight ?? 0.5);
   const [wWaveEnergy, setWWaveEnergy] = useState(profile?.weightWaveEnergy ?? 0.8);
 
-  const [activePreset, setActivePreset] = useState<string | null>(null);
+  const [activePreset, setActivePreset] = useState<string | null>(sel?.preset ?? null);
 
   const steps = BASE_STEPS;
   const currentStep = steps[stepIndex];
@@ -520,6 +520,7 @@ export function ProfileWizard({
           name: saveName,
           ...targets,
           selections: {
+            preset: activePreset ?? undefined,
             waveSize,
             waveSizeRange: {
               min: waveSizeRange[0],
