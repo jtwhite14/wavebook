@@ -46,8 +46,8 @@ export default async function LandingPage() {
               Keep it that way.
             </h1>
             <p className="mt-6 text-lg text-muted-foreground leading-relaxed max-w-xl mx-auto">
-              An AI-powered surf tracker that actually gives a damn about
-              privacy. Log sessions, score forecasts against your wave history,
+              An AI-powered surf tracker that doesn&apos;t fuck the sport we
+              all love. Log sessions, score forecasts against your wave history,
               and get alerts when it&apos;s going off — without blowing up your
               spots.
             </p>
