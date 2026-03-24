@@ -118,7 +118,7 @@ export default function MapWindRoseOverlay({
         height={SIZE}
         viewBox={`0 0 ${SIZE} ${SIZE}`}
         className="drop-shadow-lg"
-        style={{ pointerEvents: "auto" }}
+        style={{ pointerEvents: "auto", outline: "none" }}
       >
         {/* Background circle */}
         <circle cx={CENTER} cy={CENTER} r={OUTER_R} fill="black" fillOpacity={0.15} />
@@ -185,8 +185,8 @@ export default function MapWindRoseOverlay({
         })}
 
         {/* White center fill + dot — matches compass overlay */}
-        <circle cx={CENTER} cy={CENTER} r={INNER_R} fill="white" fillOpacity={0.12} />
-        <circle cx={CENTER} cy={CENTER} r={4} fill="white" fillOpacity={0.6} />
+        <circle cx={CENTER} cy={CENTER} r={INNER_R} fill="white" fillOpacity={0.12} className="outline-none" />
+        <circle cx={CENTER} cy={CENTER} r={4} fill="white" fillOpacity={0.6} stroke="none" className="outline-none" />
       </svg>
     </Marker>
   );
