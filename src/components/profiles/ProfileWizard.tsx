@@ -687,7 +687,7 @@ export function ProfileWizard({
             onLevelChange={(l) => { setWWindSpeed(levelToWeight(l)); setWWindDir(levelToWeight(l)); }}
           >
             <p className="text-xs text-muted-foreground">
-              Tap the wind rose on the map to set tolerance per direction
+              Tap directions on the map — each tap increases the max wind speed that direction can handle
             </p>
             {roseDirs.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-2">
@@ -791,7 +791,7 @@ export function ProfileWizard({
         return (
           <div className="space-y-2">
             <p className="text-xs text-muted-foreground">
-              Tap the wind rose on the map to set wind limits that kill it
+              Tap directions on the map — any wind at or above that level will kill the session. Lower = more sensitive
             </p>
             {excDirs.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
