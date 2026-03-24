@@ -33,6 +33,9 @@ interface ProfileWizardProps {
   onDirectionEditStart?: (req: WizardDirectionEditRequest) => void;
   onDirectionEditStop?: () => void;
   directionEditState?: { field: string; selected: CardinalDirection[]; mode: "target" | "exclusion" } | null;
+  /** Show the wind rose overlay on the map */
+  onWindRoseEditStart?: (value: WindRoseValue, onChange: (v: WindRoseValue) => void) => void;
+  onWindRoseEditStop?: () => void;
 }
 
 const WAVE_SIZE_OPTIONS = [
@@ -223,6 +226,8 @@ export function ProfileWizard({
   onDirectionEditStart,
   onDirectionEditStop,
   directionEditState,
+  onWindRoseEditStart,
+  onWindRoseEditStop,
 }: ProfileWizardProps) {
   const [stepIndex, setStepIndex] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -400,15 +405,28 @@ export function ProfileWizard({
     }
   }, [onDirectionEditStart, swellDirection, excludeSwellDir, excludeWindDir]);
 
-  // Activate compass when entering a compass step
+  // Activate compass/wind rose when entering relevant steps
   useEffect(() => {
     if (isCompassStep) {
+      onWindRoseEditStop?.();
       startCompass(currentStep);
+    } else if (currentStep === "wind") {
+      onDirectionEditStop?.();
+      onWindRoseEditStart?.(windRose, setWindRose);
     } else {
       onDirectionEditStop?.();
+      onWindRoseEditStop?.();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep]);
+
+  // Keep map wind rose overlay in sync when wizard windRose state changes
+  useEffect(() => {
+    if (currentStep === "wind") {
+      onWindRoseEditStart?.(windRose, setWindRose);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [windRose]);
 
   // Sync direction state from map overlay
   useEffect(() => {
@@ -488,6 +506,7 @@ export function ProfileWizard({
     setSaving(true);
     setError(null);
     onDirectionEditStop?.();
+    onWindRoseEditStop?.();
 
     try {
       const url = profile
@@ -551,6 +570,7 @@ export function ProfileWizard({
 
   function handleCancel() {
     onDirectionEditStop?.();
+    onWindRoseEditStop?.();
     onCancel();
   }
 

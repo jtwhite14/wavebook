@@ -49,6 +49,7 @@ import { ForecastCalendar } from "@/components/forecast-calendar/ForecastCalenda
 import { haversineDistance, getDistancePenalty, getRarityBoost } from "@/lib/utils/geo";
 import type { SurfSpot, Surfboard, Wetsuit } from "@/lib/db/schema";
 import type { SurfSessionWithConditions, SharedSpotView, CardinalDirection, ConditionProfileResponse } from "@/types";
+import type { WindRoseValue } from "@/components/profiles/WindRose";
 
 const SpotMap = dynamic(() => import("@/components/map/SpotMap"), {
   ssr: false,
@@ -112,6 +113,13 @@ export default function DashboardPage() {
     field: string;
     selected: CardinalDirection[];
     mode: "target" | "exclusion";
+  } | null>(null);
+
+  // Wind rose editing overlay
+  const [windRoseEdit, setWindRoseEdit] = useState<{
+    spotId: string;
+    value: WindRoseValue;
+    onChange: (value: WindRoseValue) => void;
   } | null>(null);
 
   // Profile wizard (map-centered step-by-step editor)
@@ -584,6 +592,7 @@ export default function DashboardPage() {
           mode: directionEdit.mode,
           onChange: (dirs) => setDirectionEdit(prev => prev ? { ...prev, selected: dirs } : null),
         } : undefined}
+        windRoseEdit={windRoseEdit}
         wizardSpotId={profileWizard?.spotId}
       />
       )}
@@ -1425,6 +1434,7 @@ export default function DashboardPage() {
           onSave={(saved) => {
             setProfileWizard(null);
             setDirectionEdit(null);
+            setWindRoseEdit(null);
             // Refresh profiles list by toggling pane view
             setPaneView("spot");
             setTimeout(() => setPaneView("profiles"), 0);
@@ -1432,6 +1442,7 @@ export default function DashboardPage() {
           onCancel={() => {
             setProfileWizard(null);
             setDirectionEdit(null);
+            setWindRoseEdit(null);
           }}
           onDirectionEditStart={(req) => {
             setDirectionEdit({
@@ -1443,6 +1454,14 @@ export default function DashboardPage() {
           }}
           onDirectionEditStop={() => setDirectionEdit(null)}
           directionEditState={directionEdit}
+          onWindRoseEditStart={(value, onChange) => {
+            setWindRoseEdit({
+              spotId: profileWizard.spotId,
+              value,
+              onChange: (v) => { onChange(v); setWindRoseEdit(prev => prev ? { ...prev, value: v } : null); },
+            });
+          }}
+          onWindRoseEditStop={() => setWindRoseEdit(null)}
         />
       )}
 

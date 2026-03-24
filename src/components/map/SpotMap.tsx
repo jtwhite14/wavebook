@@ -7,7 +7,9 @@ import Supercluster from "supercluster";
 import { SurfSpot } from "@/lib/db/schema";
 import SpotMarker from "./SpotMarker";
 import MapDirectionOverlay from "./MapDirectionOverlay";
+import MapWindRoseOverlay from "./MapWindRoseOverlay";
 import type { CardinalDirection } from "@/types";
+import type { WindRoseValue } from "@/components/profiles/WindRose";
 import type { IControl } from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
@@ -60,6 +62,12 @@ interface SpotMapProps {
     mode: "target" | "exclusion";
     onChange: (dirs: CardinalDirection[]) => void;
   } | null;
+  /** Wind rose editing overlay state */
+  windRoseEdit?: {
+    spotId: string;
+    value: WindRoseValue;
+    onChange: (value: WindRoseValue) => void;
+  } | null;
   /** When set, replaces the normal marker for this spot with a minimal white dot */
   wizardSpotId?: string;
 }
@@ -86,6 +94,7 @@ export default function SpotMap({
   sharedSpots,
   onSharedSpotClick,
   directionEdit,
+  windRoseEdit,
   wizardSpotId,
 }: SpotMapProps) {
   const mapRef = useRef<MapRef>(null);
@@ -354,6 +363,20 @@ export default function SpotMap({
             selected={directionEdit.selected}
             onChange={directionEdit.onChange}
             mode={directionEdit.mode}
+          />
+        );
+      })()}
+
+      {/* Wind rose editing overlay */}
+      {windRoseEdit && (() => {
+        const spot = spotById[windRoseEdit.spotId];
+        if (!spot) return null;
+        return (
+          <MapWindRoseOverlay
+            longitude={parseFloat(spot.longitude)}
+            latitude={parseFloat(spot.latitude)}
+            value={windRoseEdit.value}
+            onChange={windRoseEdit.onChange}
           />
         );
       })()}
