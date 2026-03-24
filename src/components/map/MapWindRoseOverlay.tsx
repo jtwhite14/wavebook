@@ -9,6 +9,7 @@ interface MapWindRoseOverlayProps {
   latitude: number;
   value: WindRoseValue;
   onChange: (value: WindRoseValue) => void;
+  mode?: "target" | "exclusion";
 }
 
 const DIRECTIONS: { dir: CardinalDirection; angle: number }[] = [
@@ -24,16 +25,28 @@ const DIRECTIONS: { dir: CardinalDirection; angle: number }[] = [
 
 const TIERS: (WindSpeedTier | undefined)[] = [undefined, "light", "moderate", "strong"];
 
-const TIER_FILL: Record<WindSpeedTier, string> = {
+const TIER_FILL_TARGET: Record<WindSpeedTier, string> = {
   light: "rgba(59, 130, 246, 0.25)",
   moderate: "rgba(59, 130, 246, 0.45)",
   strong: "rgba(59, 130, 246, 0.7)",
 };
 
-const TIER_STROKE: Record<WindSpeedTier, string> = {
+const TIER_STROKE_TARGET: Record<WindSpeedTier, string> = {
   light: "rgba(59, 130, 246, 0.5)",
   moderate: "rgba(59, 130, 246, 0.7)",
   strong: "rgba(59, 130, 246, 0.9)",
+};
+
+const TIER_FILL_EXCLUSION: Record<WindSpeedTier, string> = {
+  light: "rgba(239, 68, 68, 0.25)",
+  moderate: "rgba(239, 68, 68, 0.45)",
+  strong: "rgba(239, 68, 68, 0.7)",
+};
+
+const TIER_STROKE_EXCLUSION: Record<WindSpeedTier, string> = {
+  light: "rgba(239, 68, 68, 0.5)",
+  moderate: "rgba(239, 68, 68, 0.7)",
+  strong: "rgba(239, 68, 68, 0.9)",
 };
 
 // Radius fraction per tier (of the full wedge range)
@@ -80,7 +93,10 @@ export default function MapWindRoseOverlay({
   latitude,
   value,
   onChange,
+  mode = "target",
 }: MapWindRoseOverlayProps) {
+  const tierFill = mode === "exclusion" ? TIER_FILL_EXCLUSION : TIER_FILL_TARGET;
+  const tierStroke = mode === "exclusion" ? TIER_STROKE_EXCLUSION : TIER_STROKE_TARGET;
   function cycleTier(dir: CardinalDirection) {
     const current = value[dir];
     const currentIdx = TIERS.indexOf(current);
@@ -144,8 +160,8 @@ export default function MapWindRoseOverlay({
               {fillPath && (
                 <path
                   d={fillPath}
-                  fill={TIER_FILL[tier!]}
-                  stroke={TIER_STROKE[tier!]}
+                  fill={tierFill[tier!]}
+                  stroke={tierStroke[tier!]}
                   strokeWidth={1.5}
                   className="pointer-events-none transition-all duration-200"
                 />

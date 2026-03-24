@@ -120,6 +120,7 @@ export default function DashboardPage() {
     spotId: string;
     value: WindRoseValue;
     onChange: (value: WindRoseValue) => void;
+    mode: "target" | "exclusion";
   } | null>(null);
 
   // Profile wizard (map-centered step-by-step editor)
@@ -1454,11 +1455,12 @@ export default function DashboardPage() {
           }}
           onDirectionEditStop={() => setDirectionEdit(null)}
           directionEditState={directionEdit}
-          onWindRoseEditStart={(value, onChange) => {
+          onWindRoseEditStart={(value, onChange, mode) => {
             setWindRoseEdit({
               spotId: profileWizard.spotId,
               value,
               onChange: (v) => { onChange(v); setWindRoseEdit(prev => prev ? { ...prev, value: v } : null); },
+              mode,
             });
           }}
           onWindRoseEditStop={() => setWindRoseEdit(null)}

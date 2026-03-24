@@ -123,6 +123,19 @@ export function checkExclusionVeto(
       return 'windSpeed';
     }
   }
+  // Wind rose exclusion: veto if forecast wind from a direction exceeds that direction's exclusion threshold
+  if (exclusions.windRose && forecast.windDirection != null && forecast.windSpeed != null) {
+    for (const [dir, tier] of Object.entries(exclusions.windRose) as [CardinalDirection, WindSpeedTier][]) {
+      const deg = CARDINAL_DEGREES[dir];
+      if (deg == null || !tier) continue;
+      if (angularDistance(forecast.windDirection, deg) <= 22.5) {
+        const threshold = WIND_SPEED_TIER_THRESHOLDS[tier];
+        if (forecast.windSpeed >= threshold) {
+          return `windRose:${dir}:${tier}`;
+        }
+      }
+    }
+  }
   if (exclusions.tideHeight?.length && forecast.tideHeight != null) {
     if (valueInCategories(forecast.tideHeight, exclusions.tideHeight, CATEGORY_RANGES.tideHeight)) {
       return 'tideHeight';

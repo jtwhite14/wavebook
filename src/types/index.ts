@@ -200,6 +200,7 @@ export interface ExclusionZones {
   swellPeriod?: string[];    // e.g. ['short']
   swellPeriodRange?: { min: number; max: number | null }; // seconds, veto if period falls in this range
   windSpeed?: string[];      // e.g. ['onshore']
+  windRose?: Partial<Record<CardinalDirection, WindSpeedTier>>; // per-direction speed exclusion thresholds
   tideHeight?: string[];     // e.g. ['high']
   tideCurve?: { segments: boolean[] }; // 12 segments of the tide cycle that are dealbreakers
 }

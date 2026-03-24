@@ -8,7 +8,7 @@ import { Slider } from "@/components/ui/slider";
 import { TideCurveSelector } from "@/components/profiles/TideCurveSelector";
 import type { CardinalDirection, ConditionProfileResponse, ExclusionZones, WindSpeedTier } from "@/types";
 import { WEIGHT_PRESETS, WIND_SPEED_TIER_THRESHOLDS } from "@/types";
-import { WindRose, WindRoseValue } from "@/components/profiles/WindRose";
+import type { WindRoseValue } from "@/components/profiles/WindRose";
 import {
   WAVE_SIZE_MIDPOINTS,
   SWELL_PERIOD_MIDPOINTS,
@@ -34,7 +34,7 @@ interface ProfileWizardProps {
   onDirectionEditStop?: () => void;
   directionEditState?: { field: string; selected: CardinalDirection[]; mode: "target" | "exclusion" } | null;
   /** Show the wind rose overlay on the map */
-  onWindRoseEditStart?: (value: WindRoseValue, onChange: (v: WindRoseValue) => void) => void;
+  onWindRoseEditStart?: (value: WindRoseValue, onChange: (v: WindRoseValue) => void, mode: "target" | "exclusion") => void;
   onWindRoseEditStop?: () => void;
 }
 
@@ -167,8 +167,7 @@ type Step =
   | "swellDirection"
   | "exc_swellDirection"
   | "wind"
-  | "exc_windSpeed"
-  | "exc_windDirection"
+  | "exc_wind"
   | "tide"
   | "exc_tide"
   | "season"
@@ -184,8 +183,7 @@ const BASE_STEPS: Step[] = [
   "swellDirection",
   "exc_swellDirection",
   "wind",
-  "exc_windSpeed",
-  "exc_windDirection",
+  "exc_wind",
   "tide",
   "exc_tide",
   "season",
@@ -196,7 +194,7 @@ const BASE_STEPS: Step[] = [
 // Exclusion steps that can be skipped
 const EXCLUSION_STEPS = new Set<Step>([
   "exc_waveSize", "exc_swellPeriod", "exc_swellDirection",
-  "exc_windSpeed", "exc_windDirection", "exc_tide", "exc_season",
+  "exc_wind", "exc_tide", "exc_season",
 ]);
 
 const STEP_QUESTIONS: Record<Step, string> = {
@@ -208,8 +206,7 @@ const STEP_QUESTIONS: Record<Step, string> = {
   swellDirection: "What direction should the swell come from?",
   exc_swellDirection: "What swell directions don't work?",
   wind: "How much wind can each direction handle?",
-  exc_windSpeed: "What wind conditions don't work?",
-  exc_windDirection: "What wind directions don't work?",
+  exc_wind: "What winds don't work?",
   tide: "What tide levels work?",
   exc_tide: "What tide levels don't work?",
   season: "When does this spot work best?",
@@ -341,6 +338,7 @@ export function ProfileWizard({
     return [0, 6];
   });
   const [excludeWindSpeed, setExcludeWindSpeed] = useState<string[]>(exc?.windSpeed ?? []);
+  const [excludeWindRose, setExcludeWindRose] = useState<WindRoseValue>(exc?.windRose ?? {});
   const [excludeTide, setExcludeTide] = useState<string[]>(exc?.tideHeight ?? []);
   const [excludeTideCurveSegments, setExcludeTideCurveSegments] = useState<boolean[]>(() => {
     if (exc?.tideCurve?.segments) return exc.tideCurve.segments;
@@ -364,7 +362,8 @@ export function ProfileWizard({
   const isFirst = stepIndex === 0;
   const isLast = stepIndex === steps.length - 1;
   const isCompassStep = currentStep === "swellDirection"
-    || currentStep === "exc_swellDirection" || currentStep === "exc_windDirection";
+    || currentStep === "exc_swellDirection";
+  const isWindRoseStep = currentStep === "wind" || currentStep === "exc_wind";
   const isExclusionStep = EXCLUSION_STEPS.has(currentStep);
   const isSkippable = !isLast;
 
@@ -400,19 +399,21 @@ export function ProfileWizard({
       onDirectionEditStart({ field: "swellDirection", selected: swellDirection, mode: "target" });
     } else if (step === "exc_swellDirection") {
       onDirectionEditStart({ field: "excludeSwellDir", selected: excludeSwellDir, mode: "exclusion" });
-    } else if (step === "exc_windDirection") {
-      onDirectionEditStart({ field: "excludeWindDir", selected: excludeWindDir, mode: "exclusion" });
     }
-  }, [onDirectionEditStart, swellDirection, excludeSwellDir, excludeWindDir]);
+  }, [onDirectionEditStart, swellDirection, excludeSwellDir]);
 
   // Activate compass/wind rose when entering relevant steps
   useEffect(() => {
     if (isCompassStep) {
       onWindRoseEditStop?.();
       startCompass(currentStep);
-    } else if (currentStep === "wind") {
+    } else if (isWindRoseStep) {
       onDirectionEditStop?.();
-      onWindRoseEditStart?.(windRose, setWindRose);
+      if (currentStep === "wind") {
+        onWindRoseEditStart?.(windRose, setWindRose, "target");
+      } else {
+        onWindRoseEditStart?.(excludeWindRose, setExcludeWindRose, "exclusion");
+      }
     } else {
       onDirectionEditStop?.();
       onWindRoseEditStop?.();
@@ -420,13 +421,15 @@ export function ProfileWizard({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep]);
 
-  // Keep map wind rose overlay in sync when wizard windRose state changes
+  // Keep map wind rose overlay in sync when wizard state changes
   useEffect(() => {
     if (currentStep === "wind") {
-      onWindRoseEditStart?.(windRose, setWindRose);
+      onWindRoseEditStart?.(windRose, setWindRose, "target");
+    } else if (currentStep === "exc_wind") {
+      onWindRoseEditStart?.(excludeWindRose, setExcludeWindRose, "exclusion");
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [windRose]);
+  }, [windRose, excludeWindRose]);
 
   // Sync direction state from map overlay
   useEffect(() => {
@@ -468,6 +471,7 @@ export function ProfileWizard({
       };
     }
     if (excludeWindSpeed.length > 0) zones.windSpeed = excludeWindSpeed;
+    if (Object.keys(excludeWindRose).length > 0) zones.windRose = excludeWindRose;
     if (excludeTide.length > 0) zones.tideHeight = excludeTide;
     if (excludeTideCurveSegments.some(Boolean)) zones.tideCurve = { segments: excludeTideCurveSegments };
     return Object.keys(zones).length > 0 ? zones : null;
@@ -675,15 +679,28 @@ export function ProfileWizard({
           </StepWithImportance>
         );
 
-      case "wind":
+      case "wind": {
+        const roseDirs = Object.entries(windRose) as [CardinalDirection, WindSpeedTier][];
         return (
           <StepWithImportance
             level={weightToLevel(wWindSpeed)}
             onLevelChange={(l) => { setWWindSpeed(levelToWeight(l)); setWWindDir(levelToWeight(l)); }}
           >
-            <WindRose value={windRose} onChange={setWindRose} />
+            <p className="text-xs text-muted-foreground">
+              Tap the wind rose on the map to set tolerance per direction
+            </p>
+            {roseDirs.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {roseDirs.map(([d, tier]) => (
+                  <span key={d} className="px-2 py-0.5 rounded-full text-xs font-medium border border-primary text-primary bg-primary/10">
+                    {d} {tier}
+                  </span>
+                ))}
+              </div>
+            )}
           </StepWithImportance>
         );
+      }
 
       case "tide":
         return (
@@ -769,34 +786,25 @@ export function ProfileWizard({
           </div>
         );
 
-      case "exc_windSpeed":
-        return (
-          <div className="flex flex-wrap gap-2">
-            {WIND_OPTIONS.map(opt => (
-              <ExclusionPill key={opt.value} active={excludeWindSpeed.includes(opt.value)} onClick={() => setExcludeWindSpeed(togglePill(excludeWindSpeed, opt.value))}>
-                {opt.label}
-              </ExclusionPill>
-            ))}
-          </div>
-        );
-
-      case "exc_windDirection":
+      case "exc_wind": {
+        const excDirs = Object.entries(excludeWindRose) as [CardinalDirection, WindSpeedTier][];
         return (
           <div className="space-y-2">
             <p className="text-xs text-muted-foreground">
-              Tap the compass wedges on the map to select directions that don&apos;t work
+              Tap the wind rose on the map to set wind limits that kill it
             </p>
-            {excludeWindDir.length > 0 && (
+            {excDirs.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
-                {excludeWindDir.map(d => (
+                {excDirs.map(([d, tier]) => (
                   <span key={d} className="px-2 py-0.5 rounded-full text-xs font-medium border border-destructive text-destructive bg-destructive/10">
-                    {d}
+                    {d} {tier}
                   </span>
                 ))}
               </div>
             )}
           </div>
         );
+      }
 
       case "exc_tide":
         return (

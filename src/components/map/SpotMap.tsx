@@ -67,6 +67,7 @@ interface SpotMapProps {
     spotId: string;
     value: WindRoseValue;
     onChange: (value: WindRoseValue) => void;
+    mode: "target" | "exclusion";
   } | null;
   /** When set, replaces the normal marker for this spot with a minimal white dot */
   wizardSpotId?: string;
@@ -377,6 +378,7 @@ export default function SpotMap({
             latitude={parseFloat(spot.latitude)}
             value={windRoseEdit.value}
             onChange={windRoseEdit.onChange}
+            mode={windRoseEdit.mode}
           />
         );
       })()}
