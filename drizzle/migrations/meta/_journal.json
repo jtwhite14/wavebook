@@ -120,6 +120,13 @@
       "when": 1774307720110,
       "tag": "0016_familiar_goblin_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1774742400000,
+      "tag": "0017_enable-rls-all-tables",
+      "breakpoints": true
     }
   ]
 }
