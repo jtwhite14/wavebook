@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Copy, Loader2, MapPin, Phone, Search, Shield } from "lucide-react";
+import { Loader2, MapPin, Phone, Search, Shield } from "lucide-react";
 
 const ADMIN_EMAILS = ["jtwhite14@gmail.com", "jt@withforerunner.com"];
 
@@ -46,31 +46,30 @@ export default function SettingsPage() {
   const [phoneLoading, setPhoneLoading] = useState(true);
   const [phoneSaving, setPhoneSaving] = useState(false);
 
-  // Admin mode
-  const [adminStatus, setAdminStatus] = useState("");
-  const [adminLoading, setAdminLoading] = useState<string | null>(null);
+  // Admin / test mode
+  const [testModeActive, setTestModeActive] = useState(false);
+  const [testModeLoading, setTestModeLoading] = useState(false);
   const isAdminUser = user?.emailAddresses?.some(e => ADMIN_EMAILS.includes(e.emailAddress)) ?? false;
 
-  async function handleAdminAction(action: string) {
-    setAdminLoading(action);
-    setAdminStatus("");
+  useEffect(() => {
+    if (!isAdminUser) return;
+    fetch("/api/admin/impersonate").then(r => r.json()).then(d => setTestModeActive(d.active)).catch(() => {});
+  }, [isAdminUser]);
+
+  async function toggleTestMode() {
+    setTestModeLoading(true);
     try {
-      const res = await fetch("/api/admin/seed", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action }),
+      const res = await fetch("/api/admin/impersonate", {
+        method: testModeActive ? "DELETE" : "POST",
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed");
-      setAdminStatus(data.message || "Done");
-      if (data.inviteUrl) {
-        await navigator.clipboard.writeText(data.inviteUrl);
-        setAdminStatus(`${data.message} — copied to clipboard`);
-      }
+      setTestModeActive(data.active);
+      // Reload to pick up new auth context
+      window.location.href = "/dashboard";
     } catch (err) {
-      setAdminStatus(err instanceof Error ? err.message : "Failed");
-    } finally {
-      setAdminLoading(null);
+      toast.error(err instanceof Error ? err.message : "Failed");
+      setTestModeLoading(false);
     }
   }
 
@@ -417,41 +416,30 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Admin Tools */}
+      {/* Admin — Test Account */}
       {isAdminUser && (
         <Card className="border-yellow-500/30">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Shield className="size-5 text-yellow-500" />
-              Admin Tools
+              Test Account
             </CardTitle>
-            <CardDescription>Seed test data for end-to-end testing</CardDescription>
+            <CardDescription>
+              {testModeActive
+                ? "You're in the test account. All data here is separate from your real account."
+                : "Switch to a separate demo account to create fake data for marketing and testing."}
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleAdminAction("alerts")}
-                disabled={adminLoading !== null}
-              >
-                {adminLoading === "alerts" ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
-                Compute Alerts
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleAdminAction("share")}
-                disabled={adminLoading !== null}
-              >
-                {adminLoading === "share" ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
-                <Copy className="size-3.5 mr-1.5" />
-                Share Link
-              </Button>
-            </div>
-            {adminStatus && (
-              <p className="text-sm text-muted-foreground">{adminStatus}</p>
-            )}
+          <CardContent>
+            <Button
+              size="sm"
+              variant={testModeActive ? "destructive" : "default"}
+              onClick={toggleTestMode}
+              disabled={testModeLoading}
+            >
+              {testModeLoading ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
+              {testModeActive ? "Exit Test Account" : "Enter Test Account"}
+            </Button>
           </CardContent>
         </Card>
       )}

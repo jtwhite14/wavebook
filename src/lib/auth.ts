@@ -1,7 +1,9 @@
 import { auth } from "@clerk/nextjs/server";
+import { cookies } from "next/headers";
 import { db, users } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
+import { TEST_MODE_COOKIE, ADMIN_EMAILS } from "@/lib/admin";
 
 /**
  * Maps a Clerk user ID to an internal UUID.
@@ -67,11 +69,27 @@ export async function resolveUser(
 
 /**
  * Get the authenticated user's internal UUID.
- * Drop-in replacement for the old `getServerSession(authOptions)` pattern.
+ * Supports test-mode impersonation: if the wavebook-test-mode cookie is set
+ * and the real user is an admin, returns the test user ID instead.
  */
 export async function getAuthUserId(): Promise<string | null> {
   const { userId: clerkUserId } = await auth();
   if (!clerkUserId) return null;
+
+  // Check for test-mode impersonation
+  const cookieStore = await cookies();
+  const testUserId = cookieStore.get(TEST_MODE_COOKIE)?.value;
+  if (testUserId) {
+    // Verify the real user is an admin before allowing impersonation
+    const realUserId = await resolveUser(clerkUserId);
+    const realUser = await db.query.users.findFirst({
+      where: eq(users.id, realUserId),
+      columns: { email: true },
+    });
+    if (realUser?.email && ADMIN_EMAILS.includes(realUser.email)) {
+      return testUserId;
+    }
+  }
 
   return resolveUser(clerkUserId);
 }

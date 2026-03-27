@@ -28,6 +28,7 @@ import {
   X,
   Plus,
   MapPin,
+  Shield,
 } from "lucide-react";
 import { SurfboardIcon } from "@/components/icons/SurfboardIcon";
 
@@ -48,6 +49,11 @@ export default function DashboardLayout({
   const isMapView = pathname === "/dashboard" || pathname.startsWith("/dashboard/spot") || pathname.startsWith("/dashboard/session");
   const [onboardingChecked, setOnboardingChecked] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [testMode, setTestMode] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/admin/impersonate").then(r => r.json()).then(d => setTestMode(d.active)).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
@@ -167,6 +173,21 @@ export default function DashboardLayout({
             </Link>
           </header>
 
+          {testMode && (
+            <div className="flex items-center justify-center gap-2 bg-yellow-500/15 border-b border-yellow-500/30 px-4 py-1.5 text-xs font-medium text-yellow-700 dark:text-yellow-400">
+              <Shield className="size-3.5" />
+              Test Account — data here is separate from your real account
+              <button
+                onClick={async () => {
+                  await fetch("/api/admin/impersonate", { method: "DELETE" });
+                  window.location.href = "/dashboard";
+                }}
+                className="ml-2 underline hover:no-underline"
+              >
+                Exit
+              </button>
+            </div>
+          )}
           <main className={`flex-1 ${isMapView ? "overflow-hidden" : "overflow-y-auto"}`}>
             {isMapView ? children : <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">{children}</div>}
           </main>
