@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Copy, Loader2, MapPin, Phone, Search, Shield } from "lucide-react";
 
-const ADMIN_EMAIL = "jtwhite14@gmail.com";
+const ADMIN_EMAILS = ["jtwhite14@gmail.com", "jt@withforerunner.com"];
 
 
 const SpotMap = dynamic(() => import("@/components/map/SpotMap"), { ssr: false });
@@ -49,7 +49,7 @@ export default function SettingsPage() {
   // Admin mode
   const [adminStatus, setAdminStatus] = useState("");
   const [adminLoading, setAdminLoading] = useState<string | null>(null);
-  const isAdminUser = user?.emailAddresses?.some(e => e.emailAddress === ADMIN_EMAIL) ?? false;
+  const isAdminUser = user?.emailAddresses?.some(e => ADMIN_EMAILS.includes(e.emailAddress)) ?? false;
 
   async function handleAdminAction(action: string) {
     setAdminLoading(action);
@@ -416,9 +416,6 @@ export default function SettingsPage() {
           </p>
         </CardContent>
       </Card>
-
-      {/* DEBUG — remove after confirming */}
-      <p className="text-xs text-muted-foreground">email: {user?.emailAddresses?.map(e => e.emailAddress).join(", ") || "loading..."} | admin: {String(isAdminUser)}</p>
 
       {/* Admin Tools */}
       {isAdminUser && (
