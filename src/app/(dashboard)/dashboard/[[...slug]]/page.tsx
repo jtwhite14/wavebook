@@ -1111,9 +1111,9 @@ export default function DashboardPage() {
             {alertsForecastTab === "alerts" ? (
               <div className="max-h-80 overflow-y-auto">
                 {alertSummaries.length === 0 ? (
-                  <div className="px-4 py-6 text-center">
+                  <div className="px-4 py-3 text-center">
                     <p className="text-sm text-muted-foreground">No upcoming alerts</p>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       Alerts appear when forecast conditions match your best sessions.
                     </p>
                   </div>

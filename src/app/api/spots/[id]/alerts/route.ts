@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthUserId } from "@/lib/auth";
+import { getAuthUserId, isTestMode } from "@/lib/auth";
 import { db, surfSpots, spotAlerts, surfSessions, conditionProfiles } from "@/lib/db";
 import { eq, and, desc } from "drizzle-orm";
 import type { SpotAlertResponse } from "@/types";
@@ -54,10 +54,11 @@ export async function GET(
       },
     });
 
-    // Filter out expired alerts (forecast hour has passed)
+    // Filter out expired alerts (forecast hour has passed) — skip in test mode
     const now = new Date();
+    const testMode = await isTestMode();
     const activeAlerts: SpotAlertResponse[] = alerts
-      .filter(a => new Date(a.forecastHour) > now)
+      .filter(a => testMode || new Date(a.forecastHour) > now)
       .map(a => ({
         id: a.id,
         spotId: a.spotId,

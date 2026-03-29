@@ -101,9 +101,9 @@ export function SpotAlertCard({ spotId, sessionCount, alerts: prefetchedAlerts, 
     }
     if (embedded) {
       return (
-        <div className="text-center py-6">
+        <div className="text-center py-3">
           <p className="text-sm text-muted-foreground">No upcoming alerts</p>
-          <p className="text-xs text-muted-foreground/70 mt-1">
+          <p className="text-xs text-muted-foreground/70 mt-0.5">
             Alerts appear when forecast conditions match your best sessions.
           </p>
         </div>

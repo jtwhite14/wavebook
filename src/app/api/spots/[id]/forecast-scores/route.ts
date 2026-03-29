@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthUserId } from "@/lib/auth";
+import { getAuthUserId, isTestMode } from "@/lib/auth";
 import { db, surfSpots, surfSessions, spotForecasts, conditionProfiles } from "@/lib/db";
 import { eq, and, gte } from "drizzle-orm";
 import { fetchMarineForecast } from "@/lib/api/open-meteo";
@@ -355,10 +355,16 @@ async function getOrFetchForecast(
     where: eq(spotForecasts.spotId, spotId),
   });
 
-  if (cached && (Date.now() - cached.fetchedAt.getTime()) < FORECAST_CACHE_TTL) {
+  const testMode = await isTestMode();
+  const cacheValid = cached && ((Date.now() - cached.fetchedAt.getTime()) < FORECAST_CACHE_TTL || testMode);
+  if (cacheValid) {
     const data = cached.forecastData as { hourly?: HourlyForecast[]; utcOffsetSeconds?: number };
     if (!data.hourly) return null;
-    return { hourly: data.hourly, utcOffsetSeconds: data.utcOffsetSeconds ?? 0 };
+    let hourly = data.hourly;
+    if (testMode && hourly.length > 0) {
+      hourly = shiftForecastToNow(hourly, data.utcOffsetSeconds ?? 0);
+    }
+    return { hourly, utcOffsetSeconds: data.utcOffsetSeconds ?? 0 };
   }
 
   try {
@@ -402,4 +408,19 @@ async function getOrFetchForecast(
     }
     return null;
   }
+}
+
+/** Shift all forecast times so the first hour aligns with the current hour. */
+function shiftForecastToNow(hourly: HourlyForecast[], utcOffsetSeconds: number): HourlyForecast[] {
+  const now = new Date();
+  now.setMinutes(0, 0, 0);
+  const nowLocal = new Date(now.getTime() + utcOffsetSeconds * 1000);
+  const firstTime = new Date(hourly[0].time);
+  const offsetMs = nowLocal.getTime() - firstTime.getTime();
+
+  return hourly.map(h => {
+    const shifted = new Date(new Date(h.time).getTime() + offsetMs);
+    const timeStr = shifted.toISOString().replace("Z", "").split(".")[0].slice(0, 16);
+    return { ...h, time: timeStr };
+  });
 }

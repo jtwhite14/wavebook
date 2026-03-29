@@ -68,6 +68,14 @@ export async function resolveUser(
 }
 
 /**
+ * Check whether the current request is in test-mode impersonation.
+ */
+export async function isTestMode(): Promise<boolean> {
+  const cookieStore = await cookies();
+  return !!cookieStore.get(TEST_MODE_COOKIE)?.value;
+}
+
+/**
  * Get the authenticated user's internal UUID.
  * Supports test-mode impersonation: if the wavebook-test-mode cookie is set
  * and the real user is an admin, returns the test user ID instead.

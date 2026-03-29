@@ -16,6 +16,7 @@ import {
 } from "@/lib/matching/condition-matcher";
 import { buildProfileForMatching, isProfileActiveForMonth } from "@/lib/matching/profile-utils";
 import { ConditionWeights, DEFAULT_CONDITION_WEIGHTS, HourlyForecast, MarineConditions } from "@/types";
+import { TEST_USER_EMAIL } from "@/lib/admin";
 
 export const maxDuration = 300; // 5 minutes for cron processing
 
@@ -56,6 +57,16 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    // Skip test user spots — their alerts are manually seeded
+    const testUser = await db.query.users.findFirst({
+      where: eq(users.email, TEST_USER_EMAIL),
+      columns: { id: true },
+    });
+    const testUserId = testUser?.id;
+    const spots = testUserId
+      ? allSpots.filter(s => s.userId !== testUserId)
+      : allSpots;
+
     // Batch-fetch all logged friend sessions (one query for all users/spots)
     const allLoggedFriend = await db.query.loggedFriendSessions.findMany({
       with: {
@@ -82,8 +93,8 @@ export async function GET(request: NextRequest) {
     // Process spots in batches of 3 — each spot makes multiple Open-Meteo
     // calls, and batches of 5 caused ConnectTimeoutError on the free tier
     const BATCH_SIZE = 3;
-    for (let i = 0; i < allSpots.length; i += BATCH_SIZE) {
-      const batch = allSpots.slice(i, i + BATCH_SIZE);
+    for (let i = 0; i < spots.length; i += BATCH_SIZE) {
+      const batch = spots.slice(i, i + BATCH_SIZE);
       const results = await Promise.allSettled(
         batch.map(spot => {
           const friendEntries = loggedByUserSpot.get(`${spot.userId}:${spot.id}`) || [];
@@ -114,7 +125,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      spotsProcessed: allSpots.length,
+      spotsProcessed: spots.length,
       alertsGenerated: totalAlerts,
       smsSent,
     });
