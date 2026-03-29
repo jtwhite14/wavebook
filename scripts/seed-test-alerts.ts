@@ -180,7 +180,7 @@ async function main() {
     const matchedSession = spotSessions.length > 0 ? pick(spotSessions) : null;
     const sessionRating = matchedSession?.rating ?? 4;
 
-    const matchScore = randomFloat(78, 94);
+    const matchScore = randomFloat(85, 96);
     const forecastConfidence =
       def.daysOut <= 1 ? 1.0 :
       def.daysOut <= 2 ? 0.95 :

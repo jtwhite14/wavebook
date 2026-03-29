@@ -52,19 +52,14 @@ export default async function LandingPage() {
             </div>
           </div>
 
-          {/* Background image with fade */}
+          {/* Background image */}
           <div
             className="absolute inset-0 z-0 bg-top bg-no-repeat"
-            style={{
-              backgroundImage: "url(/hero-bg.jpg)",
-              backgroundSize: "100% auto",
-              maskImage: "linear-gradient(to bottom, black 30%, transparent 70%)",
-              WebkitMaskImage: "linear-gradient(to bottom, black 30%, transparent 70%)",
-            }}
+            style={{ backgroundImage: "url(/hero-bg.jpg)", backgroundSize: "100% auto" }}
           />
 
-          {/* Bottom fade into dark bg */}
-          <div className="relative z-10 h-24 md:h-32 bg-gradient-to-b from-transparent to-background" />
+          {/* Bottom fade — screenshot bleeds into dark bg */}
+          <div className="relative z-10 h-40 md:h-56 bg-gradient-to-b from-transparent via-background/70 to-background" />
         </section>
 
         {/* Features */}
