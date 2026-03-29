@@ -14,20 +14,22 @@ export default async function LandingPage() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50">
-        <div className="mx-auto px-8 md:px-12 flex items-center justify-between h-16 md:h-20">
-          <span className="flex items-center gap-2.5 text-base font-semibold tracking-tight text-gray-900">
-            <BookOpen className="h-5 w-5 text-primary" />
+      <nav className="fixed top-0 left-0 right-0 z-50 px-4 md:px-6 pt-3 md:pt-4">
+        <div className="mx-auto max-w-6xl flex items-center justify-between h-12 md:h-14 px-5 md:px-8 rounded-full bg-white/30 backdrop-blur-md border border-white/40 shadow-sm">
+          <span className="flex items-center gap-2 text-sm font-semibold tracking-tight text-gray-900">
+            <BookOpen className="h-4 w-4 text-primary" />
             Wavebook
           </span>
-          <div className="flex items-center gap-8">
-            <Link
-              href="/login"
-              className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              Log In
-            </Link>
+          <div className="hidden md:flex items-center gap-8">
+            <a href="#features" className="text-sm text-gray-700 hover:text-gray-900 transition-colors">Features</a>
+            <a href="#how-it-works" className="text-sm text-gray-700 hover:text-gray-900 transition-colors">How It Works</a>
           </div>
+          <Link
+            href="/login"
+            className="text-sm font-medium text-gray-900 px-4 py-1.5 rounded-full border border-gray-900/20 hover:bg-white/40 transition-colors"
+          >
+            Log In
+          </Link>
         </div>
       </nav>
 
