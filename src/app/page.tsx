@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { WaitlistForm } from "@/components/WaitlistForm";
@@ -36,25 +37,57 @@ export default async function LandingPage() {
         </div>
       </nav>
 
-      <main className="flex-1 flex items-center justify-center">
+      <main className="flex-1">
         {/* Hero */}
-        <section className="py-28 md:py-36">
-          <div className="max-w-2xl mx-auto px-6 text-center">
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight">
-              Your waves. Your data.
-              <br />
-              Keep it that way.
-            </h1>
-            <p className="mt-6 text-lg text-muted-foreground leading-relaxed max-w-xl mx-auto">
-              An AI-powered surf tracker that doesn&apos;t fuck the sport we
-              all love. Log sessions, track all of your favorite breaks, and
-              get alerts when it&apos;s going off — without blowing up your
-              spots.
-            </p>
-            <div className="mt-10">
-              <WaitlistForm />
+        <section className="relative overflow-hidden">
+          {/* Copy */}
+          <div className="relative z-10 pt-24 md:pt-32 pb-12 md:pb-16">
+            <div className="max-w-2xl mx-auto px-6 text-center">
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight">
+                Your waves. Your data.
+                <br />
+                Keep it that way.
+              </h1>
+              <p className="mt-6 text-lg text-muted-foreground leading-relaxed max-w-xl mx-auto">
+                An AI-powered surf tracker that doesn&apos;t ruin the sport we
+                all love. Log sessions, track all of your favorite breaks, and
+                get alerts when it&apos;s going off — without blowing up your
+                spots.
+              </p>
+              <div className="mt-10">
+                <WaitlistForm />
+              </div>
             </div>
           </div>
+
+          {/* App screenshot */}
+          <div className="relative z-10 max-w-5xl mx-auto px-6">
+            <div className="rounded-xl overflow-hidden shadow-2xl shadow-black/40 border border-white/[0.08]">
+              <Image
+                src="/screenshots/app-hero.png"
+                alt="Wavebook dashboard showing surf alerts, forecast scores, and session history"
+                width={2880}
+                height={1640}
+                className="w-full h-auto"
+                priority
+              />
+            </div>
+          </div>
+
+          {/* Background image */}
+          <div className="absolute inset-0 z-0">
+            <Image
+              src="/hero-bg.png"
+              alt=""
+              fill
+              className="object-cover object-center opacity-20"
+              priority
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-background via-background/80 to-background" />
+          </div>
+
+          {/* Bottom fade into page */}
+          <div className="h-32 relative z-10 bg-gradient-to-b from-transparent to-background" />
         </section>
       </main>
 
