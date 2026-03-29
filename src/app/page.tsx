@@ -14,22 +14,22 @@ export default async function LandingPage() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Nav */}
-      <nav className="sticky top-0 z-50 border-b border-white/[0.06] bg-background/80 backdrop-blur-sm">
+      <nav className="sticky top-0 z-50 border-b border-black/[0.06] bg-white/80 backdrop-blur-sm">
         <div className="max-w-5xl mx-auto px-6 flex items-center justify-between h-14">
-          <span className="flex items-center gap-2 text-base font-semibold tracking-tight">
+          <span className="flex items-center gap-2 text-base font-semibold tracking-tight text-gray-900">
             <BookOpen className="h-5 w-5 text-primary" />
             Wavebook
           </span>
           <div className="flex items-center gap-4">
             <Link
               href="/signup"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
             >
               Sign Up
             </Link>
             <Link
               href="/login"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
             >
               Log In
             </Link>
@@ -75,16 +75,11 @@ export default async function LandingPage() {
           </div>
 
           {/* Background image */}
-          <div className="absolute inset-0 z-0">
-            <Image
-              src="/hero-bg.png"
-              alt=""
-              fill
-              className="object-cover object-center opacity-40"
-              priority
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-white/70 via-white/50 to-white" />
-          </div>
+          <div
+            className="absolute inset-0 z-0 bg-cover bg-center opacity-40"
+            style={{ backgroundImage: "url(/hero-bg.png)" }}
+          />
+          <div className="absolute inset-0 z-0 bg-gradient-to-b from-white/70 via-white/50 to-white" />
 
           {/* Bottom fade into page */}
           <div className="h-32 relative z-10 bg-gradient-to-b from-transparent to-background" />
