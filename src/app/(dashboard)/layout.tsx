@@ -70,8 +70,8 @@ export default function DashboardLayout({
         const res = await fetch("/api/onboarding/check");
         if (res.ok) {
           const data = await res.json();
-          if (data.needsOnboarding && pathname !== "/onboarding") {
-            router.push("/onboarding");
+          if (data.needsOnboarding && data.onboardingUrl && !pathname.startsWith("/onboarding")) {
+            router.push(data.onboardingUrl);
           }
         }
       } catch {

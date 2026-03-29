@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthUserId } from "@/lib/auth";
-import { db, spotShares } from "@/lib/db";
+import { db, spotShares, surfSessions, users } from "@/lib/db";
 import { eq, and, isNull } from "drizzle-orm";
 
 // Returns invite validity. If authenticated, also returns spot/sharer details.
@@ -132,10 +132,26 @@ export async function POST(
       return NextResponse.json({ error: "This invite has already been claimed" }, { status: 409 });
     }
 
+    // Check if this is a new user (no sessions, no phone) to determine redirect
+    const [userSessions, user] = await Promise.all([
+      db.query.surfSessions.findMany({
+        where: eq(surfSessions.userId, userId),
+        columns: { id: true },
+        limit: 1,
+      }),
+      db.query.users.findFirst({
+        where: eq(users.id, userId),
+        columns: { phoneNumber: true },
+      }),
+    ]);
+    const isNewUser = userSessions.length === 0 && !user?.phoneNumber;
+
     return NextResponse.json({
       status: "accepted",
       spot: share.spot,
       sharedBy: share.sharedBy,
+      isNewUser,
+      shareId: claimed.id,
     });
   } catch (error) {
     console.error("Error claiming invite:", error);

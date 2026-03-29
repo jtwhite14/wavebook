@@ -10,28 +10,12 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Loader2, MapPin, Phone, Search, Shield } from "lucide-react";
+import { formatPhoneDisplay, toE164 } from "@/lib/utils/phone";
 
 const ADMIN_EMAILS = ["jtwhite14@gmail.com", "jt@withforerunner.com"];
 
 
 const SpotMap = dynamic(() => import("@/components/map/SpotMap"), { ssr: false });
-
-function formatPhoneDisplay(value: string): string {
-  const digits = value.replace(/\D/g, "");
-  // Remove leading "1" country code for formatting purposes
-  const national = digits.startsWith("1") && digits.length > 10 ? digits.slice(1) : digits;
-  if (national.length === 0) return "";
-  if (national.length <= 3) return `(${national}`;
-  if (national.length <= 6) return `(${national.slice(0, 3)}) ${national.slice(3)}`;
-  return `(${national.slice(0, 3)}) ${national.slice(3, 6)}-${national.slice(6, 10)}`;
-}
-
-function toE164(value: string): string {
-  const digits = value.replace(/\D/g, "");
-  if (digits.length === 0) return "";
-  const national = digits.startsWith("1") && digits.length > 10 ? digits.slice(1) : digits;
-  return `+1${national.slice(0, 10)}`;
-}
 
 export default function SettingsPage() {
   const { user } = useUser();

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,6 +65,7 @@ const SpotMap = dynamic(() => import("@/components/map/SpotMap"), {
 export default function DashboardPage() {
   const router = useRouter();
   const params = useParams<{ slug?: string[] }>();
+  const searchParams = useSearchParams();
   const initialSlug = useRef(params.slug);
   const [spots, setSpots] = useState<SurfSpot[]>([]);
   const [sessions, setSessions] = useState<SurfSessionWithConditions[]>([]);
@@ -502,6 +503,19 @@ export default function DashboardPage() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
+
+  // Auto-open shared spot from invite onboarding redirect
+  useEffect(() => {
+    if (loading || sharedSpots.length === 0) return;
+    const openShareId = searchParams.get("openShare");
+    if (!openShareId) return;
+    const match = sharedSpots.find((s) => s.shareId === openShareId);
+    if (match) {
+      setSelectedSharedSpot(match);
+    }
+    // Clean up the URL
+    router.replace("/dashboard");
+  }, [loading, sharedSpots, searchParams, router]);
 
   // Restore spot/session from URL on initial load (e.g. /dashboard/spot/:id/session/:sid)
   useEffect(() => {

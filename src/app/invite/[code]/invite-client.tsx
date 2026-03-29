@@ -71,7 +71,11 @@ export function InviteClient({ code, isAuthenticated }: InviteClientProps) {
       if (action === "accept") {
         if (data.spot) setSpotInfo({ spot: data.spot, sharedBy: data.sharedBy });
         setState("accepted");
-        setTimeout(() => router.push("/dashboard"), 2000);
+        if (data.isNewUser && data.shareId) {
+          setTimeout(() => router.push(`/onboarding/invite?shareId=${data.shareId}`), 2000);
+        } else {
+          setTimeout(() => router.push("/dashboard"), 2000);
+        }
       } else {
         setState("declined");
         setTimeout(() => router.push("/dashboard"), 2000);
