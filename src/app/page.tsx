@@ -14,8 +14,7 @@ export default async function LandingPage() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Nav */}
-      <div className="sticky top-0 z-50 bg-white">
-      <nav className="border-b border-black/[0.06] bg-white/90 backdrop-blur-sm">
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-black/[0.06] bg-white/90 backdrop-blur-sm">
         <div className="max-w-5xl mx-auto px-6 flex items-center justify-between h-14">
           <span className="flex items-center gap-2 text-base font-semibold tracking-tight text-gray-900">
             <BookOpen className="h-5 w-5 text-primary" />
@@ -31,7 +30,6 @@ export default async function LandingPage() {
           </div>
         </div>
       </nav>
-      </div>
 
       <main className="flex-1">
         {/* Hero */}
