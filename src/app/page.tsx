@@ -15,15 +15,15 @@ export default async function LandingPage() {
     <div className="min-h-screen flex flex-col bg-background">
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50">
-        <div className="max-w-5xl mx-auto px-6 flex items-center justify-between h-14">
-          <span className="flex items-center gap-2 text-base font-semibold tracking-tight text-gray-900">
+        <div className="mx-auto px-8 md:px-12 flex items-center justify-between h-16 md:h-20">
+          <span className="flex items-center gap-2.5 text-base font-semibold tracking-tight text-gray-900">
             <BookOpen className="h-5 w-5 text-primary" />
             Wavebook
           </span>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-8">
             <Link
               href="/login"
-              className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
+              className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
             >
               Log In
             </Link>
