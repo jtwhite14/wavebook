@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Copy, Loader2, Link2, Trash2, Users } from "lucide-react";
+import { ArrowLeft, Copy, Loader2, Link2, Trash2, User } from "lucide-react";
 import { toast } from "sonner";
 import type { SpotShareResponse } from "@/types";
 
@@ -15,7 +15,7 @@ interface SpotSharePanelProps {
 export function SpotSharePanel({ spotId, spotName, onBack }: SpotSharePanelProps) {
   const [shares, setShares] = useState<SpotShareResponse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
+  const [creatingSlot, setCreatingSlot] = useState<number | null>(null);
 
   const claimedCount = shares.filter((s) => s.sharedWithUserId !== null).length;
 
@@ -36,8 +36,8 @@ export function SpotSharePanel({ spotId, spotName, onBack }: SpotSharePanelProps
     fetchShares();
   }, [fetchShares]);
 
-  const handleCreateLink = async () => {
-    setCreating(true);
+  const handleCreateLink = async (slotIndex: number) => {
+    setCreatingSlot(slotIndex);
     try {
       const res = await fetch(`/api/spots/${spotId}/shares`, {
         method: "POST",
@@ -51,7 +51,7 @@ export function SpotSharePanel({ spotId, spotName, onBack }: SpotSharePanelProps
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to create link");
     } finally {
-      setCreating(false);
+      setCreatingSlot(null);
     }
   };
 
@@ -104,43 +104,22 @@ export function SpotSharePanel({ spotId, spotName, onBack }: SpotSharePanelProps
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-        {/* Create link button */}
-        <Button
-          onClick={handleCreateLink}
-          disabled={creating || claimedCount >= 5}
-          className="w-full gap-2"
-        >
-          {creating ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <Link2 className="size-4" />
-          )}
-          Create Share Link
-        </Button>
-
-        {claimedCount >= 5 && (
-          <p className="text-xs text-muted-foreground">Maximum 5 shares reached. Revoke one to share with someone new.</p>
-        )}
-
-        {/* Shares list */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
         {loading ? (
           <div className="flex justify-center py-8">
             <Loader2 className="size-5 animate-spin text-muted-foreground" />
           </div>
-        ) : shares.length === 0 ? (
-          <div className="text-center py-8">
-            <Users className="size-8 mx-auto text-muted-foreground/50 mb-2" />
-            <p className="text-sm text-muted-foreground">No shares yet</p>
-            <p className="text-xs text-muted-foreground mt-1">Create a link and send it via text message.</p>
-          </div>
         ) : (
-          <div className="space-y-2">
-            {shares.map((share) => (
+          Array.from({ length: 5 }).map((_, i) => {
+            const share = shares[i];
+            return share ? (
               <div
                 key={share.id}
                 className="flex items-center gap-3 rounded-lg border px-3 py-2.5"
               >
+                <div className="flex items-center justify-center size-8 rounded-full bg-accent shrink-0">
+                  <User className="size-4 text-muted-foreground" />
+                </div>
                 <div className="min-w-0 flex-1">
                   {share.sharedWith ? (
                     <>
@@ -156,7 +135,6 @@ export function SpotSharePanel({ spotId, spotName, onBack }: SpotSharePanelProps
                   )}
                 </div>
                 {statusBadge(share)}
-                {/* Re-copy button for unclaimed links */}
                 {share.inviteUrl && !share.sharedWithUserId && (
                   <button
                     onClick={() => copyShareLink(share.inviteUrl!, spotName)}
@@ -174,8 +152,32 @@ export function SpotSharePanel({ spotId, spotName, onBack }: SpotSharePanelProps
                   <Trash2 className="size-3.5" />
                 </button>
               </div>
-            ))}
-          </div>
+            ) : (
+              <div
+                key={`empty-${i}`}
+                className="flex items-center gap-3 rounded-lg border border-dashed px-3 py-2.5"
+              >
+                <div className="flex items-center justify-center size-8 rounded-full bg-accent/50 shrink-0">
+                  <User className="size-4 text-muted-foreground/40" />
+                </div>
+                <p className="text-sm text-muted-foreground/60 flex-1">User {i + 1}</p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleCreateLink(i)}
+                  disabled={creatingSlot !== null}
+                  className="gap-1.5 h-7 text-xs"
+                >
+                  {creatingSlot === i ? (
+                    <Loader2 className="size-3 animate-spin" />
+                  ) : (
+                    <Link2 className="size-3" />
+                  )}
+                  Generate Invite Link
+                </Button>
+              </div>
+            );
+          })
         )}
       </div>
     </div>
