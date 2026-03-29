@@ -138,6 +138,7 @@ export default function DashboardPage() {
   const [fixLocationSpot, setFixLocationSpot] = useState<SurfSpot | null>(null);
   const [isSavingLocation, setIsSavingLocation] = useState(false);
   const [dismissedLocationBanner, setDismissedLocationBanner] = useState(false);
+  const [dismissedHomeBanner, setDismissedHomeBanner] = useState(false);
 
   const spotsNeedingAttention = useMemo(() => {
     const items: { spot: SurfSpot; missingLocation: boolean; missingProfile: boolean }[] = [];
@@ -667,6 +668,36 @@ export default function DashboardPage() {
               </div>
               <button
                 onClick={() => setDismissedLocationBanner(true)}
+                className="rounded-md p-1 hover:bg-accent transition-colors shrink-0"
+              >
+                <X className="size-4 text-muted-foreground" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Home location missing banner */}
+      {!homeLocation && !loading && !dismissedHomeBanner && !selectedSpot && !selectedSharedSpot && addSpotMode === "idle" && spotsNeedingAttention.length === 0 && (
+        <div className="absolute top-4 left-4 right-4 sm:left-auto sm:right-4 z-20 sm:w-96">
+          <div className="rounded-lg border border-amber-500/40 bg-background/95 backdrop-blur-sm shadow-lg p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="size-5 text-amber-500 shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">Set your home location</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Add your home location so we can center your map and show nearby conditions.
+                </p>
+                <button
+                  onClick={() => router.push("/settings")}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-accent/50 px-2.5 py-1 text-xs hover:bg-accent transition-colors mt-2"
+                >
+                  <MapPin className="size-3" />
+                  <span>Set location</span>
+                </button>
+              </div>
+              <button
+                onClick={() => setDismissedHomeBanner(true)}
                 className="rounded-md p-1 hover:bg-accent transition-colors shrink-0"
               >
                 <X className="size-4 text-muted-foreground" />
