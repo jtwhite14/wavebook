@@ -4,6 +4,7 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { WaitlistForm } from "@/components/WaitlistForm";
 import { LandingNav } from "@/components/LandingNav";
+import { AnimatedScreenshot } from "@/components/AnimatedScreenshot";
 
 export default async function LandingPage() {
   const { userId } = await auth();
@@ -19,7 +20,7 @@ export default async function LandingPage() {
         {/* Hero */}
         <section id="hero" className="relative overflow-hidden bg-white">
           {/* Copy */}
-          <div className="relative z-10 pt-24 md:pt-32 pb-12 md:pb-16">
+          <div className="relative z-20 pt-24 md:pt-32 pb-36 md:pb-44">
             <div className="max-w-2xl mx-auto px-6 text-center">
               <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight text-gray-900">
                 Your waves. Your data.
@@ -38,28 +39,14 @@ export default async function LandingPage() {
             </div>
           </div>
 
-          {/* App screenshot */}
-          <div className="relative z-10 max-w-6xl mx-auto px-4 md:px-6">
-            <div className="rounded-xl overflow-hidden shadow-2xl shadow-black/20 border border-black/[0.08]">
-              <Image
-                src="/screenshots/app-hero.png"
-                alt="Wavebook dashboard showing surf alerts, forecast scores, and session history"
-                width={2880}
-                height={1640}
-                className="w-full h-auto"
-                priority
-              />
-            </div>
-          </div>
-
           {/* Background image */}
           <div
             className="absolute inset-0 z-0 bg-top bg-no-repeat"
-            style={{ backgroundImage: "url(/hero-bg.jpg)", backgroundSize: "100% auto" }}
+            style={{ backgroundImage: "url(/hero-bg-extended2.jpg)", backgroundSize: "100% auto" }}
           />
 
-          {/* Bottom fade — screenshot bleeds into dark bg */}
-          <div className="relative z-10 h-40 md:h-56 bg-gradient-to-b from-transparent via-background/70 to-background" />
+          {/* App screenshot — above bg, clipped by section overflow-hidden */}
+          <AnimatedScreenshot />
         </section>
 
         {/* Features */}

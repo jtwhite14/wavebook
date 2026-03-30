@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthUserId } from "@/lib/auth";
 import { db, spotShares, surfSessions } from "@/lib/db";
-import { eq, and, gte, count } from "drizzle-orm";
+import { eq, and, gte, count, inArray } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     const shares = await db.query.spotShares.findMany({
       where: and(
         eq(spotShares.sharedWithUserId, userId),
-        eq(spotShares.status, "accepted")
+        inArray(spotShares.status, ["accepted", "revoked"])
       ),
       with: {
         spot: {
@@ -25,23 +25,28 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Get high-rated session counts for each share
+    // Get high-rated session counts for each share (skip for revoked)
     const results = await Promise.all(
       shares.map(async (share) => {
-        const [sessionCount] = await db
-          .select({ count: count() })
-          .from(surfSessions)
-          .where(and(
-            eq(surfSessions.spotId, share.spotId),
-            eq(surfSessions.userId, share.sharedByUserId),
-            gte(surfSessions.rating, 3)
-          ));
+        let highRatedSessionCount = 0;
+        if (share.status === "accepted") {
+          const [sessionCount] = await db
+            .select({ count: count() })
+            .from(surfSessions)
+            .where(and(
+              eq(surfSessions.spotId, share.spotId),
+              eq(surfSessions.userId, share.sharedByUserId),
+              gte(surfSessions.rating, 3)
+            ));
+          highRatedSessionCount = sessionCount.count;
+        }
 
         return {
           shareId: share.id,
+          status: share.status as "accepted" | "revoked",
           spot: share.spot,
           sharedBy: share.sharedBy,
-          highRatedSessionCount: sessionCount.count,
+          highRatedSessionCount,
         };
       })
     );

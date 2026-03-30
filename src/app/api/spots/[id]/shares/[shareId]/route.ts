@@ -13,39 +13,41 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { shareId } = await params;
+    const { id: spotId, shareId } = await params;
 
-    const [deleted] = await db
-      .delete(spotShares)
-      .where(and(
+    // Find the share first
+    const share = await db.query.spotShares.findFirst({
+      where: and(
         eq(spotShares.id, shareId),
         eq(spotShares.sharedByUserId, userId)
-      ))
-      .returning();
+      ),
+    });
 
-    if (!deleted) {
+    if (!share) {
       return NextResponse.json({ error: "Share not found" }, { status: 404 });
     }
 
-    // Clean up logged friend sessions for the revoked share
-    // Remove entries where either party logged the other's sessions at this spot
-    if (deleted.sharedWithUserId) {
-      const { id: spotId } = await params;
-      const friendUserId = deleted.sharedWithUserId;
+    // If the share was claimed by a friend, soft-revoke it so the spot
+    // stays on their account but sessions are no longer shared
+    if (share.sharedWithUserId) {
+      await db
+        .update(spotShares)
+        .set({ status: "revoked" })
+        .where(eq(spotShares.id, shareId));
 
-      // Get session IDs for the friend at this spot
+      const friendUserId = share.sharedWithUserId;
+
+      // Clean up logged friend sessions
       const friendSessionIds = await db.query.surfSessions.findMany({
         where: and(eq(surfSessions.spotId, spotId), eq(surfSessions.userId, friendUserId)),
         columns: { id: true },
       });
 
-      // Get session IDs for the owner at this spot
       const ownerSessionIds = await db.query.surfSessions.findMany({
         where: and(eq(surfSessions.spotId, spotId), eq(surfSessions.userId, userId)),
         columns: { id: true },
       });
 
-      // Remove owner's logged entries for friend's sessions
       if (friendSessionIds.length > 0) {
         await db.delete(loggedFriendSessions).where(
           and(
@@ -55,7 +57,6 @@ export async function DELETE(
         );
       }
 
-      // Remove friend's logged entries for owner's sessions
       if (ownerSessionIds.length > 0) {
         await db.delete(loggedFriendSessions).where(
           and(
@@ -64,6 +65,11 @@ export async function DELETE(
           )
         );
       }
+    } else {
+      // Unclaimed link — just delete it
+      await db
+        .delete(spotShares)
+        .where(eq(spotShares.id, shareId));
     }
 
     return NextResponse.json({ success: true });

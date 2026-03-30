@@ -19,20 +19,13 @@ function NewSessionContent() {
     async function fetchData() {
       try {
         const [spotsRes, boardsRes, suitsRes] = await Promise.all([
-          fetch("/api/spots?includeShared=true"),
+          fetch("/api/spots"),
           fetch("/api/surfboards"),
           fetch("/api/wetsuits"),
         ]);
         if (spotsRes.ok) {
           const data = await spotsRes.json();
-          // Merge own spots and shared spots (shared spots get a label suffix)
-          const ownSpots: SurfSpot[] = data.spots || [];
-          const shared: (SurfSpot & { sharedByName?: string | null })[] = data.sharedSpots || [];
-          const labeledShared = shared.map((s) => ({
-            ...s,
-            name: s.sharedByName ? `${s.name} (${s.sharedByName}'s)` : s.name,
-          }));
-          setSpots([...ownSpots, ...labeledShared]);
+          setSpots(data.spots || []);
         }
         if (boardsRes.ok) {
           const data = await boardsRes.json();

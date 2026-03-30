@@ -288,7 +288,7 @@ export interface SpotShareResponse {
   spotId: string;
   sharedByUserId: string;
   sharedWithUserId: string | null;
-  status: 'pending' | 'accepted' | 'declined';
+  status: 'pending' | 'accepted' | 'declined' | 'revoked';
   inviteCode: string;
   inviteUrl?: string;
   createdAt: Date;
@@ -307,6 +307,7 @@ export interface SpotShareResponse {
 
 export interface SharedSpotView {
   shareId: string;
+  status: 'accepted' | 'revoked';
   spot: {
     id: string;
     name: string;

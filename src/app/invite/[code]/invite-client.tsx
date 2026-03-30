@@ -150,7 +150,7 @@ export function InviteClient({ code, isAuthenticated }: InviteClientProps) {
             <p className="text-base font-medium text-foreground">{spotInfo.spot.name}</p>
           )}
           <p className="text-sm text-muted-foreground">
-            Accept to add this spot to your shared spots.
+            Accept to add this spot to your dashboard.
           </p>
           <div className="flex gap-2 justify-center">
             <Button onClick={() => handleClaim("accept")} className="gap-1.5">

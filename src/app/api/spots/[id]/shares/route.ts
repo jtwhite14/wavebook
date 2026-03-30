@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthUserId } from "@/lib/auth";
 import { db, spotShares, surfSpots } from "@/lib/db";
-import { eq, and, count, isNotNull } from "drizzle-orm";
+import { eq, and, count, isNotNull, ne } from "drizzle-orm";
 import { generateInviteCode } from "@/lib/sharing/invite-code";
 
 export async function POST(
@@ -39,14 +39,15 @@ export async function POST(
       }
     }
 
-    // Check 5-share limit — only count claimed shares (sharedWithUserId is not null)
+    // Check 5-share limit — only count active claimed shares (not revoked)
     const [shareCount] = await db
       .select({ count: count() })
       .from(spotShares)
       .where(and(
         eq(spotShares.spotId, spotId),
         eq(spotShares.sharedByUserId, userId),
-        isNotNull(spotShares.sharedWithUserId)
+        isNotNull(spotShares.sharedWithUserId),
+        ne(spotShares.status, "revoked")
       ));
 
     if (shareCount.count >= 5) {
@@ -105,7 +106,8 @@ export async function GET(
     const shares = await db.query.spotShares.findMany({
       where: and(
         eq(spotShares.spotId, spotId),
-        eq(spotShares.sharedByUserId, userId)
+        eq(spotShares.sharedByUserId, userId),
+        ne(spotShares.status, "revoked")
       ),
       with: {
         sharedWith: {

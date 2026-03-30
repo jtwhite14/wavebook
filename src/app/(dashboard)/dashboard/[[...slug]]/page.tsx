@@ -40,9 +40,6 @@ import { SpotPaneEditSpot } from "@/components/spots/SpotPaneEditSpot";
 import { SpotPaneProfiles } from "@/components/profiles/SpotPaneProfiles";
 import { ProfileWizard } from "@/components/profiles/ProfileWizard";
 import { SpotSharePanel } from "@/components/sharing/SpotSharePanel";
-import { IncomingInvites } from "@/components/sharing/IncomingInvites";
-import { SharedSpotsList } from "@/components/sharing/SharedSpotsList";
-import { SharedSpotPane } from "@/components/sharing/SharedSpotPane";
 import { SurfboardIcon } from "@/components/icons/SurfboardIcon";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FiveStarHeatmap } from "@/components/spots/FiveStarHeatmap";
@@ -50,7 +47,7 @@ import { GearModal } from "@/components/gear/GearModal";
 import { ForecastCalendar } from "@/components/forecast-calendar/ForecastCalendar";
 import { haversineDistance, getDistancePenalty, getRarityBoost } from "@/lib/utils/geo";
 import type { SurfSpot, Surfboard, Wetsuit } from "@/lib/db/schema";
-import type { SurfSessionWithConditions, SharedSpotView, CardinalDirection, ConditionProfileResponse } from "@/types";
+import type { SurfSessionWithConditions, CardinalDirection, ConditionProfileResponse } from "@/types";
 import type { WindRoseValue } from "@/components/profiles/WindRose";
 
 const SpotMap = dynamic(() => import("@/components/map/SpotMap"), {
@@ -98,15 +95,8 @@ export default function DashboardPage() {
   const [alertSummaries, setAlertSummaries] = useState<Array<{ spotId: string; spotName: string; effectiveScore: number; travelScore: number; distanceKm: number | null; forecastHour: string; timeWindow: string; conditions: string }>>([]);
   const [spotProfileCounts, setSpotProfileCounts] = useState<Record<string, number>>({});
 
-  // Sharing state
-  const [sharedSpots, setSharedSpots] = useState<SharedSpotView[]>([]);
-  const [incomingInvites, setIncomingInvites] = useState<Array<{
-    id: string;
-    inviteCode: string;
-    spot: { id: string; name: string };
-    sharedBy: { id: string; name: string | null; email: string };
-  }>>([]);
-  const [selectedSharedSpot, setSelectedSharedSpot] = useState<SharedSpotView | null>(null);
+  // Track which spots are shared (not owned by current user)
+  const [sharedSpotIds, setSharedSpotIds] = useState<Set<string>>(new Set());
 
   // Gear modal
   const [gearModalOpen, setGearModalOpen] = useState(false);
@@ -143,6 +133,7 @@ export default function DashboardPage() {
   const spotsNeedingAttention = useMemo(() => {
     const items: { spot: SurfSpot; missingLocation: boolean; missingProfile: boolean }[] = [];
     for (const s of spots) {
+      if (sharedSpotIds.has(s.id)) continue; // Skip shared spots
       const missingLocation = parseFloat(s.latitude) === 0 && parseFloat(s.longitude) === 0;
       const missingProfile = spotProfileCounts[s.id] === 0;
       if (missingLocation || missingProfile) {
@@ -150,7 +141,7 @@ export default function DashboardPage() {
       }
     }
     return items;
-  }, [spots, spotProfileCounts]);
+  }, [spots, spotProfileCounts, sharedSpotIds]);
 
   const handleFixLocation = (spot: SurfSpot) => {
     setSelectedSpot(null);
@@ -263,7 +254,6 @@ export default function DashboardPage() {
 
   const handleCloseSpotDetail = () => {
     setSelectedSpot(null);
-    setSelectedSharedSpot(null);
     setSpotSessions([]);
     setShowAllSessions(false);
     setPaneView("spot");
@@ -271,21 +261,6 @@ export default function DashboardPage() {
     window.history.pushState(null, "", "/dashboard");
   };
 
-  const handleSharedSpotClick = (sharedSpot: SharedSpotView) => {
-    setSelectedSpot(null);
-    setSelectedSharedSpot(sharedSpot);
-  };
-
-  const handleInviteResolved = (inviteId: string, action: "accept" | "decline") => {
-    setIncomingInvites((prev) => prev.filter((i) => i.id !== inviteId));
-    if (action === "accept") {
-      // Refresh shared spots
-      fetch("/api/shares/spots")
-        .then((r) => (r.ok ? r.json() : { sharedSpots: [] }))
-        .then((data) => setSharedSpots(data.sharedSpots || []))
-        .catch(() => {});
-    }
-  };
 
   const handleViewSession = (session: SurfSessionWithConditions) => {
     setViewingSession(session);
@@ -397,18 +372,16 @@ export default function DashboardPage() {
       fetch("/api/spots").then((r) => (r.ok ? r.json() : { spots: [] })),
       fetch("/api/user/location").then((r) => (r.ok ? r.json() : { latitude: null, longitude: null })),
       fetch("/api/sessions?limit=5").then((r) => (r.ok ? r.json() : { sessions: [] })),
-      fetch("/api/shares/spots").then((r) => (r.ok ? r.json() : { sharedSpots: [] })),
-      fetch("/api/shares/incoming").then((r) => (r.ok ? r.json() : { invites: [] })),
       fetch("/api/surfboards").then((r) => (r.ok ? r.json() : { surfboards: [] })),
       fetch("/api/wetsuits").then((r) => (r.ok ? r.json() : { wetsuits: [] })),
     ])
-      .then(([spotsData, locationData, sessionsData, sharedSpotsData, invitesData, surfboardsData, wetsuitsData]) => {
-        setSpots(spotsData.spots || []);
+      .then(([spotsData, locationData, sessionsData, surfboardsData, wetsuitsData]) => {
+        const allSpots = spotsData.spots || [];
+        setSpots(allSpots);
+        setSharedSpotIds(new Set(allSpots.filter((s: any) => s.isShared).map((s: any) => s.id)));
         setSessions(sessionsData.sessions || []);
         setSurfboards(surfboardsData.surfboards || []);
         setWetsuits(wetsuitsData.wetsuits || []);
-        setSharedSpots(sharedSpotsData.sharedSpots || []);
-        setIncomingInvites(invitesData.invites || []);
         if (locationData.latitude && locationData.longitude) {
           setHomeLocation({ latitude: locationData.latitude, longitude: locationData.longitude });
         }
@@ -508,16 +481,16 @@ export default function DashboardPage() {
 
   // Auto-open shared spot from invite onboarding redirect
   useEffect(() => {
-    if (loading || sharedSpots.length === 0 || openShareHandled.current) return;
+    if (loading || spots.length === 0 || openShareHandled.current) return;
     const openShareId = searchParams.get("openShare");
     if (!openShareId) return;
     openShareHandled.current = true;
-    const match = sharedSpots.find((s) => s.shareId === openShareId);
+    const match = spots.find((s: any) => s.shareId === openShareId);
     if (match) {
-      setSelectedSharedSpot(match);
+      handleSpotClick(match);
     }
     router.replace("/dashboard");
-  }, [loading, sharedSpots, searchParams, router]);
+  }, [loading, spots, searchParams, router, handleSpotClick]);
 
   // Restore spot/session from URL on initial load (e.g. /dashboard/spot/:id/session/:sid)
   useEffect(() => {
@@ -602,15 +575,6 @@ export default function DashboardPage() {
         newSpotMarker={newSpotMarker}
         flyToPadding={flyToPadding}
         alertSpotIds={alertSpotIds}
-        sharedSpots={sharedSpots.map((s) => ({
-          shareId: s.shareId,
-          spot: s.spot,
-          sharedBy: s.sharedBy,
-        }))}
-        onSharedSpotClick={(shared) => {
-          const full = sharedSpots.find((s) => s.shareId === shared.shareId);
-          if (full) handleSharedSpotClick(full);
-        }}
         {...(initialViewState && { initialViewState })}
         directionEdit={directionEdit && selectedSpot ? {
           spotId: selectedSpot.id,
@@ -678,7 +642,7 @@ export default function DashboardPage() {
       )}
 
       {/* Home location missing banner */}
-      {!homeLocation && !loading && !dismissedHomeBanner && !selectedSpot && !selectedSharedSpot && addSpotMode === "idle" && spotsNeedingAttention.length === 0 && (
+      {!homeLocation && !loading && !dismissedHomeBanner && !selectedSpot && addSpotMode === "idle" && spotsNeedingAttention.length === 0 && (
         <div className="absolute top-4 left-4 right-4 sm:left-auto sm:right-4 z-20 sm:w-96">
           <div className="rounded-lg border border-amber-500/40 bg-background/95 backdrop-blur-sm shadow-lg p-4">
             <div className="flex items-start gap-3">
@@ -771,6 +735,7 @@ export default function DashboardPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
+                  {!sharedSpotIds.has(selectedSpot.id) && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button className="rounded-md p-2 hover:bg-accent transition-colors">
@@ -803,6 +768,7 @@ export default function DashboardPage() {
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
+                  )}
                   <button
                     onClick={handleCloseSpotDetail}
                     className="rounded-md p-2 hover:bg-accent transition-colors"
@@ -933,7 +899,7 @@ export default function DashboardPage() {
                     </div>
 
                     {/* Condition Profiles */}
-                    {spotProfileCounts[selectedSpot.id] === 0 && (
+                    {spotProfileCounts[selectedSpot.id] === 0 && !sharedSpotIds.has(selectedSpot.id) && (
                       <button
                         onClick={() => setPaneView("profiles")}
                         className="w-full rounded-lg border border-yellow-500/50 bg-yellow-500/10 px-3 py-2.5 text-left hover:bg-yellow-500/15 transition-colors"
@@ -1063,25 +1029,8 @@ export default function DashboardPage() {
       )}
 
       {/* Shared spot detail pane */}
-      {selectedSharedSpot && !selectedSpot && addSpotMode === "idle" && (
-        <SharedSpotPane
-          sharedSpot={selectedSharedSpot}
-          onClose={() => setSelectedSharedSpot(null)}
-        />
-      )}
-
-      {/* Incoming invites banner */}
-      {incomingInvites.length > 0 && !selectedSpot && !selectedSharedSpot && addSpotMode === "idle" && !spotsNeedingAttention.length && (
-        <div className="absolute top-4 left-4 right-4 sm:left-auto sm:right-4 z-20 sm:w-96">
-          <IncomingInvites
-            invites={incomingInvites}
-            onResolved={handleInviteResolved}
-          />
-        </div>
-      )}
-
       {/* Alerts + Sessions/Spots panels — visible when no spot is selected */}
-      {!selectedSpot && !selectedSharedSpot && addSpotMode === "idle" && (
+      {!selectedSpot && addSpotMode === "idle" && (
         <div className="absolute bottom-4 left-4 right-4 sm:bottom-auto sm:right-auto sm:top-4 z-10 sm:w-80 flex flex-col gap-3">
           {loading ? (
             /* Skeleton panels while data loads */
@@ -1120,7 +1069,7 @@ export default function DashboardPage() {
                 </div>
               </div>
             </>
-          ) : (sessions.length > 0 || alertSummaries.length > 0 || sharedSpots.length > 0 || spots.length > 0 || surfboards.length > 0 || wetsuits.length > 0) ? (
+          ) : (sessions.length > 0 || alertSummaries.length > 0 || spots.length > 0 || surfboards.length > 0 || wetsuits.length > 0) ? (
             <>
           {/* Alerts + Forecast tabbed panel */}
           <div className="rounded-lg border bg-background/90 backdrop-blur-sm shadow-lg overflow-hidden">
@@ -1217,15 +1166,6 @@ export default function DashboardPage() {
                       </div>
                     ));
                   })()
-                )}
-                {sharedSpots.length > 0 && (
-                  <>
-                    <div className="border-t" />
-                    <SharedSpotsList
-                      sharedSpots={sharedSpots}
-                      onSpotClick={handleSharedSpotClick}
-                    />
-                  </>
                 )}
               </div>
             ) : spots.length > 0 ? (

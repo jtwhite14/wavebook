@@ -1,6 +1,6 @@
 "use client";
 
-import { Users } from "lucide-react";
+import { Users, Link2Off } from "lucide-react";
 import type { SharedSpotView } from "@/types";
 
 interface SharedSpotsListProps {
@@ -27,11 +27,22 @@ export function SharedSpotsList({ sharedSpots, onSpotClick, selectedShareId }: S
           }`}
         >
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium truncate">{shared.spot.name}</p>
+            <p className={`text-sm font-medium truncate ${shared.status === "revoked" ? "text-muted-foreground" : ""}`}>
+              {shared.spot.name}
+            </p>
             <p className="text-xs text-muted-foreground truncate">
-              Shared by {shared.sharedBy.name || "Unknown"}
-              {shared.highRatedSessionCount > 0 && (
-                <> &middot; {shared.highRatedSessionCount} session{shared.highRatedSessionCount !== 1 ? "s" : ""}</>
+              {shared.status === "revoked" ? (
+                <span className="flex items-center gap-1">
+                  <Link2Off className="size-3 inline" />
+                  Sessions no longer shared
+                </span>
+              ) : (
+                <>
+                  Shared by {shared.sharedBy.name || "Unknown"}
+                  {shared.highRatedSessionCount > 0 && (
+                    <> &middot; {shared.highRatedSessionCount} session{shared.highRatedSessionCount !== 1 ? "s" : ""}</>
+                  )}
+                </>
               )}
             </p>
           </div>

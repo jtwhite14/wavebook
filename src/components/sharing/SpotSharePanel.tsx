@@ -160,7 +160,7 @@ export function SpotSharePanel({ spotId, spotName, onBack }: SpotSharePanelProps
                 <div className="flex items-center justify-center size-8 rounded-full bg-accent/50 shrink-0">
                   <User className="size-4 text-muted-foreground/40" />
                 </div>
-                <p className="text-sm text-muted-foreground/60 flex-1">User {i + 1}</p>
+                <p className="text-sm text-muted-foreground/60 flex-1">Friend {i + 1}</p>
                 <Button
                   size="sm"
                   variant="outline"

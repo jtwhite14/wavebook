@@ -46,31 +46,38 @@ export async function GET(request: NextRequest) {
     }
 
     // Get all spots for user
-    const spots = await db.query.surfSpots.findMany({
+    const ownedSpots = await db.query.surfSpots.findMany({
       where: eq(surfSpots.userId, userId),
       orderBy: [desc(surfSpots.createdAt)],
     });
 
-    // Include shared spots if requested (for session form spot picker)
-    const includeShared = searchParams.get("includeShared") === "true";
-    let sharedSpots: Array<typeof spots[number] & { sharedByName: string | null }> = [];
-    if (includeShared) {
-      const acceptedShares = await db.query.spotShares.findMany({
-        where: and(
-          eq(spotShares.sharedWithUserId, userId),
-          eq(spotShares.status, "accepted")
-        ),
-        with: {
-          spot: true,
-          sharedBy: true,
-        },
-      });
-      sharedSpots = acceptedShares
-        .filter((s) => s.spot && !spots.some((own) => own.id === s.spot.id))
-        .map((s) => ({ ...s.spot, sharedByName: s.sharedBy?.name ?? null }));
-    }
+    // Always include accepted shared spots merged into the spots array
+    const acceptedShares = await db.query.spotShares.findMany({
+      where: and(
+        eq(spotShares.sharedWithUserId, userId),
+        eq(spotShares.status, "accepted")
+      ),
+      with: {
+        spot: true,
+        sharedBy: true,
+      },
+    });
 
-    return NextResponse.json({ spots, sharedSpots });
+    const sharedSpotItems = acceptedShares
+      .filter((s) => s.spot && !ownedSpots.some((own) => own.id === s.spot.id))
+      .map((s) => ({
+        ...s.spot,
+        isShared: true as const,
+        sharedByName: s.sharedBy?.name ?? null,
+        shareId: s.id,
+      }));
+
+    const spots = [
+      ...ownedSpots.map((s) => ({ ...s, isShared: false as const, sharedByName: null as string | null, shareId: null as string | null })),
+      ...sharedSpotItems,
+    ];
+
+    return NextResponse.json({ spots });
   } catch (error) {
     console.error("Error fetching spots:", error);
     return NextResponse.json(
