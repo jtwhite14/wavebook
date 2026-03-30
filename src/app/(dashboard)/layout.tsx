@@ -117,7 +117,7 @@ export default function DashboardLayout({
       <div className="flex h-screen overflow-hidden bg-background">
         {/* Sidebar — desktop */}
         <nav
-          className="hidden lg:flex shrink-0 flex-col border-r bg-sidebar h-full w-[60px]"
+          className="hidden lg:flex shrink-0 flex-col border-r border-r-sidebar-border bg-sidebar h-full w-[60px]"
         >
           <SidebarContent
             user={userInfo}
@@ -130,15 +130,15 @@ export default function DashboardLayout({
         {/* Mobile overlay */}
         {mobileMenuOpen && (
           <div
-            className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+            className="fixed inset-0 z-40 bg-black/40 lg:hidden"
             onClick={() => setMobileMenuOpen(false)}
           />
         )}
 
         {/* Sidebar — mobile slide-out (always expanded) */}
         <nav
-          className={`fixed inset-y-0 left-0 z-50 w-[280px] flex flex-col bg-sidebar border-r transform transition-transform duration-200 ease-in-out lg:hidden ${
-            mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+          className={`fixed inset-y-0 left-0 z-50 w-[260px] flex flex-col bg-sidebar border-r border-r-sidebar-border transform transition-transform lg:hidden ${
+            mobileMenuOpen ? "translate-x-0 duration-200 ease-out" : "-translate-x-full duration-150 ease-in"
           }`}
         >
           <div className="flex items-center justify-end p-3">
@@ -161,7 +161,7 @@ export default function DashboardLayout({
         {/* Main content area */}
         <div className="flex flex-1 flex-col overflow-hidden">
           {/* Mobile top bar */}
-          <header className="flex items-center h-14 px-4 border-b bg-background lg:hidden">
+          <header className="flex items-center h-12 px-4 border-b bg-background lg:hidden">
             <button
               onClick={() => setMobileMenuOpen(true)}
               className="p-2 -ml-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent"
@@ -170,7 +170,7 @@ export default function DashboardLayout({
             </button>
             <Link href="/dashboard" className="flex items-center gap-2 ml-3">
               <BookOpen className="size-5 text-primary" />
-              <span className="font-bold text-sm">Wavebook</span>
+              <span className="font-semibold text-sm tracking-[-0.01em]">Wavebook</span>
             </Link>
           </header>
 
@@ -229,7 +229,7 @@ function SidebarContent({
       <div className={`flex flex-col gap-3 p-3 border-b border-sidebar-border ${collapsed ? "items-center" : ""}`}>
         <Link href="/dashboard" className={`flex items-center gap-2.5 ${collapsed ? "justify-center" : "px-1.5"} py-1`}>
           <BookOpen className="size-5 text-primary shrink-0" />
-          {!collapsed && <span className="font-bold text-sidebar-foreground">Wavebook</span>}
+          {!collapsed && <span className="font-semibold text-sidebar-foreground tracking-[-0.01em]">Wavebook</span>}
         </Link>
       </div>
 
@@ -243,15 +243,15 @@ function SidebarContent({
               href={item.href}
               className={`flex items-center rounded-md text-sm font-medium transition-colors ${
                 collapsed
-                  ? `justify-center size-9 ${
+                  ? `justify-center size-10 ${
                       active
                         ? "bg-accent text-foreground"
-                        : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                        : "text-muted-foreground hover:bg-accent/70 hover:text-foreground"
                     }`
-                  : `gap-2.5 px-2.5 py-1.5 w-full ${
+                  : `gap-2.5 px-2.5 py-2 w-full ${
                       active
                         ? "bg-accent text-foreground"
-                        : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                        : "text-muted-foreground hover:bg-accent/70 hover:text-foreground"
                     }`
               }`}
             >
@@ -276,11 +276,11 @@ function SidebarContent({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             {collapsed ? (
-              <button className="flex items-center justify-center size-9 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
+              <button className="flex items-center justify-center size-10 rounded-lg bg-primary text-primary-foreground hover:brightness-110 transition-all duration-100">
                 <Plus className="size-4" />
               </button>
             ) : (
-              <button className="flex w-full items-center justify-center gap-2 rounded-md px-2.5 py-1.5 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
+              <button className="flex w-full items-center justify-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium bg-primary text-primary-foreground hover:brightness-110 transition-all duration-100">
                 <Plus className="size-4 shrink-0" />
                 Add
               </button>
@@ -319,7 +319,7 @@ function SidebarContent({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             {collapsed ? (
-              <button className="flex items-center justify-center size-9 rounded-md hover:bg-accent transition-colors">
+              <button className="flex items-center justify-center size-10 rounded-lg hover:bg-accent/70 transition-colors duration-100">
                 <Avatar className="size-7">
                   <AvatarImage
                     src={user.image || undefined}
@@ -331,7 +331,7 @@ function SidebarContent({
                 </Avatar>
               </button>
             ) : (
-              <button className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-sm hover:bg-accent transition-colors">
+              <button className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm hover:bg-accent/70 transition-colors duration-100">
                 <Avatar className="size-7">
                   <AvatarImage
                     src={user.image || undefined}

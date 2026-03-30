@@ -55,12 +55,12 @@ export function SpotPaneEditSpot({ spot, onBack, onSave }: SpotPaneEditSpotProps
       <div className="flex items-center justify-between gap-2 px-4 pt-4 pb-3 border-b">
         <button
           onClick={onBack}
-          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-all duration-100"
         >
           <ArrowLeft className="size-4" />
           Back
         </button>
-        <h2 className="text-sm font-semibold">Edit Spot</h2>
+        <h2 className="text-sm font-semibold tracking-[-0.01em]">Edit Spot</h2>
         <div className="w-12" /> {/* spacer for centering */}
       </div>
 

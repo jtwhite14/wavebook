@@ -91,7 +91,7 @@ export function ChartPanel({
           </div>
           {heroValue && (
             <div className="flex items-baseline gap-1 mt-1">
-              <span className="text-2xl font-semibold tracking-tight text-white">
+              <span className="text-2xl font-semibold tracking-[-0.01em] text-white">
                 {heroValue}
               </span>
               {heroUnit && (

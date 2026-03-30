@@ -307,7 +307,7 @@ export function WeatherStrip({ data, sessionIndex }: WeatherStripProps) {
                 key={hour.time}
                 className={`
                   flex flex-col items-center gap-2 py-3 flex-1 rounded-xl
-                  transition-colors
+                  transition-all duration-100
                   ${isSession
                     ? "bg-white/[0.08] ring-1 ring-inset ring-amber-400/40"
                     : "hover:bg-white/[0.03]"

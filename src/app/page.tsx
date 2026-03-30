@@ -22,12 +22,12 @@ export default async function LandingPage() {
           {/* Copy */}
           <div className="relative z-20 pt-24 md:pt-32 pb-36 md:pb-44">
             <div className="max-w-2xl mx-auto px-6 text-center">
-              <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight text-gray-900">
+              <h1 className="text-4xl md:text-5xl font-bold tracking-[-0.02em] leading-tight text-gray-900">
                 Your waves. Your data.
                 <br />
                 Keep it that way.
               </h1>
-              <p className="mt-6 text-lg text-gray-500 leading-relaxed max-w-xl mx-auto">
+              <p className="mt-6 text-[1.0625rem] text-gray-500 leading-relaxed max-w-xl mx-auto">
                 An AI-powered surf tracker that doesn&apos;t ruin the sport we
                 all love. Log sessions, track all of your favorite breaks, and
                 get alerts when it&apos;s going off — without blowing up your
@@ -54,7 +54,7 @@ export default async function LandingPage() {
           {/* Feature 1 — Alerts */}
           <div className="max-w-6xl mx-auto px-6 mb-32 md:mb-40">
             <div className="grid md:grid-cols-2 gap-8 md:gap-16 items-start mb-12 md:mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight text-foreground">
+              <h2 className="text-4xl md:text-5xl font-bold tracking-[-0.02em] leading-tight text-foreground">
                 Never miss
                 <br />
                 another swell
@@ -65,7 +65,7 @@ export default async function LandingPage() {
                 waking up for — dawn patrol or afternoon glass.
               </p>
             </div>
-            <div className="rounded-xl overflow-hidden border border-white/[0.06] bg-white/[0.03] aspect-[16/10] flex items-center justify-center">
+            <div className="rounded-xl overflow-hidden border border-white/[0.08] bg-gradient-to-b from-white/[0.04] to-white/[0.02] aspect-[16/10] flex items-center justify-center">
               <span className="text-sm text-muted-foreground">2880 x 1800 — Alerts screenshot</span>
             </div>
           </div>
@@ -73,7 +73,7 @@ export default async function LandingPage() {
           {/* Feature 2 — Sessions */}
           <div className="max-w-6xl mx-auto px-6 mb-32 md:mb-40">
             <div className="grid md:grid-cols-2 gap-8 md:gap-16 items-start mb-12 md:mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight text-foreground">
+              <h2 className="text-4xl md:text-5xl font-bold tracking-[-0.02em] leading-tight text-foreground">
                 Log every
                 <br />
                 session
@@ -84,7 +84,7 @@ export default async function LandingPage() {
                 ridden — searchable, sortable, and entirely yours.
               </p>
             </div>
-            <div className="rounded-xl overflow-hidden border border-white/[0.06] bg-white/[0.03] aspect-[16/10] flex items-center justify-center">
+            <div className="rounded-xl overflow-hidden border border-white/[0.08] bg-gradient-to-b from-white/[0.04] to-white/[0.02] aspect-[16/10] flex items-center justify-center">
               <span className="text-sm text-muted-foreground">2880 x 1800 — Sessions screenshot</span>
             </div>
           </div>
@@ -92,7 +92,7 @@ export default async function LandingPage() {
           {/* Feature 3 — Session Detail */}
           <div className="max-w-6xl mx-auto px-6 mb-32 md:mb-40">
             <div className="grid md:grid-cols-2 gap-8 md:gap-16 items-start mb-12 md:mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight text-foreground">
+              <h2 className="text-4xl md:text-5xl font-bold tracking-[-0.02em] leading-tight text-foreground">
                 Relive the
                 <br />
                 details
@@ -103,7 +103,7 @@ export default async function LandingPage() {
                 you can chase the same conditions again.
               </p>
             </div>
-            <div className="rounded-xl overflow-hidden border border-white/[0.06] bg-white/[0.03] aspect-[16/10] flex items-center justify-center">
+            <div className="rounded-xl overflow-hidden border border-white/[0.08] bg-gradient-to-b from-white/[0.04] to-white/[0.02] aspect-[16/10] flex items-center justify-center">
               <span className="text-sm text-muted-foreground">2880 x 1800 — Session detail screenshot</span>
             </div>
           </div>
@@ -111,7 +111,7 @@ export default async function LandingPage() {
           {/* Feature 4 — Privacy */}
           <div className="max-w-6xl mx-auto px-6">
             <div className="grid md:grid-cols-2 gap-8 md:gap-16 items-start mb-12 md:mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight text-foreground">
+              <h2 className="text-4xl md:text-5xl font-bold tracking-[-0.02em] leading-tight text-foreground">
                 Your spots
                 <br />
                 stay secret
@@ -122,7 +122,7 @@ export default async function LandingPage() {
                 track their waves without blowing up their breaks.
               </p>
             </div>
-            <div className="rounded-xl overflow-hidden border border-white/[0.06] bg-white/[0.03] aspect-[16/10] flex items-center justify-center">
+            <div className="rounded-xl overflow-hidden border border-white/[0.08] bg-gradient-to-b from-white/[0.04] to-white/[0.02] aspect-[16/10] flex items-center justify-center">
               <span className="text-sm text-muted-foreground">2880 x 1800 — Privacy/map screenshot</span>
             </div>
           </div>
@@ -130,7 +130,7 @@ export default async function LandingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="py-8 text-center text-sm text-muted-foreground">
+      <footer className="py-12 text-center text-sm text-muted-foreground">
         <div className="flex items-center justify-center gap-6">
           <Link
             href="/privacy"

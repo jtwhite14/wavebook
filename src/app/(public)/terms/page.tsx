@@ -11,12 +11,12 @@ export default function TermsPage() {
       <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
         <Link
           href="/"
-          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="text-sm text-muted-foreground hover:text-foreground transition-all duration-100"
         >
           &larr; Back to Wavebook
         </Link>
 
-        <h1 className="text-3xl font-bold mt-6 mb-8">Terms &amp; Conditions</h1>
+        <h1 className="text-3xl font-bold tracking-[-0.02em] mt-6 mb-8">Terms &amp; Conditions</h1>
         <p className="text-sm text-muted-foreground mb-8">
           Effective date: March 16, 2026
         </p>

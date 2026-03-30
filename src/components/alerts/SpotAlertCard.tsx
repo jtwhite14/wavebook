@@ -152,7 +152,7 @@ export function SpotAlertCard({ spotId, sessionCount, alerts: prefetchedAlerts, 
           <ConfidenceRing score={activeAlert.effectiveScore} size={24} />
           <button
             onClick={() => handleDismiss(activeAlert)}
-            className="rounded-md p-1 hover:bg-accent transition-colors"
+            className="rounded-md p-1 hover:bg-accent transition-all duration-100"
             aria-label={`Dismiss alert for ${dayLabel}`}
           >
             <X className="size-3.5 text-muted-foreground" />
@@ -197,7 +197,7 @@ export function SpotAlertCard({ spotId, sessionCount, alerts: prefetchedAlerts, 
               <button
                 key={alert.id}
                 onClick={() => setActiveIndex(i)}
-                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs transition-colors ${
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs transition-all duration-100 ${
                   isActive
                     ? 'bg-primary/15 text-primary'
                     : 'bg-muted/50 text-muted-foreground hover:bg-muted'

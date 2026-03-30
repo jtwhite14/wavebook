@@ -76,7 +76,7 @@ function NewSessionContent() {
         </Button>
       </div>
 
-      <h1 className="text-2xl sm:text-3xl font-bold">Log Session</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold tracking-[-0.02em]">Log Session</h1>
 
       <SessionForm spots={spots} defaultSpotId={defaultSpotId} surfboards={surfboards} wetsuits={wetsuits} />
     </div>

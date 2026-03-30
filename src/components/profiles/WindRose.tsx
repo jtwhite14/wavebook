@@ -172,7 +172,7 @@ export function WindRose({ value, onChange, size = 180 }: WindRoseProps) {
               <path
                 d={outlinePath}
                 fill="currentColor"
-                className="text-muted/60 hover:text-muted transition-colors"
+                className="text-muted/60 hover:text-muted transition-all duration-100"
               />
               {/* Filled portion */}
               {fillPath && (

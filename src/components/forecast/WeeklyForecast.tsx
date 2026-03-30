@@ -133,7 +133,7 @@ export function WeeklyForecast({ spotId, embedded }: WeeklyForecastProps) {
     <div>
       {!embedded && (
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-semibold">Weekly Forecast</h3>
+          <h3 className="text-sm font-semibold tracking-[-0.01em]">Weekly Forecast</h3>
           {scores && scores.seasonalSessionCount > 0 && (
             <span className="text-[10px] text-muted-foreground">
               {scores.seasonalSessionCount} session{scores.seasonalSessionCount !== 1 ? "s" : ""} matched
@@ -160,7 +160,7 @@ export function WeeklyForecast({ spotId, embedded }: WeeklyForecastProps) {
             <div key={day.date} className="border-b last:border-b-0">
               <button
                 onClick={() => setExpanded(isExpanded ? null : day.date)}
-                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-accent/50 transition-colors text-left"
+                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-accent/50 transition-all duration-100 text-left"
               >
                 <span className="text-xs font-medium w-10 shrink-0">
                   {day.label}

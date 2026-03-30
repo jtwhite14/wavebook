@@ -93,10 +93,10 @@ export function SpotPaneProfiles({ spotId, onBack, onDirectionEditStart, onDirec
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center gap-2 px-4 pt-4 pb-3 border-b">
-        <button onClick={onBack} className="rounded-md p-1 hover:bg-accent transition-colors">
+        <button onClick={onBack} className="rounded-md p-1 hover:bg-accent transition-all duration-100">
           <ArrowLeft className="size-4" />
         </button>
-        <h2 className="text-lg font-semibold flex-1">Condition Profiles</h2>
+        <h2 className="text-lg font-semibold tracking-[-0.01em] flex-1">Condition Profiles</h2>
         <Button
           size="sm"
           variant="outline"
@@ -132,7 +132,7 @@ export function SpotPaneProfiles({ spotId, onBack, onDirectionEditStart, onDirec
               return (
                 <div
                   key={profile.id}
-                  className="rounded-lg border px-3 py-2.5 transition-colors bg-background"
+                  className="rounded-lg border px-3 py-2.5 transition-all duration-100 bg-background"
                 >
                   {/* Header row */}
                   <div className="flex items-start justify-between gap-2">
@@ -154,14 +154,14 @@ export function SpotPaneProfiles({ spotId, onBack, onDirectionEditStart, onDirec
                     <div className="flex items-center gap-1 shrink-0">
                       <button
                         onClick={() => { setEditingProfile(profile); setView("edit"); }}
-                        className="rounded-md p-1 hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+                        className="rounded-md p-1 hover:bg-accent transition-all duration-100 text-muted-foreground hover:text-foreground"
                         title="Edit profile"
                       >
                         <Pencil className="size-3.5" />
                       </button>
                       <button
                         onClick={() => handleDelete(profile, displayName)}
-                        className="rounded-md p-1 hover:bg-accent transition-colors text-muted-foreground hover:text-destructive"
+                        className="rounded-md p-1 hover:bg-accent transition-all duration-100 text-muted-foreground hover:text-destructive"
                         title="Delete profile"
                       >
                         <Trash2 className="size-3.5" />

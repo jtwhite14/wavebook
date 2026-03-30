@@ -98,7 +98,7 @@ export function InviteClient({ code, isAuthenticated }: InviteClientProps) {
     if (state === "loading") {
       return (
         <>
-          <h1 className="text-lg font-semibold">Loading invite...</h1>
+          <h1 className="text-lg font-semibold tracking-[-0.01em]">Loading invite...</h1>
           <Loader2 className="size-6 mx-auto animate-spin text-muted-foreground" />
         </>
       );
@@ -107,7 +107,7 @@ export function InviteClient({ code, isAuthenticated }: InviteClientProps) {
     if (state === "invalid") {
       return (
         <>
-          <h1 className="text-lg font-semibold">Invite not found</h1>
+          <h1 className="text-lg font-semibold tracking-[-0.01em]">Invite not found</h1>
           <p className="text-sm text-muted-foreground">
             This link may have expired or already been used.
           </p>
@@ -118,7 +118,7 @@ export function InviteClient({ code, isAuthenticated }: InviteClientProps) {
     if (state === "valid" && !isAuthenticated) {
       return (
         <>
-          <h1 className="text-lg font-semibold">
+          <h1 className="text-lg font-semibold tracking-[-0.01em]">
             {spotInfo?.spot?.name
               ? `You've been invited to ${spotInfo.spot.name}`
               : "You've been invited to view a surf spot"}
@@ -141,7 +141,7 @@ export function InviteClient({ code, isAuthenticated }: InviteClientProps) {
     if (state === "preview") {
       return (
         <>
-          <h1 className="text-lg font-semibold">
+          <h1 className="text-lg font-semibold tracking-[-0.01em]">
             {spotInfo?.sharedBy?.name
               ? `${spotInfo.sharedBy.name} shared a spot with you`
               : "You've been invited to view a surf spot"}
@@ -169,7 +169,7 @@ export function InviteClient({ code, isAuthenticated }: InviteClientProps) {
     if (state === "claiming") {
       return (
         <>
-          <h1 className="text-lg font-semibold">Processing...</h1>
+          <h1 className="text-lg font-semibold tracking-[-0.01em]">Processing...</h1>
           <Loader2 className="size-6 mx-auto animate-spin text-muted-foreground" />
         </>
       );
@@ -191,7 +191,7 @@ export function InviteClient({ code, isAuthenticated }: InviteClientProps) {
     if (state === "declined") {
       return (
         <>
-          <h1 className="text-lg font-semibold">Invite declined</h1>
+          <h1 className="text-lg font-semibold tracking-[-0.01em]">Invite declined</h1>
           <p className="text-xs text-muted-foreground">Redirecting to dashboard...</p>
         </>
       );

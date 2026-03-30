@@ -158,7 +158,7 @@ export function SpotPaneSessionDetail({
       <div className="flex items-center justify-between gap-2 px-4 pt-4 pb-3">
         <button
           onClick={onBack}
-          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-all duration-100"
         >
           <ArrowLeft className="size-4" />
           Back
@@ -168,7 +168,7 @@ export function SpotPaneSessionDetail({
             <button
               onClick={handleToggleLog}
               disabled={togglingLog}
-              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all duration-100 ${
                 session.addedToLog
                   ? "bg-primary/10 text-primary hover:bg-primary/20"
                   : "bg-accent hover:bg-accent/80 text-muted-foreground"
@@ -184,7 +184,7 @@ export function SpotPaneSessionDetail({
         ) : (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="rounded-md p-2 hover:bg-accent transition-colors">
+              <button className="rounded-md p-2 hover:bg-accent transition-all duration-100">
                 <MoreHorizontal className="size-4" />
               </button>
             </DropdownMenuTrigger>
@@ -250,7 +250,7 @@ export function SpotPaneSessionDetail({
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 p-3">
-                <h2 className="text-lg font-semibold text-white">
+                <h2 className="text-lg font-semibold tracking-[-0.01em] text-white">
                   {session.spot?.name || "Session"}
                 </h2>
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1">
@@ -281,7 +281,7 @@ export function SpotPaneSessionDetail({
                 <>
                   <button
                     onClick={(e) => { e.stopPropagation(); setActivePhotoIndex((prev) => (prev - 1 + allPhotos.length) % allPhotos.length); }}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 bg-black/40 rounded-full flex items-center justify-center hover:bg-black/60 transition-colors"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 bg-black/40 rounded-full flex items-center justify-center hover:bg-black/60 transition-all duration-100"
                   >
                     <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -289,7 +289,7 @@ export function SpotPaneSessionDetail({
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); setActivePhotoIndex((prev) => (prev + 1) % allPhotos.length); }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 bg-black/40 rounded-full flex items-center justify-center hover:bg-black/60 transition-colors"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 bg-black/40 rounded-full flex items-center justify-center hover:bg-black/60 transition-all duration-100"
                   >
                     <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -331,7 +331,7 @@ export function SpotPaneSessionDetail({
         {/* No-photo header */}
         {allPhotos.length === 0 && (
           <div>
-            <h2 className="text-lg font-semibold">{session.spot?.name || "Session"}</h2>
+            <h2 className="text-lg font-semibold tracking-[-0.01em]">{session.spot?.name || "Session"}</h2>
             <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
               <span>{formatFullDate(session.date)}</span>
               <span>
@@ -359,7 +359,7 @@ export function SpotPaneSessionDetail({
         {/* Equipment */}
         {(session.surfboard || session.wetsuit) && (
           <div className="rounded-lg border bg-background/60 p-3 space-y-2">
-            <p className="text-sm font-semibold">Equipment</p>
+            <p className="text-sm font-semibold tracking-[-0.01em]">Equipment</p>
             {session.surfboard && (
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">Board:</span>
@@ -386,7 +386,7 @@ export function SpotPaneSessionDetail({
         {/* Notes */}
         {session.notes && (
           <div className="rounded-lg border bg-background/60 p-3">
-            <p className="text-sm font-semibold mb-1">Notes</p>
+            <p className="text-sm font-semibold tracking-[-0.01em] mb-1">Notes</p>
             <p className="text-sm whitespace-pre-wrap">{session.notes}</p>
           </div>
         )}
@@ -394,7 +394,7 @@ export function SpotPaneSessionDetail({
         {/* Conditions */}
         {conditions && (
           <div className="rounded-lg border bg-background/60 p-3">
-            <p className="text-sm font-semibold mb-1">Conditions</p>
+            <p className="text-sm font-semibold tracking-[-0.01em] mb-1">Conditions</p>
             <p className="text-xs text-muted-foreground mb-2">Historical conditions at time of session</p>
             <ConditionsDisplay conditions={conditions} />
           </div>
@@ -420,7 +420,7 @@ export function SpotPaneSessionDetail({
           onClick={() => setLightboxOpen(false)}
         >
           <button
-            className="absolute top-6 right-6 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors z-10"
+            className="absolute top-6 right-6 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-all duration-100 z-10"
             onClick={() => setLightboxOpen(false)}
           >
             <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -437,7 +437,7 @@ export function SpotPaneSessionDetail({
             <>
               <button
                 onClick={(e) => { e.stopPropagation(); setActivePhotoIndex((prev) => (prev - 1 + allPhotos.length) % allPhotos.length); }}
-                className="absolute left-6 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors"
+                className="absolute left-6 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-all duration-100"
               >
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -445,7 +445,7 @@ export function SpotPaneSessionDetail({
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); setActivePhotoIndex((prev) => (prev + 1) % allPhotos.length); }}
-                className="absolute right-6 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors"
+                className="absolute right-6 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-all duration-100"
               >
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

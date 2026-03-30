@@ -94,12 +94,12 @@ export function SpotSharePanel({ spotId, spotName, onBack }: SpotSharePanelProps
       <div className="flex items-center gap-2 px-4 pt-4 pb-3 border-b">
         <button
           onClick={onBack}
-          className="rounded-md p-1.5 hover:bg-accent transition-colors"
+          className="rounded-md p-1.5 hover:bg-accent transition-all duration-100"
         >
           <ArrowLeft className="size-4" />
         </button>
         <div className="min-w-0 flex-1">
-          <h2 className="text-lg font-bold truncate">Share {spotName}</h2>
+          <h2 className="text-lg font-bold tracking-[-0.01em] truncate">Share {spotName}</h2>
           <p className="text-xs text-muted-foreground">{claimedCount} of 5 shares used</p>
         </div>
       </div>
@@ -138,7 +138,7 @@ export function SpotSharePanel({ spotId, spotName, onBack }: SpotSharePanelProps
                 {share.inviteUrl && !share.sharedWithUserId && (
                   <button
                     onClick={() => copyShareLink(share.inviteUrl!, spotName)}
-                    className="rounded-md p-1.5 hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+                    className="rounded-md p-1.5 hover:bg-accent transition-all duration-100 text-muted-foreground hover:text-foreground"
                     title="Copy link"
                   >
                     <Copy className="size-3.5" />
@@ -146,7 +146,7 @@ export function SpotSharePanel({ spotId, spotName, onBack }: SpotSharePanelProps
                 )}
                 <button
                   onClick={() => handleRevoke(share.id)}
-                  className="rounded-md p-1.5 hover:bg-accent transition-colors text-muted-foreground hover:text-destructive"
+                  className="rounded-md p-1.5 hover:bg-accent transition-all duration-100 text-muted-foreground hover:text-destructive"
                   title="Revoke share"
                 >
                   <Trash2 className="size-3.5" />

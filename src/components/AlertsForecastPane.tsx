@@ -21,7 +21,7 @@ export function AlertsForecastPane({ spotId, sessionCount }: AlertsForecastPaneP
       <div className="flex border-b">
         <button
           onClick={() => setTab("alerts")}
-          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors ${
+          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium transition-all duration-100 ${
             tab === "alerts"
               ? "text-foreground border-b-2 border-primary -mb-px"
               : "text-muted-foreground hover:text-foreground"
@@ -32,7 +32,7 @@ export function AlertsForecastPane({ spotId, sessionCount }: AlertsForecastPaneP
         </button>
         <button
           onClick={() => setTab("forecast")}
-          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors ${
+          className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium transition-all duration-100 ${
             tab === "forecast"
               ? "text-foreground border-b-2 border-primary -mb-px"
               : "text-muted-foreground hover:text-foreground"

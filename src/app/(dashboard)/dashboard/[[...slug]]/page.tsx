@@ -590,7 +590,7 @@ export default function DashboardPage() {
       {/* Spots needing attention banner */}
       {spotsNeedingAttention.length > 0 && !dismissedLocationBanner && !selectedSpot && addSpotMode === "idle" && (
         <div className="absolute top-4 left-4 right-4 sm:left-auto sm:right-4 z-20 sm:w-96">
-          <div className="rounded-lg border border-amber-500/40 bg-background/95 backdrop-blur-sm shadow-lg p-4 max-h-[calc(100vh-2rem)] flex flex-col">
+          <div className="rounded-lg border border-amber-500/40 bg-background/95 backdrop-blur-sm shadow-[--shadow-popover] p-4 max-h-[calc(100vh-2rem)] flex flex-col">
             <div className="flex items-start gap-3 min-h-0">
               <AlertTriangle className="size-5 text-amber-500 shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0 min-h-0 flex flex-col">
@@ -604,13 +604,13 @@ export default function DashboardPage() {
                 </p>
                 <div className="mt-3 space-y-2 overflow-y-auto pb-4">
                   {spotsNeedingAttention.map(({ spot, missingLocation, missingProfile }) => (
-                    <div key={spot.id} className="rounded-md border border-dashed px-3 py-2 space-y-1.5">
+                    <div key={spot.id} className="rounded-lg border border-dashed px-3 py-2 space-y-1.5">
                       <p className="text-sm font-medium truncate">{spot.name}</p>
                       <div className="flex flex-wrap gap-1.5">
                         {missingLocation && (
                           <button
                             onClick={() => handleFixLocation(spot)}
-                            className="inline-flex items-center gap-1.5 rounded-full bg-accent/50 px-2.5 py-1 text-xs hover:bg-accent transition-colors"
+                            className="inline-flex items-center gap-1.5 rounded-full bg-accent/50 px-2.5 py-1 text-xs hover:bg-accent transition-all duration-100"
                           >
                             <MapPin className="size-3" />
                             <span>Set location</span>
@@ -619,7 +619,7 @@ export default function DashboardPage() {
                         {missingProfile && (
                           <button
                             onClick={() => { handleSpotClick(spot); setPaneView("profiles"); }}
-                            className="inline-flex items-center gap-1.5 rounded-full bg-accent/50 px-2.5 py-1 text-xs hover:bg-accent transition-colors"
+                            className="inline-flex items-center gap-1.5 rounded-full bg-accent/50 px-2.5 py-1 text-xs hover:bg-accent transition-all duration-100"
                           >
                             <Target className="size-3" />
                             <span>Add condition profile</span>
@@ -632,7 +632,7 @@ export default function DashboardPage() {
               </div>
               <button
                 onClick={() => setDismissedLocationBanner(true)}
-                className="rounded-md p-1 hover:bg-accent transition-colors shrink-0"
+                className="rounded-md p-1 hover:bg-accent transition-all duration-100 shrink-0"
               >
                 <X className="size-4 text-muted-foreground" />
               </button>
@@ -644,7 +644,7 @@ export default function DashboardPage() {
       {/* Home location missing banner */}
       {!homeLocation && !loading && !dismissedHomeBanner && !selectedSpot && addSpotMode === "idle" && spotsNeedingAttention.length === 0 && (
         <div className="absolute top-4 left-4 right-4 sm:left-auto sm:right-4 z-20 sm:w-96">
-          <div className="rounded-lg border border-amber-500/40 bg-background/95 backdrop-blur-sm shadow-lg p-4">
+          <div className="rounded-lg border border-amber-500/40 bg-background/95 backdrop-blur-sm shadow-[--shadow-popover] p-4">
             <div className="flex items-start gap-3">
               <AlertTriangle className="size-5 text-amber-500 shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
@@ -654,7 +654,7 @@ export default function DashboardPage() {
                 </p>
                 <button
                   onClick={() => router.push("/settings")}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-accent/50 px-2.5 py-1 text-xs hover:bg-accent transition-colors mt-2"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-accent/50 px-2.5 py-1 text-xs hover:bg-accent transition-all duration-100 mt-2"
                 >
                   <MapPin className="size-3" />
                   <span>Set location</span>
@@ -662,7 +662,7 @@ export default function DashboardPage() {
               </div>
               <button
                 onClick={() => setDismissedHomeBanner(true)}
-                className="rounded-md p-1 hover:bg-accent transition-colors shrink-0"
+                className="rounded-md p-1 hover:bg-accent transition-all duration-100 shrink-0"
               >
                 <X className="size-4 text-muted-foreground" />
               </button>
@@ -673,7 +673,7 @@ export default function DashboardPage() {
 
       {/* Spot detail pane — hidden when profile wizard is active */}
       {selectedSpot && addSpotMode === "idle" && !profileWizard && (
-        <div className="absolute inset-0 sm:inset-auto sm:top-4 sm:left-4 sm:bottom-4 z-20 w-full sm:w-[50vw] sm:max-w-[800px] flex flex-col sm:rounded-lg border bg-background/95 sm:bg-background/90 backdrop-blur-sm shadow-lg overflow-hidden">
+        <div className="absolute inset-0 sm:inset-auto sm:top-4 sm:left-4 sm:bottom-4 z-20 w-full sm:w-[50vw] sm:max-w-[800px] flex flex-col sm:rounded-lg border bg-background/95 sm:bg-background/90 backdrop-blur-sm shadow-[--shadow-popover] overflow-hidden">
           {paneView === "session" && viewingSession ? (
             <SpotPaneSessionDetail
               session={viewingSession}
@@ -726,7 +726,7 @@ export default function DashboardPage() {
               {/* Header */}
               <div className="flex items-start justify-between gap-2 px-4 pt-4 pb-3">
                 <div className="min-w-0 flex-1">
-                  <h2 className="text-xl font-bold truncate">{selectedSpot.name}</h2>
+                  <h2 className="text-xl font-bold tracking-[-0.02em] truncate">{selectedSpot.name}</h2>
                   {selectedSpot.description && (
                     <p className="text-sm text-muted-foreground mt-1">{selectedSpot.description}</p>
                   )}
@@ -738,7 +738,7 @@ export default function DashboardPage() {
                   {!sharedSpotIds.has(selectedSpot.id) && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <button className="rounded-md p-2 hover:bg-accent transition-colors">
+                      <button className="rounded-md p-2 hover:bg-accent transition-all duration-100">
                         <MoreHorizontal className="size-4" />
                       </button>
                     </DropdownMenuTrigger>
@@ -771,7 +771,7 @@ export default function DashboardPage() {
                   )}
                   <button
                     onClick={handleCloseSpotDetail}
-                    className="rounded-md p-2 hover:bg-accent transition-colors"
+                    className="rounded-md p-2 hover:bg-accent transition-all duration-100"
                   >
                     <X className="size-5 sm:size-4" />
                   </button>
@@ -794,12 +794,12 @@ export default function DashboardPage() {
                   <div>
                     <button
                       onClick={() => setShowAllSessions(false)}
-                      className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-3"
+                      className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-all duration-100 mb-3"
                     >
                       <ArrowLeft className="size-4" />
                       Back
                     </button>
-                    <h3 className="text-sm font-semibold mb-3">All Sessions</h3>
+                    <h3 className="text-sm font-semibold tracking-[-0.01em] mb-3">All Sessions</h3>
                     <div className="space-y-3">
                       {spotSessions.map((session) => {
                         const photo = session.photos?.[0]?.photoUrl || session.photoUrl;
@@ -807,7 +807,7 @@ export default function DashboardPage() {
                           <button
                             key={session.id}
                             onClick={() => handleViewSession(session)}
-                            className="block w-full text-left rounded-lg border bg-background/60 overflow-hidden hover:bg-accent/50 transition-colors"
+                            className="block w-full text-left rounded-lg border bg-background/60 overflow-hidden hover:bg-accent/50 transition-all duration-100"
                           >
                             {photo && (
                               <div className="relative aspect-video w-full overflow-hidden">
@@ -902,7 +902,7 @@ export default function DashboardPage() {
                     {spotProfileCounts[selectedSpot.id] === 0 && !sharedSpotIds.has(selectedSpot.id) && (
                       <button
                         onClick={() => setPaneView("profiles")}
-                        className="w-full rounded-lg border border-yellow-500/50 bg-yellow-500/10 px-3 py-2.5 text-left hover:bg-yellow-500/15 transition-colors"
+                        className="w-full rounded-lg border border-yellow-500/50 bg-yellow-500/10 px-3 py-2.5 text-left hover:bg-yellow-500/15 transition-all duration-100"
                       >
                         <div className="flex items-start gap-2">
                           <AlertTriangle className="size-3.5 text-yellow-600 dark:text-yellow-400 shrink-0 mt-0.5" />
@@ -922,11 +922,11 @@ export default function DashboardPage() {
                     ) : spotSessions.length > 0 ? (
                       <div>
                         <div className="flex items-center justify-between mb-2">
-                          <h3 className="text-sm font-semibold">Recent Sessions</h3>
+                          <h3 className="text-sm font-semibold tracking-[-0.01em]">Recent Sessions</h3>
                           {spotSessions.length > 2 && (
                             <button
                               onClick={() => setShowAllSessions(true)}
-                              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                              className="text-xs text-muted-foreground hover:text-foreground transition-all duration-100"
                             >
                               View all
                             </button>
@@ -939,7 +939,7 @@ export default function DashboardPage() {
                               <button
                                 key={session.id}
                                 onClick={() => handleViewSession(session)}
-                                className="block w-full text-left rounded-lg border bg-background/60 overflow-hidden hover:bg-accent/50 transition-colors"
+                                className="block w-full text-left rounded-lg border bg-background/60 overflow-hidden hover:bg-accent/50 transition-all duration-100"
                               >
                                 {photo && (
                                   <div className="relative aspect-video w-full overflow-hidden">
@@ -1035,7 +1035,7 @@ export default function DashboardPage() {
           {loading ? (
             /* Skeleton panels while data loads */
             <>
-              <div className="rounded-lg border bg-background/90 backdrop-blur-sm shadow-lg overflow-hidden">
+              <div className="rounded-lg border bg-background/90 backdrop-blur-sm shadow-[--shadow-popover] overflow-hidden">
                 <div className="px-4 py-2.5 border-b">
                   <div className="h-4 w-16 bg-muted animate-pulse rounded" />
                 </div>
@@ -1050,7 +1050,7 @@ export default function DashboardPage() {
                   ))}
                 </div>
               </div>
-              <div className="rounded-lg border bg-background/90 backdrop-blur-sm shadow-lg overflow-hidden">
+              <div className="rounded-lg border bg-background/90 backdrop-blur-sm shadow-[--shadow-popover] overflow-hidden">
                 <div className="flex items-center border-b gap-2 px-4 py-2.5">
                   <div className="h-4 w-16 bg-muted animate-pulse rounded" />
                   <div className="h-4 w-12 bg-muted animate-pulse rounded" />
@@ -1072,11 +1072,11 @@ export default function DashboardPage() {
           ) : (sessions.length > 0 || alertSummaries.length > 0 || spots.length > 0 || surfboards.length > 0 || wetsuits.length > 0) ? (
             <>
           {/* Alerts + Forecast tabbed panel */}
-          <div className="rounded-lg border bg-background/90 backdrop-blur-sm shadow-lg overflow-hidden">
+          <div className="rounded-lg border bg-background/90 backdrop-blur-sm shadow-[--shadow-popover] overflow-hidden">
             <div className="flex border-b">
               <button
                 onClick={() => setAlertsForecastTab("alerts")}
-                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-colors ${
+                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-all duration-100 ${
                   alertsForecastTab === "alerts"
                     ? "text-foreground border-b-2 border-primary -mb-px"
                     : "text-muted-foreground hover:text-foreground"
@@ -1092,7 +1092,7 @@ export default function DashboardPage() {
               </button>
               <button
                 onClick={() => setAlertsForecastTab("forecast")}
-                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-colors ${
+                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-all duration-100 ${
                   alertsForecastTab === "forecast"
                     ? "text-foreground border-b-2 border-primary -mb-px"
                     : "text-muted-foreground hover:text-foreground"
@@ -1146,7 +1146,7 @@ export default function DashboardPage() {
                             <button
                               key={`${summary.spotId}:${summary.forecastHour}`}
                               onClick={() => spot && handleSpotClick(spot)}
-                              className="flex items-center gap-3 px-4 py-2.5 hover:bg-accent/50 transition-colors w-full text-left"
+                              className="flex items-center gap-3 px-4 py-2.5 hover:bg-accent/50 transition-all duration-100 w-full text-left"
                             >
                               <div className="min-w-0 flex-1">
                                 <p className="text-sm font-medium truncate">{summary.spotName}</p>
@@ -1186,11 +1186,11 @@ export default function DashboardPage() {
 
           {/* Sessions / Spots panel */}
           {(sessions.length > 0 || spots.length > 0 || surfboards.length > 0 || wetsuits.length > 0) && (
-            <div className="rounded-lg border bg-background/90 backdrop-blur-sm shadow-lg overflow-hidden">
+            <div className="rounded-lg border bg-background/90 backdrop-blur-sm shadow-[--shadow-popover] overflow-hidden">
               <div className="flex border-b">
                 <button
                   onClick={() => { setSessionsTab("sessions"); setSessionsPanelOpen(true); }}
-                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-colors ${
+                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-all duration-100 ${
                     sessionsTab === "sessions"
                       ? "text-foreground border-b-2 border-primary -mb-px"
                       : "text-muted-foreground hover:text-foreground"
@@ -1201,7 +1201,7 @@ export default function DashboardPage() {
                 </button>
                 <button
                   onClick={() => { setSessionsTab("spots"); setSessionsPanelOpen(true); }}
-                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-colors ${
+                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-all duration-100 ${
                     sessionsTab === "spots"
                       ? "text-foreground border-b-2 border-primary -mb-px"
                       : "text-muted-foreground hover:text-foreground"
@@ -1212,7 +1212,7 @@ export default function DashboardPage() {
                 </button>
                 <button
                   onClick={() => { setSessionsTab("equipment"); setSessionsPanelOpen(true); }}
-                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-colors ${
+                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-all duration-100 ${
                     sessionsTab === "equipment"
                       ? "text-foreground border-b-2 border-primary -mb-px"
                       : "text-muted-foreground hover:text-foreground"
@@ -1242,7 +1242,7 @@ export default function DashboardPage() {
                               handleViewSession(session);
                             }
                           }}
-                          className="flex items-center gap-3 px-4 py-2.5 hover:bg-accent/50 transition-colors w-full text-left"
+                          className="flex items-center gap-3 px-4 py-2.5 hover:bg-accent/50 transition-all duration-100 w-full text-left"
                         >
                           {photo && (
                             <img
@@ -1295,7 +1295,7 @@ export default function DashboardPage() {
                           <button
                             key={item.id}
                             onClick={() => setGearModalOpen(true)}
-                            className="flex items-center gap-3 px-4 py-2.5 hover:bg-accent/50 transition-colors w-full text-left"
+                            className="flex items-center gap-3 px-4 py-2.5 hover:bg-accent/50 transition-all duration-100 w-full text-left"
                           >
                             {item._type === "surfboard" && (item as Surfboard).photoUrl && (
                               <img
@@ -1347,7 +1347,7 @@ export default function DashboardPage() {
                       <button
                         key={spot.id}
                         onClick={() => handleSpotClick(spot)}
-                        className="flex items-center gap-3 px-4 py-2.5 hover:bg-accent/50 transition-colors w-full text-left"
+                        className="flex items-center gap-3 px-4 py-2.5 hover:bg-accent/50 transition-all duration-100 w-full text-left"
                       >
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium truncate">{spot.name}</p>
@@ -1379,7 +1379,7 @@ export default function DashboardPage() {
       {/* Instruction banner (picking / detailing / fixing) */}
       {addSpotMode !== "idle" && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20">
-          <div className="flex items-center gap-2 rounded-full bg-background/90 backdrop-blur-sm shadow-lg px-4 py-2 text-sm font-medium">
+          <div className="flex items-center gap-2 rounded-full bg-background/90 backdrop-blur-sm shadow-[--shadow-popover] px-4 py-2 text-sm font-medium">
             <span>
               {addSpotMode === "picking"
                 ? "Tap the map to place your spot"
@@ -1389,7 +1389,7 @@ export default function DashboardPage() {
             </span>
             <button
               onClick={addSpotMode.startsWith("fixing") ? handleCancelFixLocation : handleCancelAddSpot}
-              className="rounded-full p-1 hover:bg-accent transition-colors"
+              className="rounded-full p-1 hover:bg-accent transition-all duration-100"
             >
               <X className="size-4" />
             </button>
@@ -1400,7 +1400,7 @@ export default function DashboardPage() {
       {/* Bottom slide-up panel (detailing only) */}
       {addSpotMode === "detailing" && newSpotMarker && (
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 w-[calc(100%-2rem)] sm:w-96">
-          <div className="rounded-lg border bg-background/95 backdrop-blur-sm shadow-lg p-4 space-y-3">
+          <div className="rounded-lg border bg-background/95 backdrop-blur-sm shadow-[--shadow-popover] p-4 space-y-3">
             <div className="space-y-1.5">
               <Label htmlFor="spot-name">Name</Label>
               <Input
@@ -1443,7 +1443,7 @@ export default function DashboardPage() {
       {/* Bottom slide-up panel (fix location) */}
       {addSpotMode === "fixing-detailing" && newSpotMarker && fixLocationSpot && (
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 w-[calc(100%-2rem)] sm:w-96">
-          <div className="rounded-lg border bg-background/95 backdrop-blur-sm shadow-lg p-4 space-y-3">
+          <div className="rounded-lg border bg-background/95 backdrop-blur-sm shadow-[--shadow-popover] p-4 space-y-3">
             <p className="text-sm font-medium">{fixLocationSpot.name}</p>
             <p className="text-xs text-muted-foreground">
               {newSpotMarker.lat.toFixed(5)}, {newSpotMarker.lng.toFixed(5)}

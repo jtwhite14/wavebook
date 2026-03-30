@@ -58,7 +58,7 @@ export function ForecastScores({ spotId }: ForecastScoresProps) {
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-semibold">Forecast Scores</h3>
+        <h3 className="text-sm font-semibold tracking-[-0.01em]">Forecast Scores</h3>
         <span className="text-[10px] text-muted-foreground">
           {data.seasonalSessionCount} session{data.seasonalSessionCount !== 1 ? "s" : ""} matched
           {data.ignoredCount > 0 && `, ${data.ignoredCount} ignored`}
@@ -76,7 +76,7 @@ export function ForecastScores({ spotId }: ForecastScoresProps) {
             <div key={day.date} className="border-b last:border-b-0">
               <button
                 onClick={() => setExpanded(isExpanded ? null : day.date)}
-                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-accent/50 transition-colors text-left"
+                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-accent/50 transition-all duration-100 text-left"
               >
                 <span className="text-xs font-medium w-16 shrink-0">{day.label}</span>
                 <div className="flex-1 flex items-center gap-1.5">

@@ -116,10 +116,10 @@ export function GearModal({ open, onClose, onChanged }: GearModalProps) {
         <div className="pointer-events-auto w-full max-w-2xl max-h-full overflow-y-auto rounded-lg border bg-background shadow-xl">
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b sticky top-0 bg-background z-10">
-            <h2 className="text-xl font-bold">Gear</h2>
+            <h2 className="text-xl font-bold tracking-[-0.02em]">Gear</h2>
             <button
               onClick={onClose}
-              className="rounded-md p-2 hover:bg-accent transition-colors"
+              className="rounded-md p-2 hover:bg-accent transition-all duration-100"
             >
               <X className="size-4" />
             </button>
@@ -146,7 +146,7 @@ export function GearModal({ open, onClose, onChanged }: GearModalProps) {
                 {/* Surfboards */}
                 <section className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold">Boards</h3>
+                    <h3 className="text-lg font-semibold tracking-[-0.01em]">Boards</h3>
                     <Button size="sm" variant="outline" onClick={() => handleAdd("surfboard")}>
                       <Plus className="size-4 mr-1" />
                       Add Board
@@ -176,7 +176,7 @@ export function GearModal({ open, onClose, onChanged }: GearModalProps) {
                 {/* Wetsuits */}
                 <section className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold">Wetsuits</h3>
+                    <h3 className="text-lg font-semibold tracking-[-0.01em]">Wetsuits</h3>
                     <Button size="sm" variant="outline" onClick={() => handleAdd("wetsuit")}>
                       <Plus className="size-4 mr-1" />
                       Add Wetsuit

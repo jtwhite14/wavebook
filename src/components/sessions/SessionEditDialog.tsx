@@ -120,7 +120,7 @@ export function SessionEditDialog({
                   onClick={() => setRating(i + 1)}
                 >
                   <svg
-                    className={`w-7 h-7 transition-colors ${
+                    className={`w-7 h-7 transition-all duration-100 ${
                       i < (hoverRating || rating)
                         ? "text-yellow-400"
                         : "text-muted-foreground/30"

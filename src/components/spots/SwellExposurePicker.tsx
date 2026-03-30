@@ -55,7 +55,7 @@ export function SwellExposurePicker({ value, onChange, variant = "default" }: Sw
               key={entry.dir}
               type="button"
               onClick={() => toggle(entry.dir)}
-              className={`w-9 h-9 rounded text-xs font-medium transition-colors ${
+              className={`w-9 h-9 rounded text-xs font-medium transition-all duration-100 ${
                 selected
                   ? selectedStyle
                   : "bg-muted text-muted-foreground hover:bg-accent"

@@ -827,7 +827,7 @@ export function ProfileWizard({
                   key={m.value}
                   onClick={() => toggleMonth(m.value)}
                   className={cn(
-                    "px-2 py-1 rounded-full text-xs font-medium transition-colors border",
+                    "px-2 py-1 rounded-full text-xs font-medium transition-all duration-100 border",
                     activeMonths.includes(m.value)
                       ? "border-primary text-primary bg-primary/10"
                       : "border-transparent bg-muted text-muted-foreground hover:bg-accent"
@@ -854,7 +854,7 @@ export function ProfileWizard({
                     prev.includes(m.value) ? prev.filter(v => v !== m.value) : [...prev, m.value]
                   )}
                   className={cn(
-                    "px-2 py-1 rounded-full text-xs font-medium transition-colors border",
+                    "px-2 py-1 rounded-full text-xs font-medium transition-all duration-100 border",
                     excludeMonths.includes(m.value)
                       ? "border-destructive text-destructive bg-destructive/10"
                       : "border-transparent bg-muted text-muted-foreground hover:bg-accent"
@@ -912,12 +912,12 @@ export function ProfileWizard({
         <div className="rounded-xl border bg-background/95 backdrop-blur-sm shadow-2xl overflow-hidden">
           {/* Question + close button */}
           <div className="px-5 pt-4 pb-3 flex items-start gap-3">
-            <h3 className="text-base font-semibold text-foreground leading-snug flex-1">
+            <h3 className="text-base font-semibold tracking-[-0.01em] text-foreground leading-snug flex-1">
               {STEP_QUESTIONS[currentStep]}
             </h3>
             <button
               onClick={handleCancel}
-              className="rounded-md p-1 -mt-0.5 -mr-1 hover:bg-accent transition-colors shrink-0"
+              className="rounded-md p-1 -mt-0.5 -mr-1 hover:bg-accent transition-all duration-100 shrink-0"
             >
               <X className="size-4 text-muted-foreground" />
             </button>
@@ -1007,7 +1007,7 @@ function WizardPill({
     <button
       onClick={onClick}
       className={cn(
-        "px-3 py-1.5 rounded-full text-sm font-medium transition-colors border",
+        "px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-100 border",
         active
           ? "border-primary text-primary bg-primary/10"
           : "border-transparent bg-muted text-muted-foreground hover:bg-accent"
@@ -1033,7 +1033,7 @@ function ExclusionPill({
     <button
       onClick={onClick}
       className={cn(
-        "px-3 py-1.5 rounded-full text-sm font-medium transition-colors border",
+        "px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-100 border",
         active
           ? "border-destructive text-destructive bg-destructive/10"
           : "border-transparent bg-muted text-muted-foreground hover:bg-accent"
@@ -1063,7 +1063,7 @@ function StepWithImportance({
         <span className="text-xs text-muted-foreground">Importance:</span>
         <button
           onClick={() => onLevelChange((level + 1) % 5)}
-          className={`px-2 py-0.5 rounded text-xs font-semibold leading-none transition-colors ${info.style}`}
+          className={`px-2 py-0.5 rounded text-xs font-semibold leading-none transition-all duration-100 ${info.style}`}
           title="Click to cycle importance"
         >
           {info.label}

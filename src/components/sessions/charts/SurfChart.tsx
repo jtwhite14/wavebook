@@ -129,7 +129,7 @@ export function SurfChart({ data, sessionIndex }: SurfChartProps) {
             SURF HEIGHT
           </span>
           <div className="flex items-baseline gap-1 mt-1">
-            <span className="text-2xl font-semibold tracking-tight text-white">
+            <span className="text-2xl font-semibold tracking-[-0.01em] text-white">
               {sessionWave > 0
                 ? `${Math.floor(sessionWave)}-${Math.ceil(sessionWave)}`
                 : "—"}
@@ -147,7 +147,7 @@ export function SurfChart({ data, sessionIndex }: SurfChartProps) {
             SWELL
           </span>
           <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-lg font-semibold text-white tabular-nums">
+            <span className="text-lg font-semibold tracking-[-0.01em] text-white tabular-nums">
               {swellParts.length > 0 ? swellParts.join("  ") : "—"}
             </span>
           </div>

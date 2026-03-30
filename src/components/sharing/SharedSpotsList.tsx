@@ -22,7 +22,7 @@ export function SharedSpotsList({ sharedSpots, onSpotClick, selectedShareId }: S
         <button
           key={shared.shareId}
           onClick={() => onSpotClick(shared)}
-          className={`flex items-center gap-3 px-4 py-2.5 hover:bg-accent/50 transition-colors w-full text-left ${
+          className={`flex items-center gap-3 px-4 py-2.5 hover:bg-accent/50 transition-all duration-100 w-full text-left ${
             selectedShareId === shared.shareId ? "bg-accent" : ""
           }`}
         >

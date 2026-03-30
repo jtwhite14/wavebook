@@ -429,7 +429,7 @@ export default function OnboardingPage() {
           className="focus:outline-none"
         >
           <svg
-            className={`w-6 h-6 transition-colors ${
+            className={`w-6 h-6 transition-all duration-100 ${
               i < value
                 ? "text-yellow-400"
                 : "text-muted-foreground/40 hover:text-yellow-200"
@@ -449,7 +449,7 @@ export default function OnboardingPage() {
   return (
     <div className="max-w-3xl mx-auto py-8">
       <div className="text-center mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold">Welcome to Wavebook</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-[-0.02em]">Welcome to Wavebook</h1>
         <p className="text-muted-foreground mt-2">
           Import your surf photos to create your session history
         </p>
@@ -652,7 +652,7 @@ export default function OnboardingPage() {
                                 creatingNewSpot: false,
                               })
                             }
-                            className={`p-3 rounded-lg border text-left transition-colors ${
+                            className={`p-3 rounded-lg border text-left transition-all duration-100 ${
                               currentReview.spotId === spot.id
                                 ? "border-primary bg-primary/5"
                                 : "hover:border-primary/50"
@@ -943,7 +943,7 @@ export default function OnboardingPage() {
             <CardContent className="pt-8 pb-8">
               <div className="text-center space-y-4">
                 <div className="text-6xl">*</div>
-                <h2 className="text-2xl font-bold">You&apos;re all set!</h2>
+                <h2 className="text-2xl font-bold tracking-[-0.02em]">You&apos;re all set!</h2>
                 <p className="text-lg text-muted-foreground">
                   You&apos;ve added {createdCount} session
                   {createdCount !== 1 ? "s" : ""}

@@ -305,10 +305,10 @@ export function ProfileEditor({ spotId, profile, defaultName, onSave, onCancel, 
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-2 px-4 pt-4 pb-3 border-b">
-        <button onClick={handleCancel} className="rounded-md p-1 hover:bg-accent transition-colors">
+        <button onClick={handleCancel} className="rounded-md p-1 hover:bg-accent transition-all duration-100">
           <ArrowLeft className="size-4" />
         </button>
-        <h2 className="text-lg font-semibold">
+        <h2 className="text-lg font-semibold tracking-[-0.01em]">
           {profile ? "Edit Profile" : "New Profile"}
         </h2>
       </div>
@@ -320,7 +320,7 @@ export function ProfileEditor({ spotId, profile, defaultName, onSave, onCancel, 
               key={key}
               onClick={() => applyPreset(key)}
               className={cn(
-                "px-2.5 py-1 rounded-full text-xs font-medium transition-colors",
+                "px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-100",
                 activePreset === key
                   ? "border border-primary text-primary bg-primary/10"
                   : "bg-muted text-muted-foreground hover:bg-accent"
@@ -486,7 +486,7 @@ export function ProfileEditor({ spotId, profile, defaultName, onSave, onCancel, 
                 key={m.value}
                 onClick={() => toggleMonth(m.value)}
                 className={cn(
-                  "px-2 py-0.5 rounded-full text-xs font-medium transition-colors",
+                  "px-2 py-0.5 rounded-full text-xs font-medium transition-all duration-100",
                   activeMonths.includes(m.value)
                     ? "border border-primary text-primary bg-primary/10"
                     : "bg-muted text-muted-foreground hover:bg-accent"
@@ -564,7 +564,7 @@ function ConditionRow({
         <span className="text-xs font-medium text-muted-foreground">{label}</span>
         <button
           onClick={() => onLevelChange((level + 1) % 5)}
-          className={`px-1.5 py-0.5 rounded text-[10px] font-semibold leading-none transition-colors ${info.style}`}
+          className={`px-1.5 py-0.5 rounded text-[10px] font-semibold leading-none transition-all duration-100 ${info.style}`}
           title="Click to cycle importance"
         >
           {info.label}
@@ -590,7 +590,7 @@ function Pill({
     <button
       onClick={onClick}
       className={cn(
-        "px-2.5 py-1 rounded-full text-xs font-medium transition-colors",
+        "px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-100",
         active
           ? "border border-primary text-primary bg-primary/10"
           : "bg-muted text-muted-foreground hover:bg-accent"
@@ -615,10 +615,10 @@ function ExclusionDropdown({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-md border border-destructive/25 overflow-hidden -mx-0.5">
+    <div className="rounded-lg border border-destructive/25 overflow-hidden -mx-0.5">
       <button
         type="button"
-        className="w-full flex items-center gap-1.5 px-2.5 py-1.5 text-left hover:bg-destructive/5 transition-colors"
+        className="w-full flex items-center gap-1.5 px-2.5 py-1.5 text-left hover:bg-destructive/5 transition-all duration-100"
         onClick={onToggle}
       >
         <ChevronRight className={`size-3 text-destructive/60 shrink-0 transition-transform duration-200 ${open ? 'rotate-90' : ''}`} />
@@ -651,7 +651,7 @@ function ExclusionPill({
     <button
       onClick={onClick}
       className={cn(
-        "px-2.5 py-1 rounded-full text-xs font-medium transition-colors",
+        "px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-100",
         active
           ? "border border-destructive text-destructive bg-destructive/10"
           : "bg-muted text-muted-foreground hover:bg-accent"

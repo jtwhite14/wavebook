@@ -23,6 +23,7 @@
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
+  --color-border-secondary: var(--border-secondary);
   --color-destructive: var(--destructive);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
@@ -46,7 +47,7 @@
 }
 
 :root {
-  --radius: 0.625rem;
+  --radius: 0.5rem;
   --background: oklch(0.13 0 0);
   --foreground: oklch(0.95 0 0);
   --card: oklch(0.17 0 0);
@@ -62,8 +63,9 @@
   --accent: oklch(0.22 0 0);
   --accent-foreground: oklch(0.95 0 0);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 12%);
+  --border: oklch(1 0 0 / 8%);
+  --border-secondary: oklch(1 0 0 / 5%);
+  --input: oklch(1 0 0 / 10%);
   --ring: oklch(0.848 0.173 86.06);
   --chart-1: oklch(0.848 0.173 86.06);
   --chart-2: oklch(0.512 0.273 263.49);
@@ -76,8 +78,14 @@
   --sidebar-primary-foreground: oklch(0.15 0 0);
   --sidebar-accent: oklch(0.18 0 0);
   --sidebar-accent-foreground: oklch(0.95 0 0);
-  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-border: oklch(1 0 0 / 6%);
   --sidebar-ring: oklch(0.848 0.173 86.06);
+
+  /* Layered shadows */
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.2), 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  --shadow-popover: 0 4px 12px 0 rgb(0 0 0 / 0.4), 0 1px 4px 0 rgb(0 0 0 / 0.2);
+  --shadow-button: 0 1px 2px 0 rgb(0 0 0 / 0.15);
 }
 
 .dark {
@@ -96,8 +104,9 @@
   --accent: oklch(0.22 0 0);
   --accent-foreground: oklch(0.95 0 0);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 12%);
+  --border: oklch(1 0 0 / 8%);
+  --border-secondary: oklch(1 0 0 / 5%);
+  --input: oklch(1 0 0 / 10%);
   --ring: oklch(0.848 0.173 86.06);
   --chart-1: oklch(0.848 0.173 86.06);
   --chart-2: oklch(0.512 0.273 263.49);
@@ -110,8 +119,13 @@
   --sidebar-primary-foreground: oklch(0.15 0 0);
   --sidebar-accent: oklch(0.18 0 0);
   --sidebar-accent-foreground: oklch(0.95 0 0);
-  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-border: oklch(1 0 0 / 6%);
   --sidebar-ring: oklch(0.848 0.173 86.06);
+
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.2), 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  --shadow-popover: 0 4px 12px 0 rgb(0 0 0 / 0.4), 0 1px 4px 0 rgb(0 0 0 / 0.2);
+  --shadow-button: 0 1px 2px 0 rgb(0 0 0 / 0.15);
 }
 
 @layer base {
@@ -120,8 +134,20 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-size: 0.9375rem;
+    line-height: 1.5;
     -webkit-tap-highlight-color: transparent;
     -webkit-text-size-adjust: 100%;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Focus ring utility */
+.focus-ring {
+  @apply outline-none;
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
   }
 }
 

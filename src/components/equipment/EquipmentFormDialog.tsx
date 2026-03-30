@@ -259,7 +259,7 @@ export function EquipmentFormDialog({
               <div className="space-y-2">
                 <Label>Photo</Label>
                 {photoUrl ? (
-                  <div className="relative w-full aspect-[4/3] rounded-md overflow-hidden border">
+                  <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden border">
                     <img
                       src={photoUrl}
                       alt="Board photo"
@@ -278,7 +278,7 @@ export function EquipmentFormDialog({
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploading}
-                    className="flex items-center justify-center gap-2 w-full h-24 rounded-md border border-dashed text-sm text-muted-foreground hover:bg-accent/50 transition-colors"
+                    className="flex items-center justify-center gap-2 w-full h-24 rounded-lg border border-dashed text-sm text-muted-foreground hover:bg-accent/50 transition-all duration-100"
                   >
                     <Camera className="size-4" />
                     {uploading ? "Uploading..." : "Add a photo"}

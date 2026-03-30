@@ -220,7 +220,7 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <h1 className="text-2xl sm:text-3xl font-bold">Settings</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold tracking-[-0.02em]">Settings</h1>
 
       {/* Account */}
       <Card>
@@ -324,13 +324,13 @@ export default function SettingsPage() {
                   </Button>
                 </div>
                 {addressResults.length > 0 && (
-                  <div className="absolute z-20 mt-1 w-full rounded-md border bg-popover shadow-lg">
+                  <div className="absolute z-20 mt-1 w-full rounded-lg border bg-popover shadow-[--shadow-popover]">
                     {addressResults.map((result, i) => (
                       <button
                         key={i}
                         type="button"
                         onClick={() => handleSelectAddress(result.center, result.place_name)}
-                        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-left hover:bg-accent transition-colors first:rounded-t-md last:rounded-b-md"
+                        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-left hover:bg-accent transition-all duration-100 first:rounded-t-lg last:rounded-b-lg"
                       >
                         <MapPin className="size-3.5 shrink-0 text-muted-foreground" />
                         <span className="truncate">{result.place_name}</span>

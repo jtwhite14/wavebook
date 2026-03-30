@@ -36,7 +36,7 @@ export default function SpotMarker({ spot, isSelected, hasAlert }: SpotMarkerPro
       <div
         className={`
           absolute bottom-full left-1/2 -translate-x-1/2 mb-2
-          px-2 py-1 bg-background border rounded-md shadow-lg
+          px-2 py-1 bg-background border rounded-lg shadow-[--shadow-popover]
           whitespace-nowrap text-sm font-medium
           opacity-0 group-hover:opacity-100 transition-opacity
           pointer-events-none

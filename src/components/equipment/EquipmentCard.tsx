@@ -82,7 +82,7 @@ export function EquipmentCard({ equipment, type, onEdit, onDelete, onRetire }: E
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="font-semibold truncate">{equipment.name}</h3>
+            <h3 className="font-semibold tracking-[-0.01em] truncate">{equipment.name}</h3>
             {isRetired && <Badge variant="secondary" className="text-xs">Retired</Badge>}
           </div>
           {brandModel && (

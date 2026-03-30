@@ -24,14 +24,14 @@ export function LandingNav() {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 px-4 md:px-6 pt-3 md:pt-4">
       <div
-        className={`mx-auto max-w-6xl flex items-center justify-between h-12 md:h-14 px-5 md:px-8 rounded-full backdrop-blur-md border shadow-sm transition-colors duration-300 ${
+        className={`mx-auto max-w-6xl flex items-center justify-between h-11 md:h-12 px-5 md:px-7 rounded-full backdrop-blur-md border shadow-[--shadow-card] transition-colors duration-300 ${
           isDark
             ? "bg-white/10 border-white/15"
             : "bg-white/30 border-white/40"
         }`}
       >
         <span
-          className={`flex items-center gap-2 text-sm font-semibold tracking-tight transition-colors duration-300 ${
+          className={`flex items-center gap-2 text-sm font-semibold tracking-[-0.01em] transition-colors duration-300 ${
             isDark ? "text-white" : "text-gray-900"
           }`}
         >

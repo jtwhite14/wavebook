@@ -196,7 +196,7 @@ export function AlertTuningSection({ spotId, onSave }: AlertTuningSectionProps) 
             <button
               key={key}
               onClick={() => applyPreset(key)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-100 ${
                 activePreset === key
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted text-muted-foreground hover:bg-accent"
@@ -324,7 +324,7 @@ function TuningSection({
   return (
     <div className="rounded-lg border overflow-hidden">
       <button
-        className="w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-muted/50 transition-colors"
+        className="w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-muted/50 transition-all duration-100"
         onClick={() => setOpen(!open)}
       >
         <ChevronRight className={`size-3.5 text-muted-foreground shrink-0 transition-transform duration-200 ${open ? 'rotate-90' : ''}`} />
@@ -370,7 +370,7 @@ function PreferenceGroup({
             <button
               key={opt.value}
               onClick={() => onSelect(opt.value)}
-              className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-all duration-100 ${
                 isSelected
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted text-muted-foreground hover:bg-accent"
@@ -408,7 +408,7 @@ function ImportanceDots({
           <button
             key={level}
             onClick={(e) => handleClick(level, e)}
-            className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+            className={`px-2 py-1 rounded text-xs font-medium transition-all duration-100 ${
               isActive
                 ? level === 3
                   ? "bg-orange-500 text-white"
@@ -514,7 +514,7 @@ function WindDirectionPicker({
               key={entry.dir}
               type="button"
               onClick={() => toggle(entry.dir)}
-              className={`w-9 h-9 rounded text-xs font-medium transition-colors ${
+              className={`w-9 h-9 rounded text-xs font-medium transition-all duration-100 ${
                 selected
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted text-muted-foreground hover:bg-accent"

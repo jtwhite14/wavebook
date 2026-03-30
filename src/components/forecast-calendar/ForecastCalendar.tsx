@@ -119,11 +119,11 @@ export function ForecastCalendar({ spots, onSpotClick, embedded }: ForecastCalen
   const days = data ? flattenDays(data.days) : [];
 
   return (
-    <div className={embedded ? "overflow-hidden" : "rounded-lg border bg-background/90 backdrop-blur-sm shadow-lg overflow-hidden"}>
+    <div className={embedded ? "overflow-hidden" : "rounded-lg border bg-background/90 backdrop-blur-sm shadow-[--shadow-popover] overflow-hidden"}>
       {/* Header (non-embedded only) */}
       {!embedded && (
         <div className="flex items-center justify-between px-3 py-2 border-b">
-          <h3 className="text-sm font-semibold">Forecast</h3>
+          <h3 className="text-sm font-semibold tracking-[-0.01em]">Forecast</h3>
         </div>
       )}
 
@@ -256,7 +256,7 @@ function CalendarCell({
   return (
     <button
       onClick={() => onToggle(isExpanded ? null : cellKey)}
-      className={`text-[10px] font-medium w-10 text-center rounded py-0.5 transition-colors hover:opacity-80 ${color} ${isExpanded ? "ring-1 ring-primary/30" : ""}`}
+      className={`text-[10px] font-medium w-10 text-center rounded py-0.5 transition-all duration-100 hover:opacity-80 ${color} ${isExpanded ? "ring-1 ring-primary/30" : ""}`}
     >
       {score}
     </button>

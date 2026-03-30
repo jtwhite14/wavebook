@@ -754,7 +754,7 @@ export function SessionForm({ spots: initialSpots, defaultSpotId, surfboards: in
             {/* Session label for multi-session */}
             {sessionDrafts.length > 1 && (
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Session {idx + 1}</h2>
+                <h2 className="text-lg font-semibold tracking-[-0.01em]">Session {idx + 1}</h2>
                 <Button
                   type="button"
                   variant="ghost"
@@ -801,7 +801,7 @@ export function SessionForm({ spots: initialSpots, defaultSpotId, surfboards: in
                             activePhotoIndex: (draft.activePhotoIndex - 1 + draft.photoUrls.length) % draft.photoUrls.length,
                           })
                         }
-                        className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 rounded-full flex items-center justify-center hover:bg-black/60 transition-colors"
+                        className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 rounded-full flex items-center justify-center hover:bg-black/60 transition-all duration-100"
                       >
                         <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -814,7 +814,7 @@ export function SessionForm({ spots: initialSpots, defaultSpotId, surfboards: in
                             activePhotoIndex: (draft.activePhotoIndex + 1) % draft.photoUrls.length,
                           })
                         }
-                        className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 rounded-full flex items-center justify-center hover:bg-black/60 transition-colors"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 rounded-full flex items-center justify-center hover:bg-black/60 transition-all duration-100"
                       >
                         <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -979,7 +979,7 @@ export function SessionForm({ spots: initialSpots, defaultSpotId, surfboards: in
                           className="focus:outline-none"
                         >
                           <svg
-                            className={`w-6 h-6 transition-colors ${
+                            className={`w-6 h-6 transition-all duration-100 ${
                               i < draft.rating ? "text-yellow-400" : "text-muted-foreground/40 hover:text-yellow-200"
                             }`}
                             fill="currentColor"

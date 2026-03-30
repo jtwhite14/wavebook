@@ -71,7 +71,7 @@ export function ConditionsTimeline({ sessionId, spotId }: ConditionsTimelineProp
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold tracking-tight">Conditions Timeline</h2>
+        <h2 className="text-lg font-semibold tracking-[-0.01em]">Conditions Timeline</h2>
         <p className="text-[13px] text-white/30 mt-0.5">
           {spotId ? "Current conditions and forecast" : "24-hour window around your session"}
         </p>

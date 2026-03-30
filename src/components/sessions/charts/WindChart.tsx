@@ -82,12 +82,12 @@ export function WindChart({ data, sessionIndex }: WindChartProps) {
           WIND
         </span>
         <div className="flex items-baseline gap-1.5 mt-1">
-          <span className="text-2xl font-semibold tracking-tight text-white">
+          <span className="text-2xl font-semibold tracking-[-0.01em] text-white">
             {sessionSpeed > 0 ? Math.round(sessionSpeed) : "—"}
           </span>
           <span className="text-sm text-white/40 font-medium">mph</span>
           {dirText && (
-            <span className="text-lg font-semibold text-white ml-1">
+            <span className="text-lg font-semibold tracking-[-0.01em] text-white ml-1">
               {dirText}
             </span>
           )}
