@@ -1,9 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthUserId } from "@/lib/auth";
-import { isAdmin } from "@/lib/admin";
-import { db, surfSpots, spotShares } from "@/lib/db";
-import { eq, and } from "drizzle-orm";
+import { isAdmin, getOrCreateFakeShareUsers, FAKE_SHARE_USERS } from "@/lib/admin";
+import { db, surfSpots, spotShares, surfSessions, sessionConditions } from "@/lib/db";
+import { eq, and, desc } from "drizzle-orm";
 import { generateInviteCode } from "@/lib/sharing/invite-code";
+
+type SurfSpot = typeof surfSpots.$inferSelect;
+
+async function findUserSpot(userId: string, spotId: string | undefined): Promise<SurfSpot> {
+  const spot = await db.query.surfSpots.findFirst({
+    where: spotId
+      ? and(eq(surfSpots.id, spotId), eq(surfSpots.userId, userId))
+      : eq(surfSpots.userId, userId),
+  });
+  if (!spot) throw new Error("No spots found — create a spot first");
+  return spot;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,8 +40,26 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // For "all", create accepted shares once and pass IDs through to friend-session
+    let fakeUserIds: string[] | undefined;
+
+    if (action === "accepted-share" || action === "all") {
+      const result = await createAcceptedShares(userId, spotId);
+      fakeUserIds = result.fakeUserIds;
+      if (action === "accepted-share") {
+        return NextResponse.json({ message: result.message });
+      }
+    }
+
+    if (action === "friend-session" || action === "all") {
+      const result = await createFriendSession(userId, spotId, fakeUserIds);
+      if (action === "friend-session") {
+        return NextResponse.json({ message: result });
+      }
+    }
+
     if (action === "all") {
-      return NextResponse.json({ message: "Computed alerts and created share link" });
+      return NextResponse.json({ message: "Computed alerts, created share link, seeded accepted shares, and created friend session" });
     }
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
@@ -69,20 +99,7 @@ async function computeAlerts(userId: string, spotId: string | undefined, request
 }
 
 async function createShareLink(userId: string, spotId: string | undefined, request: NextRequest): Promise<string> {
-  let spot;
-  if (spotId) {
-    spot = await db.query.surfSpots.findFirst({
-      where: and(eq(surfSpots.id, spotId), eq(surfSpots.userId, userId)),
-    });
-  } else {
-    spot = await db.query.surfSpots.findFirst({
-      where: eq(surfSpots.userId, userId),
-    });
-  }
-
-  if (!spot) {
-    throw new Error("No spots found — create a spot first");
-  }
+  const spot = await findUserSpot(userId, spotId);
 
   const inviteCode = generateInviteCode();
   const origin = new URL(request.url).origin;
@@ -94,4 +111,101 @@ async function createShareLink(userId: string, spotId: string | undefined, reque
   });
 
   return `${origin}/invite/${inviteCode}`;
+}
+
+async function createAcceptedShares(userId: string, spotId: string | undefined): Promise<{ message: string; fakeUserIds: string[] }> {
+  const spot = await findUserSpot(userId, spotId);
+  const fakeUserIds = await getOrCreateFakeShareUsers();
+  let created = 0;
+
+  for (const fakeUserId of fakeUserIds) {
+    const existing = await db.query.spotShares.findFirst({
+      where: and(
+        eq(spotShares.spotId, spot.id),
+        eq(spotShares.sharedWithUserId, fakeUserId),
+      ),
+    });
+    if (existing) continue;
+
+    await db.insert(spotShares).values({
+      spotId: spot.id,
+      sharedByUserId: userId,
+      sharedWithUserId: fakeUserId,
+      status: "accepted",
+      inviteCode: generateInviteCode(),
+      respondedAt: new Date(),
+    });
+    created++;
+  }
+
+  const message = created > 0
+    ? `Created ${created} accepted share(s) on "${spot.name}"`
+    : `Accepted shares already exist on "${spot.name}"`;
+
+  return { message, fakeUserIds };
+}
+
+async function createFriendSession(userId: string, spotId: string | undefined, existingFakeUserIds?: string[]): Promise<string> {
+  const spot = await findUserSpot(userId, spotId);
+
+  // Ensure accepted shares exist if called standalone
+  const fakeUserIds = existingFakeUserIds ?? (await createAcceptedShares(userId, spotId)).fakeUserIds;
+  const friendUserId = fakeUserIds[0];
+  const friendName = FAKE_SHARE_USERS[0].name;
+
+  // Check if friend already has a session on this spot
+  const existingFriendSession = await db.query.surfSessions.findFirst({
+    where: and(
+      eq(surfSessions.spotId, spot.id),
+      eq(surfSessions.userId, friendUserId),
+    ),
+  });
+  if (existingFriendSession) {
+    return `Friend session already exists on "${spot.name}"`;
+  }
+
+  // Find the most recent session from the test user on this spot to duplicate
+  const sourceSession = await db.query.surfSessions.findFirst({
+    where: and(
+      eq(surfSessions.spotId, spot.id),
+      eq(surfSessions.userId, userId),
+    ),
+    orderBy: [desc(surfSessions.date)],
+    with: { conditions: true },
+  });
+
+  if (!sourceSession) {
+    throw new Error(`No sessions found on "${spot.name}" — log a session first`);
+  }
+
+  // Create a duplicate session for the friend, shifted back 2 days
+  const twoDaysMs = 2 * 24 * 60 * 60 * 1000;
+  const friendDate = new Date(new Date(sourceSession.date).getTime() - twoDaysMs);
+  const friendStartTime = new Date(new Date(sourceSession.startTime).getTime() - twoDaysMs);
+  const friendEndTime = sourceSession.endTime
+    ? new Date(new Date(sourceSession.endTime).getTime() - twoDaysMs)
+    : null;
+
+  const [newSession] = await db.insert(surfSessions).values({
+    spotId: spot.id,
+    userId: friendUserId,
+    date: friendDate,
+    startTime: friendStartTime,
+    endTime: friendEndTime,
+    rating: Math.min(sourceSession.rating + 1, 5),
+    notes: "Epic morning session, caught some great sets!",
+    photoUrl: sourceSession.photoUrl,
+  }).returning();
+
+  // Duplicate conditions if the source had them
+  if (sourceSession.conditions) {
+    const { id, sessionId, createdAt, ...conditionValues } = sourceSession.conditions;
+    await db.insert(sessionConditions).values({
+      sessionId: newSession.id,
+      ...conditionValues,
+      timestamp: friendDate,
+    });
+  }
+
+  return `Created friend session on "${spot.name}" for ${friendName}`;
 }

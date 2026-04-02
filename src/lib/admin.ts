@@ -33,3 +33,34 @@ export async function getOrCreateTestUser(): Promise<string> {
   });
   return id;
 }
+
+export const FAKE_SHARE_USERS = [
+  { email: "alex@wavebook.test", name: "Alex Rivera" },
+  { email: "jordan@wavebook.test", name: "Jordan Lee" },
+];
+
+/**
+ * Get or create fake users for simulating accepted shares on the test account.
+ */
+export async function getOrCreateFakeShareUsers(): Promise<string[]> {
+  const ids: string[] = [];
+  for (const { email, name } of FAKE_SHARE_USERS) {
+    const existing = await db.query.users.findFirst({
+      where: eq(users.email, email),
+      columns: { id: true },
+    });
+    if (existing) {
+      ids.push(existing.id);
+    } else {
+      const id = randomUUID();
+      await db.insert(users).values({
+        id,
+        email,
+        name,
+        clerkId: `test_${id}`,
+      });
+      ids.push(id);
+    }
+  }
+  return ids;
+}
