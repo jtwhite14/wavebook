@@ -1096,7 +1096,7 @@ export default function DashboardPage() {
       {/* Shared spot detail pane */}
       {/* Alerts + Sessions/Spots panels — visible when no spot is selected */}
       {!selectedSpot && addSpotMode === "idle" && (
-        <div className="absolute bottom-4 left-4 right-4 sm:bottom-auto sm:right-auto sm:top-4 z-10 sm:w-80 flex flex-col gap-3 max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-2rem)] overflow-y-auto">
+        <div className="absolute bottom-4 left-4 right-4 sm:right-auto sm:top-4 sm:bottom-4 z-10 sm:w-80 flex flex-col gap-3 overflow-y-auto">
           {loading ? (
             /* Skeleton panels while data loads */
             <>
@@ -1169,7 +1169,7 @@ export default function DashboardPage() {
             </div>
 
             {alertsForecastTab === "alerts" ? (
-              <div className="max-h-80 overflow-y-auto">
+              <div>
                 {alertSummaries.length === 0 ? (
                   <div className="px-4 py-3 text-center">
                     <p className="text-sm text-muted-foreground">No upcoming alerts</p>
@@ -1256,17 +1256,16 @@ export default function DashboardPage() {
                 <Waves className="size-3.5 text-muted-foreground" />
                 <span className="text-sm font-medium">Activity</span>
               </div>
-              <div className="max-h-80 overflow-y-auto">
+              <div>
                 {activityFeed.map((item) => {
                   if (item.type === "session") {
                     const session = item.data;
                     const photo = session.photos?.[0]?.photoUrl || session.photoUrl;
                     const friendName = session.friendUser?.name?.split(" ")[0];
-                    const label = item.action === "edited"
-                      ? `Updated session at ${session.spot?.name || "Unknown Spot"}`
-                      : friendName
-                        ? `${friendName} logged a session at ${session.spot?.name || "Unknown Spot"}`
-                        : `Logged a session at ${session.spot?.name || "Unknown Spot"}`;
+                    const spotName = session.spot?.name || "Unknown Spot";
+                    const label = friendName
+                      ? `${friendName} ${item.action === "edited" ? "updated" : "created"} session at ${spotName}`
+                      : `You ${item.action === "edited" ? "updated" : "created"} session at ${spotName}`;
                     return (
                       <button
                         key={item.id}
@@ -1297,22 +1296,22 @@ export default function DashboardPage() {
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate">{label}</p>
                           <div className="flex items-center gap-1.5">
-                            <p className="text-sm font-medium truncate">{label}</p>
+                            <p className="text-xs text-muted-foreground">{formatRelative(item.timestamp)}</p>
+                            <div className="flex items-center">
+                              {Array.from({ length: 5 }).map((_, i) => (
+                                <svg
+                                  key={i}
+                                  className={`w-2 h-2 ${i < session.rating ? "text-yellow-400" : "text-muted-foreground/30"}`}
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                              ))}
+                            </div>
                           </div>
-                          <p className="text-xs text-muted-foreground">{formatRelative(item.timestamp)}</p>
-                        </div>
-                        <div className="flex items-center shrink-0">
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <svg
-                              key={i}
-                              className={`w-2.5 h-2.5 ${i < session.rating ? "text-yellow-400" : "text-muted-foreground/30"}`}
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                            </svg>
-                          ))}
                         </div>
                       </button>
                     );
