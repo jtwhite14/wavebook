@@ -1096,7 +1096,7 @@ export default function DashboardPage() {
       {/* Shared spot detail pane */}
       {/* Alerts + Sessions/Spots panels — visible when no spot is selected */}
       {!selectedSpot && addSpotMode === "idle" && (
-        <div className="absolute bottom-4 left-4 right-4 sm:bottom-auto sm:right-auto sm:top-4 z-10 sm:w-80 flex flex-col gap-3">
+        <div className="absolute bottom-4 left-4 right-4 sm:right-auto sm:top-4 sm:bottom-4 z-10 sm:w-80 flex flex-col gap-3 overflow-y-auto">
           {loading ? (
             /* Skeleton panels while data loads */
             <>
@@ -1169,7 +1169,7 @@ export default function DashboardPage() {
             </div>
 
             {alertsForecastTab === "alerts" ? (
-              <div className="max-h-80 overflow-y-auto">
+              <div>
                 {alertSummaries.length === 0 ? (
                   <div className="px-4 py-3 text-center">
                     <p className="text-sm text-muted-foreground">No upcoming alerts</p>
@@ -1256,7 +1256,7 @@ export default function DashboardPage() {
                 <Waves className="size-3.5 text-muted-foreground" />
                 <span className="text-sm font-medium">Activity</span>
               </div>
-              <div className="max-h-80 overflow-y-auto">
+              <div>
                 {activityFeed.map((item) => {
                   if (item.type === "session") {
                     const session = item.data;
