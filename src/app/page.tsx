@@ -41,8 +41,8 @@ export default async function LandingPage() {
 
           {/* Background image */}
           <div
-            className="absolute inset-0 z-0 bg-top bg-no-repeat"
-            style={{ backgroundImage: "url(/hero-bg-extended2.jpg)", backgroundSize: "100% auto" }}
+            className="absolute inset-0 z-0 bg-top bg-no-repeat bg-cover"
+            style={{ backgroundImage: "url(/hero-bg-extended2.jpg)" }}
           />
 
           {/* App screenshot — above bg, clipped by section overflow-hidden */}
