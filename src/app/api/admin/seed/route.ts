@@ -186,13 +186,12 @@ async function createFriendSession(userId: string, spotId: string | undefined, e
     throw new Error(`No sessions found on "${spot.name}" — log a session first`);
   }
 
-  // Create a duplicate session for the friend, shifted back 2 days
-  const twoDaysMs = 2 * 24 * 60 * 60 * 1000;
-  const friendDate = new Date(new Date(sourceSession.date).getTime() - twoDaysMs);
-  const friendStartTime = new Date(new Date(sourceSession.startTime).getTime() - twoDaysMs);
-  const friendEndTime = sourceSession.endTime
-    ? new Date(new Date(sourceSession.endTime).getTime() - twoDaysMs)
-    : null;
+  // Create a friend session dated 2 hours ago so it appears at the top of the list
+  const now = new Date();
+  const twoHoursMs = 2 * 60 * 60 * 1000;
+  const friendDate = new Date(now.getTime() - twoHoursMs);
+  const friendStartTime = new Date(now.getTime() - twoHoursMs);
+  const friendEndTime = new Date(now.getTime() - (1 * 60 * 60 * 1000));
 
   const [newSession] = await db.insert(surfSessions).values({
     spotId: spot.id,
